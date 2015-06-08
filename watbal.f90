@@ -152,7 +152,8 @@ END SUBROUTINE INITWATBAL
                             ROOTRAD,MINROOTWP,TOTLAI, &
                             WIND, ZHT, Z0HT, GAMSOIL, &
                             WEIGHTEDSWP,TOTESTEVAP,   &
-                            FRACUPTAKE,TOTSOILRES,ALPHARET,WS,WR,NRET) 
+                            FRACUPTAKE,TOTSOILRES,ALPHARET,WS,WR,NRET,ZBC,RZ,&
+                            ZPD, NOTREES)   ! M. Christina, added ZBC, RZ, for gravitational potential calculation
 
 ! Calculates soil water potential, hydraulic conductivity,
 ! soil-to-root hydraulic conductance (leaf specific), thermal
@@ -178,6 +179,10 @@ END SUBROUTINE INITWATBAL
       REAL MINROOTWP,KTOT,SOILZPD,GAMSOIL,TOTESTEVAP
       REAL SOILMOISTURE,ROOTRESIST,ROOTRESFRAC,ROOTRAD,TOTLAI
       REAL WIND,ZHT,Z0HT,WEIGHTEDSWP,TOTSOILRES
+      REAL ZBC(MAXT),RZ(MAXT)
+      REAL TREEH,ZPD    ! for aerodynamic conductance calculation
+      INTEGER J, NOTREES
+      
       REAL, EXTERNAL :: SOILCONDFUN
       REAL, EXTERNAL :: THERMCONDFUN
       REAL, EXTERNAL :: SOILWPFUN
@@ -223,14 +228,23 @@ END SUBROUTINE INITWATBAL
                                 USEMEASSW, SOILDATA, SOILMOISTURE, &
                                 ROOTLEN,NROOTLAYER,WEIGHTEDSWP, &
                                 FRACUPTAKE,TOTSOILRES,LAYTHICK, &
-                                TOTESTEVAP)
-
+                            TOTESTEVAP,ZBC,RZ) ! M. Christina, laythick 12/2012, ZBC,RZ, gravitational potential calculation 
       
 ! Aerodynamic conductance between soil surface and air,
 ! assuming turbulent transfer (so that conductance is the same for
 ! momentum, heat and mass transfer (Jones 1992)).
       SOILZPD = 0.0  ! Reference height is the soil surface.
-      GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,SOILZPD)
+      !GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,SOILZPD)
+      !GAMSOIL = WIND*0.008   ! Modification G Le Maire July 2013
+
+      ! average canopy height calculation
+      TREEH = 0.0
+      DO J = 1,notrees 
+          TREEH = TREEH + ZBC(J)+RZ(J)
+      ENDDO
+          TREEH = TREEH / NOTREES
+
+          GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH, TOTLAI)
 
       RETURN
       END
@@ -474,8 +488,10 @@ END SUBROUTINE INITWATBAL
 !**********************************************************************
       SUBROUTINE FINDSOILTK(IDAY,TAIRK, GAMSOIL, &
                             PRESSPA, SOILTK, SOILTK2, VPDKPA, RGLOB, &
-                            THERMCOND1, LAYTHICK1, POREFRAC1, &
-                            SOILWP1,DRYTHICK,TORTPAR,VIEWFACTOR)
+                            THERMCOND1, LAYTHICK1, LAYTHICK2, POREFRAC1, &      ! layerthick2 M. Christina 09/2013, proposition when 2 width layers differs
+                            SOILWP1,DRYTHICK,TORTPAR,VIEWFACTOR,&
+                            SOILLONGWAVE, RHOSOLSPEC,RGLOBUND1, &
+                            RGLOBUND2,DOWNTHAV)
 
 ! Finds the soil surface temperature from energy balance, by
 ! calling the ZBRENT routine, which uses the ENERGY function.
@@ -487,11 +503,12 @@ END SUBROUTINE INITWATBAL
       INTEGER IDAY
       INTEGER EXTRAINT(10)
       REAL EXTRAPARS(EXTRAPARDIM)
-      REAL LAYTHICK1,VIEWFACTOR
+      REAL LAYTHICK1,VIEWFACTOR, LAYTHICK2
       REAL TAIRK,GAMSOIL,PRESSPA,SOILTK,SOILTK2,VPDKPA
       REAL RGLOB,THERMCOND1,POREFRAC1,SOILWP1
       REAL DRYTHICK,TORTPAR
       REAL T1,T2,XACC,TEST
+      REAL SOILLONGWAVE,RHOSOLSPEC(1:3,MAXSP),RGLOBUND1,RGLOBUND2,DOWNTHAV
       REAL, EXTERNAL :: ENERGYFUN
       REAL, EXTERNAL :: ZBRENT
       
@@ -509,6 +526,15 @@ END SUBROUTINE INITWATBAL
       EXTRAPARS(11) = DRYTHICK
       EXTRAPARS(12) = TORTPAR
       EXTRAPARS(13) = VIEWFACTOR
+      EXTRAPARS(14) = LAYTHICK2
+      EXTRAPARS(15) = DRYTHICK
+      EXTRAPARS(16) = SOILLONGWAVE 
+      EXTRAPARS(17) = RHOSOLSPEC(1,1)
+      EXTRAPARS(18) = RHOSOLSPEC(2,1)
+      EXTRAPARS(19) = RGLOBUND1 
+      EXTRAPARS(20) = RGLOBUND2 
+      EXTRAPARS(21) = RHOSOLSPEC(3,1)
+      EXTRAPARS(22) = DOWNTHAV
      
 ! Set bounds for root-finding (quite liberal bounds!).
       T1 = TAIRK - 50.
@@ -543,9 +569,10 @@ END SUBROUTINE INITWATBAL
       IMPLICIT NONE
       REAL EXTRAPARS(EXTRAPARDIM)
       INTEGER EXTRAINT(10)
-      REAL LAYTHICK1,VIEWFACTOR,GAMSOIL,PRESSPA,SOILTK2,VPDKPA
+      REAL LAYTHICK1,VIEWFACTOR,GAMSOIL,PRESSPA,SOILTK2,VPDKPA, LAYTHICK2
       REAL RGLOB,TAIRK,THERMCOND1,POREFRAC1,SOILWP1,DRYTHICK
-      REAL TORTPAR,QE,QH,QN,QC,ESOIL,SOILTK
+      REAL TORTPAR,QE,QH,QN,QC,ESOIL,SOILTK, TSOILSURFACE
+      REAL SOILLONGWAVE,RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,RGLOBUND1,RGLOBUND2,DOWNTHAV
 
       ! Get parameters from EXTRAPARS array:
       GAMSOIL = EXTRAPARS(1)
@@ -561,13 +588,24 @@ END SUBROUTINE INITWATBAL
       DRYTHICK = EXTRAPARS(11)
       TORTPAR = EXTRAPARS(12)
       VIEWFACTOR = EXTRAPARS(13)
+      LAYTHICK2 = EXTRAPARS(14) ! M. Christina 09/2013
+      DRYTHICK = EXTRAPARS(15)
+      SOILLONGWAVE = EXTRAPARS(16)! M. Christina 09/2014
+      RHOSOLSPEC1 = EXTRAPARS(17)
+      RHOSOLSPEC2 = EXTRAPARS(18)
+      RGLOBUND1 = EXTRAPARS(19)
+      RGLOBUND2 = EXTRAPARS(20)
+      RHOSOLSPEC3 = EXTRAPARS(21)
+      DOWNTHAV = EXTRAPARS(22)
 
 ! Subroutine that actually does all the work.
       CALL ENERGYCALC(SOILTK,GAMSOIL,PRESSPA,SOILTK2, &
-                        VPDKPA,RGLOB,TAIRK,THERMCOND1,LAYTHICK1, &
+                        VPDKPA,RGLOB,TAIRK,THERMCOND1,LAYTHICK1,LAYTHICK2, &
                         POREFRAC1,SOILWP1,DRYTHICK,TORTPAR, &
                         VIEWFACTOR, &
-                        QH,QE,QN,QC,ESOIL)
+                        QH,QE,QN,QC,ESOIL,TSOILSURFACE,&
+                        SOILLONGWAVE,RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,&
+                        RGLOBUND1,RGLOBUND2,DOWNTHAV)
 
 ! Energy balance:
       ENERGYFUN = QH + QE + QN + QC
@@ -578,10 +616,12 @@ END SUBROUTINE INITWATBAL
 
 !**********************************************************************
       SUBROUTINE ENERGYCALC(SOILTK,GAMSOIL,PRESSPA,SOILTK2, &
-                            VPDKPA,RGLOB,TAIRK,THERMCOND1,LAYTHICK1, &
+                            VPDKPA,RGLOB,TAIRK,THERMCOND1,LAYTHICK1,LAYTHICK2, &
                             POREFRAC1,SOILWP1, &
                             DRYTHICK,TORTPAR, &
-                            VIEWFACTOR,QH,QE,QN,QC,ESOIL)
+                            VIEWFACTOR,QH,QE,QN,QC,ESOIL,TSOILSURFACE,&
+                            SOILLONGWAVE,RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,&
+                            RGLOBUND1,RGLOBUND2,DOWNTHAV)
 
 ! Calculate components of the soil energy balance.
 ! For arguments, subscript (1 or 2) refers to soil layer (1 = surface).
@@ -590,10 +630,12 @@ END SUBROUTINE INITWATBAL
 
       USE maestcom
       IMPLICIT NONE
-      REAL LAYTHICK1,VIEWFACTOR,SOILTK,GAMSOIL,PRESSPA,SOILTK2
+      REAL LAYTHICK1,VIEWFACTOR,SOILTK,GAMSOIL,PRESSPA,SOILTK2,LAYTHICK2
       REAL VPDKPA,RGLOB,TAIRK,THERMCOND1,POREFRAC1,SOILWP1
       REAL DRYTHICK,TORTPAR,QH,QE,QN,QC,ESOIL,TAIRC
-      REAL RHO,QEFLUX
+      REAL RHO,QEFLUX, TSOILSURFACE
+      REAL SOILLONGWAVE,RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,RGLOBUND1,RGLOBUND2,DOWNTHAV
+
       REAL, EXTERNAL :: RHOFUN
       REAL, EXTERNAL :: ESOILFUN
 
@@ -603,25 +645,37 @@ END SUBROUTINE INITWATBAL
       ! Density of air (kg m-3)
       RHO = RHOFUN(TAIRK)
 
-      ! Sensible heat flux (W m-2)
-      QH = CPAIR * RHO * GAMSOIL * (TAIRK - SOILTK)
+      ! Soil heat flux (flux of heat out of layer 1 into layer 2).
+      !QC = -THERMCOND1 * (SOILTK - SOILTK2)/LAYTHICK1
+      ! Was 0.5*LAYTHICK1; but actually has to transport to middle of next layer (otherwise we get a mismatch!)
+      ! This actually should be the depth from the middle of layer 1 to the middle of layer 1, which
+      ! only is LAYTHICK1 when 1 and 2 have the same thickness!!!
+!	  QC = -THERMCOND1 * (SOILTK - SOILTK2)/(0.5*LAYTHICK1+0.5*LAYTHICK2)   ! M. Christina 09/2013
+	  QC = -THERMCOND1 * (SOILTK - SOILTK2)/(LAYTHICK1)   
+      ! SoilTK = Temperature jsut below drythick, SOILTK2 = T in the middle of layer 1)
 
       ! Latent heat flux (W m-2)
       QE = QEFLUX(SOILTK,TAIRK,VPDKPA,POREFRAC1,SOILWP1, &
                   GAMSOIL,PRESSPA,DRYTHICK,TORTPAR)
 
+      ! soil surface temperature assuming a dry thermal conductivity of 0.8 W m-1 K-1 (Choudhury et al. 1988)
+      TSOILSURFACE = SOILTK - (QE + QC) *DRYTHICK / (0.8)
+
+
+    ! Sensible heat flux (W m-2)
+!      QH = CPAIR * RHO * GAMSOIL * (TAIRK - SOILTK)
+      QH = CPAIR * RHO * GAMSOIL * (TAIRK - TSOILSURFACE)   ! Sensible calculated from soil surface (Choudhury et al. 1988)
+
+      
       ! No soil evap if surface is frozen
       IF(SOILTK.LE.FREEZE)QE = 0.
 
       ! Net radiation - emitted longwave varies with surface temp.
-      ESOIL = ESOILFUN(SOILTK)
-      QN = (1-SOILALBEDO)*RGLOB - ESOIL
-
-      ! Soil heat flux (flux of heat out of layer 1 into layer 2).
-      QC = -THERMCOND1 * (SOILTK - SOILTK2)/LAYTHICK1
-      ! Was 0.5*LAYTHICK1; but actually has to transport to middle of next layer (otherwise we get a mismatch!)
-      ! This actually should be the depth from the middle of layer 1 to the middle of layer 1, which
-      ! only is LAYTHICK1 when 1 and 2 have the same thickness!!!
+!      ESOIL = ESOILFUN(SOILTK)
+      ESOIL = ESOILFUN(TSOILSURFACE)
+      !QN = (1-SOILALBEDO)*RGLOB - ESOIL
+      !QN = SOILLONGWAVE + (1-RHOSOLSPEC1)*RGLOBUND1 + (1-RHOSOLSPEC2)*RGLOBUND2 
+      QN = DOWNTHAV*(1-RHOSOLSPEC3) + (1-RHOSOLSPEC1)*RGLOBUND1 + (1-RHOSOLSPEC2)*RGLOBUND2 - ESOIL 
 
       RETURN
       END
@@ -655,7 +709,7 @@ END SUBROUTINE INITWATBAL
         SOILWPFUN = PSIE*(WATERCONTENT)**(-BPAR)
       ENDIF
       IF(RETFUNCTION.EQ.3) THEN
-          IF(WATERCONTENT.LT.WR)THEN
+          IF(WATERCONTENT.LE.WR)THEN
               SOILWPFUN = -999.0
           ELSE IF (WATERCONTENT.GT.WS) THEN
               SOILWPFUN = -0.0001
@@ -701,11 +755,12 @@ END SUBROUTINE INITWATBAL
           SOILCONDFUN = KSAT*(WATERCONTENT/POROSITY)**(2*BPAR + 3)
       ELSE IF (RETFUNCTION.EQ.3) THEN
         ! van genuchten
-          IF (WATERCONTENT.LT.WR) THEN
+          IF (WATERCONTENT.LE.WR) THEN
               SOILCONDFUN = 0
           ELSE IF (WATERCONTENT.GT.WS) THEN
               SOILCONDFUN = KSAT
           ELSE
+!              ALPHAPOT = (( (WS - WR)/(WATERCONTENT-WR) )**(N/(N-1)) - 1) ** (1/N)
               ALPHAPOT = (( (WS - WR)/(WATERCONTENT-WR) )**(N/(N-1)) - 1) ** (1/N)
               SOILCONDFUN = KSAT * (1 - ALPHAPOT**(N-1) * ( 1+ ALPHAPOT**N )**(-1+1/N) ) **2   &
                             / (1 + ALPHAPOT**N)**(1/2 - 1/(2*N))
@@ -811,7 +866,7 @@ END SUBROUTINE INITWATBAL
                 
                         KS = ROOTLEN(I)*LAYTHICK(I)*2.0*pi*KSOIL/LOGRR
                 
-                        SOILR1(I) = 1/KS
+                    SOILR1(I) = 1/KS   *0.001   ! M. Christina to have in MPA s m2 mmol-1
                 
                         ! As in SPA:
                         !RS2 = LOG(RS/ROOTRAD)/(2.0*PI*ROOTLEN(I)*LAYTHICK(I)*LSOIL)
@@ -873,7 +928,7 @@ END SUBROUTINE INITWATBAL
                                   USEMEASSW, SOILDATA, SOILMOISTURE, &
                                   ROOTLEN,NROOTLAYER,WEIGHTEDSWP, &
                                   FRACUPTAKE,TOTSOILRES,LAYTHICK, &
-                                  TOTESTEVAP) ! rajout laythick mathias décembre 2012
+                                  TOTESTEVAP,ZBC,RZ) ! M. Christina, added LAYTHICK 09/2012 and ZBC 09/2013
 
 ! Function for deciding from which layer water is withdrawn,
 ! and to calculate soil water potential weighted by root fraction.
@@ -884,8 +939,9 @@ END SUBROUTINE INITWATBAL
         USE metcom
         IMPLICIT NONE
     
-        INTEGER I,NROOTLAYER,EQUALUPTAKE,SOILDATA,USEMEASSW
-        REAL ESTEVAP(MAXSOILLAY),FRACUPTAKE(MAXSOILLAY),RSUM
+        INTEGER I,NROOTLAYER,EQUALUPTAKE,SOILDATA,USEMEASSW, J
+        INTEGER TMP1,TMP2
+        REAL ESTEVAP(MAXSOILLAY),FRACUPTAKE(MAXSOILLAY)
         REAL FRACUPTAKE2(MAXSOILLAY), LAYTHICK(MAXSOILLAY) 
         REAL ICEPROP(MAXSOILLAY), SOILWP(MAXSOILLAY)
         REAL SOILRRES1(MAXSOILLAY),SOILRRES2(MAXSOILLAY)
@@ -894,6 +950,7 @@ END SUBROUTINE INITWATBAL
         REAL MINROOTWP,KTOT,KTOT2,TOTESTEVAP,TOTESTEVAPMM
         REAL WEIGHTEDSWP,TOTSOILRES,SOILMOISTURE
         REAL EMAXLEAF,TOTLAI,FRACSUM,ROOTRESFRAC,TOTESTEVAPWET
+        REAL ZBC(MAXT),RZ(MAXT), TREEHEIGHT, DEPTH  ! M. Christina 09/2013
 
         !Reset.
         TOTESTEVAP = 0.
@@ -901,15 +958,25 @@ END SUBROUTINE INITWATBAL
         WEIGHTEDSWP = 0.
         ESTEVAP = 0.
         FRACUPTAKE = 0.
+        TREEHEIGHT = 0.
 
         ! Total soil conductance at the leaf level; including soil and root component.
         ! SOILRRES2 is commented out : don't use root-component of resistance (is part of plant resistance)
         SOILRRES = SOILRRES1 !+ SOILRRES2
 
+        ! Height of tree M. Christina Septemebr 2013
+        TREEHEIGHT = ZBC(1)+RZ(1)
+
         ! Estimated max transpiration from gradient-gravity / soil resis
         IF(EQUALUPTAKE.EQ.0)THEN
         
         DO I=1,NROOTLAYER
+
+                !Depth of the layer M. Christina 09/2013
+                DEPTH = 0.
+                DO J=1,I
+                    DEPTH = DEPTH + LAYTHICK(J)
+                END DO
 
                 ! Estimated maximum uptake rate with the current soil watyer
                 ! if aboveground resistance is zero.
@@ -947,7 +1014,8 @@ END SUBROUTINE INITWATBAL
         IF(TOTESTEVAP.GT.0.)THEN
             WEIGHTEDSWP = WEIGHTEDSWP / TOTESTEVAP       
         ELSE
-            WEIGHTEDSWP = 0.0
+            !WEIGHTEDSWP = SUM(SOILWP(1:NROOTLAYER)) / NROOTLAYER
+            WEIGHTEDSWP =0
             DO I=1,NROOTLAYER
                 WEIGHTEDSWP = WEIGHTEDSWP + SOILWP(I) * LAYTHICK(I)
             ENDDO
@@ -1362,7 +1430,8 @@ END SUBROUTINE INITWATBAL
 
         ! Vapor pressure in soil airspace (kpa) depends on soil water po
         ! See Jones 1992 p.110 (Eq. 5.11).
-        ESURF = ESAT*EXP(1E6*SOILWP1*H2OVW/(RCONST*SOILTK))
+!        ESURF = ESAT*EXP(1E6*SOILWP1*H2OVW/(RCONST*SOILTK))
+        ESURF = ESAT!*EXP(1E6*SOILWP1*H2OVW/(RCONST*SOILTK))    ! assumed saturated as C&M  M. Christina September 2014
 
         ! Diffusion coefficient for water vapor (m2 s-1)
         ! Jones 1992, Appendix 2.
@@ -1377,7 +1446,8 @@ END SUBROUTINE INITWATBAL
 
         ! Soil conductance to water vapour diffusion, m s-1.
         ! Choudhury and Monteith (1988), Eq. 41b.
-        GWS = EFFDIFF * (POREFRAC1 / DRYTHICK)
+!        GWS = EFFDIFF * (POREFRAC1 / DRYTHICK)
+        GWS = DIFF * POREFRAC1 / (TORTPAR*DRYTHICK)     ! M. Christina septembre 2014
 
         ! Total conductance.
         GWSTOT = 1. / (1./GAMSOIL + 1./GWS)
@@ -1385,6 +1455,8 @@ END SUBROUTINE INITWATBAL
         ! Latent energy flux from soil surface (Choudhury and Monteith 1
         QEFLUX = GWSTOT * LAMBDASOIL * (RHO / PRESSKPA) * (H2OMW/AIRMA) &
                  * (EA - ESURF)
+!        QEFLUX = GWSTOT  * (RHO / PRESSKPA) * (H2OMW/AIRMA) &
+!                 * (EA - ESURF) * LAMBDASOIL        ! modified  M.Christina September 2014
 
         ! Turn off potential dew formation here if QEFLUX is larger than
         ! Problems arise when soil water potential in top layer is very
@@ -1667,20 +1739,20 @@ END SUBROUTINE INITWATBAL
               VOLHC(I) = VOLHCFUN(POREFRAC(I), FRACWATER(I))
 
               ! Heat content of the layer (J m-2).
-              HEAT = SOILTEMP(I) * OLDVOLHC * LAYTHICK(I)
+              HEAT = SOILTEMP(I+1) * OLDVOLHC * LAYTHICK(I)     ! because soiltemp(1) = SOILTK Christina
 
               ! Heat loss : water loss in m * heat capacity of water * t
-              HEATLOSS = WATERLOSS(I) * CPH2O * SOILTEMP(I)
+              HEATLOSS = WATERLOSS(I) * CPH2O * SOILTEMP(I+1)
 
               ! Heat gain: water gain in m * heat capacity of water * te
-              HEATGAIN = WATERGAIN(I) * CPH2O * SOILTEMP(I) + &
+              HEATGAIN = WATERGAIN(I) * CPH2O * SOILTEMP(I+1) + &
                              PPTGAIN(I) * CPH2O * TAIRK
 
               ! Net redistribution of heat (IF clause deleted here).
               NEWHEAT = HEAT - HEATLOSS + HEATGAIN
 
               ! New soil temperature.
-              SOILTEMP(I) = NEWHEAT / (VOLHC(I) * LAYTHICK(I))
+              SOILTEMP(I+1) = NEWHEAT / (VOLHC(I) * LAYTHICK(I))
  
         ENDDO
 
@@ -1722,11 +1794,12 @@ END SUBROUTINE INITWATBAL
              I = 2
 
            ! loop for all x-dimension nodes, except first and last.
-           DO WHILE (I .LT. (NLAYER+1))
+           DO WHILE (I .LT. (NLAYER+1)) !+1: SOILTK is the soil temperature below the drythick, SOILTEMP(2) is the soil temperature of the first layer M. Christina
 
            ! Thermal conductivity, w m-1 k-1 is converted to j m-1 k-1 t
            TDIFFUSE = SPERHR * THERMCOND(I) / VOLHC(I)
-           D = TDIFFUSE / LAYTHICK(I)**2
+!           D = TDIFFUSE / LAYTHICK(I)**2
+            D = TDIFFUSE / LAYTHICK(I-1)**2 ! Christina from just below drythick to middle first layer, temperature calculated at the bottom of the layer
 
            ! Store value of previous iteration.
            OLD_VALUE = SOILTEMP_NPLUS1(I)
@@ -1750,7 +1823,7 @@ END SUBROUTINE INITWATBAL
          ! Loop for all x-dimension nodes, except first and last.
          ! set the values at time n equal to the values at
          ! time  t+1 for the next time step.
-         DO I= 2,NLAYER
+         DO I= 2,NLAYER!+1 Christina
              SOILTEMP(I) = SOILTEMP_NPLUS1(I)
          ENDDO
 
@@ -1846,12 +1919,16 @@ END SUBROUTINE INITWATBAL
 !**********************************************************************
 
       SUBROUTINE SCALEUP(IHOUR,USESTAND,NOTARGETS,NOALLTREES,FOLT, &
-                         ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,SCLOSTTREE, &
-                         THRAB,RADABV,FH2O,PLOTAREA,DOWNTHTREE, &
-                         RGLOBABV,RGLOBUND,RADINTERC,FRACAPAR,&
+                         ITARGETS,TOTLAI,STOCKING,SCLOSTTREE, &
+                         THRAB,RADABV,FH2O, &
+                         PLOTAREA,DOWNTHTREE, &
+                         RGLOBABV,RGLOBUND,RADINTERC, &
+                         FRACAPAR, &
                          ISIMUS,FH2OUS,THRABUS,PARUSMEAN, &
                          SCLOSTTOT,GSCAN,WIND,ZHT,Z0HT,ZPD, &
-                         PRESS,TAIR,VPD,ETMM,ETUSMM,ETMMSPEC)
+                         PRESS,TAIR,VPD,ETMM,ETUSMM,TREEH, &
+                         SOILLONGWAVETREE,SOILLONGWAVE,RGLOBUND1,&
+                         RGLOBUND2,DOWNTHAV)
 
 ! Scale up individual tree transpiration and radiation interception to
 ! a per m2 basis for use in water/heat balance calculations.
@@ -1875,7 +1952,8 @@ END SUBROUTINE INITWATBAL
     REAL RADINTERC1,RADINTERC2,RADINTERC3,SCLOSTTOT
     REAL FRACAPAR,GSCANAV,RADINTERCTREE,CONV
     REAL ETMM,  WIND, ZHT,Z0HT,ZPD,PRESS,TAIR,VPD,ETCAN
-    REAL ETUSMM,FH2OUS,WTOT,ETMMSPEC(MAXSP)
+    REAL ETUSMM,FH2OUS,WTOT,TREEH
+    REAL SOILLONGWAVETREE(MAXT),SOILLONGWAVE,RGLOBUND1,RGLOBUND2,DOWNTHAV
     
 ! Get average leaf area of target trees
       TOTLATAR = 0.0
@@ -1927,7 +2005,9 @@ END SUBROUTINE INITWATBAL
                       DOWNTHTREE,EXPFACTORS, &
                       RGLOBABV,RGLOBABV12,RGLOBUND,RADINTERC12, &
                       RADINTERC1,RADINTERC2,RADINTERC3, &
-                      SCLOSTTOT,FRACAPAR,RADINTERC)
+                      SCLOSTTOT,FRACAPAR,RADINTERC,  &
+                      SOILLONGWAVETREE,SOILLONGWAVE,RGLOBUND1,&
+                      RGLOBUND2,DOWNTHAV)
                            
 ! Get average canopy conductance across target trees:
       GSCANAV = 0.
@@ -2105,3 +2185,153 @@ END SUBROUTINE INITWATBAL
       END
 
 
+SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,&
+                         WIND, ZPD, ZHT, Z0HT, DELTA, PRESS, QC,TREEH,TOTLAI, GCANOP)
+
+! calculation of air temperature and VPD within the canopy,
+! applied as Tair et VPDair after
+
+      USE maestcom
+      IMPLICIT NONE
+
+      REAL QN, QE, RADINTERC, TAIR, VPD, TAIRNEW, VPDNEW, ETMM, RHNEW, TAIRABOVE, VPDABOVE,QC
+      REAL RNETTOT, ETOT, LHV, GCANOP, WIND, ZHT, ZPD, Z0HT, DELTA,ZPD2,Z0HT2, ZHT2
+      REAL VPAIR, VPAIRCANOP, PRESS, CMOLAR, GAMMA,TREEH,TAIRCAN
+      
+      REAL Cd, X, TOTLAI, Z0, KH, ALPHA
+      REAL COAT, USTAR, Z0H
+    
+      REAL, EXTERNAL :: SATUR
+      REAL, EXTERNAL :: TK
+
+ 
+      
+      ! total net radiation in the system (W m-2)
+      RNETTOT = QN + RADINTERC
+
+      ! Latent heat of water vapour at air temperature (J mol-1)
+       LHV = (H2OLV0 - 2.365E3 * TAIRCAN) * H2OMW  ! 
+    
+      ! total latent heat flux in the system en W m-2  (QE J m-2 s-1, ETMM en kg m-2 t-1)
+      ETOT = -QE + ETMM / (SPERHR * 1E-06 * 18 * 1E-03) * 1e-06 * LHV
+      
+      ! Convert from m s-1 to mol m-2 s-1
+      CMOLAR = PRESS / (RCONST * TK(TAIRABOVE))
+
+      IF (WIND.LT.0.2) WIND=0.2
+      
+      ! aerodynamic conductance air within canopy - air above canopy from Choudhury 1988
+      ZPD2 = 0.75*TREEH
+      Z0HT2 = 0.1*TREEH
+
+      ! Atenuation coefficient, from Lafleur & Roux 1989
+      COAT = 2.6 * TOTLAI**0.36
+        IF (COAT.LT.1) COAT = 1
+        IF (COAT.GT.3) COAT = 3
+
+      ! Intermediate values
+        USTAR = WIND * VONKARMAN / log((ZHT-ZPD2)/Z0HT2)
+        Z0H = Z0HT2*exp(-6.27*VONKARMAN*(USTAR**(1/3)))
+      
+        GCANOP = 1/  ( log((ZHT-ZPD2)/Z0HT2)/(WIND*VONKARMAN**2) * (log((ZHT-ZPD2)/(TREEH-ZPD2)) +  &
+               (TREEH/(COAT*(TREEH-ZPD2)))*   (exp(COAT*(1-(ZPD2+Z0H)/TREEH))- 1)))     *CMOLAR
+
+       
+      ! calculation of air temperature within the canopy (attention QC est négatif)
+      TAIRNEW = TAIRABOVE +  (RNETTOT - ETOT + QC) / (CPAIR * AIRMA * GCANOP)
+
+      ! air vapor pressure
+      VPAIR = SATUR(TAIRABOVE) - VPDABOVE
+
+      ! psychometric constant
+      GAMMA = CPAIR*AIRMA*PRESS/LHV
+
+      ! calculation of air vapor pressure within the canopy
+      VPAIRCANOP = ETOT / (CPAIR * AIRMA * GCANOP/GAMMA) + VPAIR   
+      VPDNEW = SATUR(TAIRNEW) - VPAIRCANOP
+
+    ! limit condition      
+    IF ((TAIRNEW-TAIRABOVE).GT.10)  TAIRNEW = TAIRABOVE + 10
+    IF ((TAIRABOVE-TAIRNEW).GT.10)  TAIRNEW = TAIRABOVE - 10
+
+    !IF ((VPDABOVE.LT.100).AND.(VPDNEW.LT.100)) VPDNEW=VPDABOVE
+    IF (VPDNEW.LT.1) VPDNEW=1
+    IF (VPDNEW.GT.SATUR(TAIRNEW)) VPDNEW=SATUR(TAIRNEW) -1  ! to avoid RHnew = 0.
+      
+      RHNEW = 1.0 - VPDNEW/SATUR(TAIRNEW) 
+      
+      RETURN
+      
+    END 
+
+    SUBROUTINE  ZEROHRFLUX(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,        &
+                    AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
+                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,  &
+                    PSILCAN,PSILCANMIN,CICAN, ECANMAX, ACANMAX,AREATOT)
+
+    ! set to 0 the value of Hrflux
+    
+    USE maestcom
+    IMPLICIT NONE
+    INTEGER ITAR,ILAY,IHOUR,NOTARGETS,NUMPNT,NSUMMED
+
+    REAL THRAB(MAXT,MAXHRS,3)
+    REAL FCO2(MAXT,MAXHRS),FRESPF(MAXT,MAXHRS),TCAN(MAXT,MAXHRS)
+    REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
+    REAL GSCAN(MAXT,MAXHRS),FH2O(MAXT,MAXHRS),FHEAT(MAXT,MAXHRS)
+    REAL GBHCAN(MAXT,MAXHRS)
+    REAL ACANMAX(MAXT,MAXHRS),ECANMAX(MAXT,MAXHRS)
+    REAL PPAR(MAXT,MAXLAY,MAXHRS),PPS(MAXT,MAXLAY,MAXHRS)
+    REAL PTRANSP(MAXT,MAXLAY,MAXHRS)
+    REAL APAR,AREA,ALEAF,ET,ANIR,ATHR,RD,GSC,HFX,TLEAF,FSOIL1,FSOIL,TOTTMP
+    REAL PSIL,CI,GBH, AREATOT
+
+    AREATOT = 0.
+    
+    DO ITAR = 1,MAXT
+        DO ILAY= 1,MAXLAY
+    ! Zero PAR, photosynthesis, & transpiration by layer
+    PPAR(ITAR,ILAY,IHOUR) = 0.
+    PPS(ITAR,ILAY,IHOUR) = 0.
+    PTRANSP(ITAR,ILAY,IHOUR) = 0.
+        END DO
+    END DO
+    
+    DO ITAR= 1,MAXT
+    ! Sum all fluxes for the hour
+    THRAB(ITAR,IHOUR,1) = 0.
+    THRAB(ITAR,IHOUR,2) = 0.
+    THRAB(ITAR,IHOUR,3) = 0.
+    FCO2(ITAR,IHOUR) = 0.
+    
+    ! Foliage respiration in umol tree-1 s-1
+    FRESPF(ITAR,IHOUR) = 0.
+    ! Transpiration in umol tree-1 s-1
+    FH2O(ITAR,IHOUR) = 0.
+    ! Maximum rates of transpiration and photosynthesis
+    
+    ! Stom cond in mol tree-1 s-1
+    GSCAN(ITAR,IHOUR) = 0.
+    ! Boundary layer conductance to heat
+    GBHCAN(ITAR,IHOUR) = 0.
+    ! Heat flux in mol tree-1 s-1
+    FHEAT(ITAR,IHOUR) = 0.
+    ! Average leaf temperature - will be divided by total leaf area later. 
+    TCAN(ITAR,IHOUR) = 0.
+    ! Average leaf water potential
+    PSILCAN(ITAR,IHOUR) = 0.
+    ! Lowest leaf water potential for the target tree.
+    
+    ! Average ci.
+    CICAN(ITAR,IHOUR) = 0.
+    END DO
+    
+    ! Average FSOIL across all target trees and grid points.
+    FSOIL1 = 0.
+    TOTTMP = 0.
+    NSUMMED = 0
+
+    
+    RETURN
+    
+    END 

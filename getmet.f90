@@ -179,6 +179,8 @@ SUBROUTINE OPENMETF(ISTART,IEND,CAK,PRESSK,SWMIN,SWMAX,USEMEASET,DIFSKY,ALAT,TTI
                 ICOL = MDSWC
             ELSEIF (COLUMNS(I).EQ.'ET')  THEN
                 ICOL = MDET
+			ELSEIF (COLUMNS(I).EQ.'RTHERM')  THEN
+                ICOL = MDTHR
             ELSE
                 CALL SUBERROR('ERROR: Header incorrectly specified in Met file',&
                               IFATAL,0) 
@@ -240,6 +242,8 @@ SUBROUTINE OPENMETF(ISTART,IEND,CAK,PRESSK,SWMIN,SWMAX,USEMEASET,DIFSKY,ALAT,TTI
                 ICOL = MHTIME
             ELSEIF (COLUMNS(I).EQ.'VMFD')  THEN
                 ICOL = MHMFD
+			ELSEIF (COLUMNS(I).EQ.'RTHERM')  THEN  !TEST
+                ICOL = MHTHR
             ELSE
                 CALL SUBERROR('WARNING: Header includes unknown variable - ignored',&
                               IWARN,0) 
@@ -366,7 +370,7 @@ END SUBROUTINE READDELTAT
 
 !**********************************************************************
 SUBROUTINE GETMET(IDATE,MFLAG,ZEN,METCOLS,NOMETCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,ALAT,DEC,DAYL,WINDAH,&
-                    TSOIL,TAIR,RADABV,FBEAM,RH,VPD,VMFD,CA,PRESS,PPT,SOILMOIST,SOILDATA,TSOILDATA,ETMEAS)
+                    TSOIL,TAIR,RADABV,FBEAM,RH,VPD,VMFD,CA,PRESS,PPT,SOILMOIST,SOILDATA,TSOILDATA,ETMEAS,EMSKY)
 
 ! According to the value of MFLAG, this subroutine calls the appropriate
 ! subroutine to read in the meteorological data for use in MAESTRO.
@@ -413,7 +417,7 @@ SUBROUTINE GETMET(IDATE,MFLAG,ZEN,METCOLS,NOMETCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTA
     REAL RADABV(MAXHRS,3),FBEAM(MAXHRS,3)
     REAL RH(MAXHRS),VPD(MAXHRS),CA(MAXHRS),VMFD(MAXHRS),PRESS(MAXHRS)
     REAL PPT(MAXHRS), SOILMOIST(MAXHRS), ETMEAS(MAXHRS)
-    REAL DELTAT(12)
+    REAL DELTAT(12),EMSKY(MAXHRS)
     INTEGER METCOLS(MAXMET),SOILDATA,TSOILDATA,MFLAG,IDATE,NOMETCOLS
     REAL CAK,PRESSK,SWMIN,SWMAX,ALAT,DEC,DAYL
 
@@ -421,12 +425,12 @@ SUBROUTINE GETMET(IDATE,MFLAG,ZEN,METCOLS,NOMETCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTA
     IF (MFLAG.EQ.0) THEN
         CALL GETMETDAY(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,ALAT,DEC,  &
                         DAYL,WINDAH,TSOIL,TAIR,RADABV,FBEAM,RH,VPD,VMFD,CA,PRESS,PPT,       &
-                        SOILMOIST,SOILDATA,TSOILDATA)
+                        SOILMOIST,SOILDATA,TSOILDATA,EMSKY)
 
     ELSE IF (MFLAG.EQ.1) THEN
         CALL GETMETHR(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,ALAT,DEC,   &
                         DAYL,WINDAH,TSOIL,TAIR,RADABV,FBEAM,RH,VPD,VMFD,CA,PRESS,PPT,       &
-                        SOILMOIST,SOILDATA,TSOILDATA,ETMEAS)
+                        SOILMOIST,SOILDATA,TSOILDATA,ETMEAS,EMSKY)
 
     !      ELSE
     ! insert other formats if required
@@ -438,7 +442,7 @@ END SUBROUTINE GETMET
 !**********************************************************************
 SUBROUTINE GETMETDAY(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,ALAT,DEC,DAYL,   &
                         WINDAH,TSOIL,TAIR,RADABV,FBEAM,RH,VPD,VMFD,CA,PRESS,PPT,SOILMOIST,      &
-                        SOILDATA,TSOILDATA)
+                        SOILDATA,TSOILDATA,EMSKY)
 ! Read daily met data: see function GETMET for parameter definitions
 !**********************************************************************
 
@@ -456,6 +460,7 @@ SUBROUTINE GETMETDAY(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,A
     REAL DELTAT(12)
     REAL WIND,PRESSK,TMAX,TMIN,DAYL,PRECIP,ALAT,DEC,PAR,FBM
     REAL RADBM,RADDF,SMD,CAK,SWMIN,SWMAX
+    REAL EMSKY(MAXHRS)
     
     ! Read in day's data
     READ (UMET,*,IOSTAT = IOERROR) (DATAIN(I), I = 1,NOMETCOLS)
@@ -541,7 +546,7 @@ SUBROUTINE GETMETDAY(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,A
     CALL CALCFSUN(FBEAM,FSUN)
 
     ! Calculate thermal radiation
-    CALL THERMAL(TAIR,VPD,FSUN,RADABV)
+    CALL THERMAL(TAIR,VPD,FSUN,RADABV,EMSKY)
 
     ! Read in value of CA if present - NB could add daily variation if wished?
     IF (METCOLS(MDCA).NE.MISSING) THEN
@@ -603,7 +608,7 @@ END SUBROUTINE GETMETDAY
 !**********************************************************************
 SUBROUTINE GETMETHR(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,ALAT,DEC,DAYL,WINDAH, &
                     TSOIL,TAIR,RADABV,FBEAM,RH,VPD,VMFD,CA,PRESS,PPT,SOILMOIST,SOILDATA,            &
-                    TSOILDATA,ETMEAS)
+                    TSOILDATA,ETMEAS,EMSKY)
 ! Read hourly met data: see function GETMET for parameter definitions
 !**********************************************************************
 
@@ -622,6 +627,7 @@ SUBROUTINE GETMETHR(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,AL
     REAL SOILMOIST(MAXHRS)
     REAL DELTAT(12),PRESSK,TMIN,TMAX,DAYPPT,ALAT,DEC,DAYL
     REAL PAR,FBM,RADBM,RADDF,CALCFBMH,CAK,SWMIN,SWMAX
+    REAL EMSKY(MAXHRS)
     
     ! Read in one day's worth of data at a time.
     DO IHR = 1,KHRS
@@ -787,8 +793,14 @@ SUBROUTINE GETMETHR(IDATE,ZEN,NOMETCOLS,METCOLS,CAK,PRESSK,SWMIN,SWMAX,DELTAT,AL
     ! Calculate FSUN
     CALL CALCFSUN(FBEAM,FSUN)
 
+    IF (METCOLS(MHTHR).NE.MISSING) THEN     ! TEST
+        DO IHR = 1,KHRS
+            RADABV(IHR,3) = DATAIN(IHR,METCOLS(MHTHR)) 
+        END DO
+    ELSE 
     ! Calculate thermal radiation
-    CALL THERMAL(TAIR,VPD,FSUN,RADABV)
+        CALL THERMAL(TAIR,VPD,FSUN,RADABV,EMSKY)
+    END IF
 
     ! Read in values of CA if present
     IF (METCOLS(MHCA).NE.MISSING) THEN
@@ -1300,7 +1312,7 @@ END SUBROUTINE CALCNIR
 
 
 !**********************************************************************
-SUBROUTINE THERMAL(TAIR,VPD,FSUN,RADABV)
+SUBROUTINE THERMAL(TAIR,VPD,FSUN,RADABV,EMSKY)
 ! Calculate incident thermal radiation, if it has not been measured. 
 ! Several different formulae exist:
 ! Ying-Ping had the following formula, from MH Unsworth & JL Monteith
@@ -1322,7 +1334,7 @@ SUBROUTINE THERMAL(TAIR,VPD,FSUN,RADABV)
     IMPLICIT NONE
     INTEGER I
     REAL RADABV(MAXHRS,3),TAIR(MAXHRS),VPD(MAXHRS),FSUN(MAXHRS)
-    REAL TMP,EA,EMCLEAR,EMSKY
+    REAL TMP,EA,EMCLEAR,EMSKY(MAXHRS)
     REAL, EXTERNAL :: TK
     REAL, EXTERNAL :: SATUR
     
@@ -1349,8 +1361,8 @@ SUBROUTINE THERMAL(TAIR,VPD,FSUN,RADABV)
 !            WRITE(UWATTEST) EA 
 !        ENDIF
         EMCLEAR = 0.642*(EA/TK(TAIR(I)))**(1./7.)
-        EMSKY = FSUN(I)*EMCLEAR + (1.-FSUN(I))*(0.84+0.16*EMCLEAR)
-        RADABV(I,3) = EMSKY*SIGMA*(TK(TAIR(I))**4)
+        EMSKY(I) = FSUN(I)*EMCLEAR + (1.-FSUN(I))*(0.84+0.16*EMCLEAR)
+        RADABV(I,3) = EMSKY(I)*SIGMA*(TK(TAIR(I))**4)
     END DO
 
     RETURN
