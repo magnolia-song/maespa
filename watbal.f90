@@ -1926,10 +1926,10 @@ END SUBROUTINE INITWATBAL
                          FRACAPAR, &
                          ISIMUS,FH2OUS,THRABUS,PARUSMEAN, &
                          SCLOSTTOT,GSCAN,WIND,ZHT,Z0HT,ZPD, &
-                         PRESS,TAIR,VPD,ETMM,ETUSMM,TREEH, &
+                         PRESS,TAIR,VPD,ETMM,ETUSMM,ETMMSPEC,TREEH, &
                          SOILLONGWAVETREE,SOILLONGWAVE,RGLOBUND1,&
                          RGLOBUND2,DOWNTHAV)
-
+                      
 ! Scale up individual tree transpiration and radiation interception to
 ! a per m2 basis for use in water/heat balance calculations.
 ! For global radiation above and underneath the canopy, GETRGLOB is called.

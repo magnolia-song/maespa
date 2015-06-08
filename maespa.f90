@@ -125,7 +125,7 @@ PROGRAM maespa
     
     ! Get input from the water balance file
     IF(ISMAESPA)THEN        
-        CALL INPUTWATBAL(BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC, ROOTRADTABLE, ROOTRSLTABLE,ROOTMASSTOTTABLE,              &
+        CALL INPUTWATBAL(BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC, ROOTRADTABLE, ROOTSRLTABLE,ROOTMASSTOTTABLE,              &
                         MINROOTWP,MINLEAFWPSPEC,PLANTKTABLE,KSCALING,THROUGHFALL,REASSIGNRAIN,RUTTERB,RUTTERD, MAXSTORAGE, &
                         DRAINLIMIT,ROOTXSECAREA,EQUALUPTAKE,NLAYER, NROOTLAYER, LAYTHICK, INITWATER,    & 
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET,DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
@@ -185,13 +185,13 @@ PROGRAM maespa
         !**********************************************************************
     
         CALL INTERPOLATEDIST(IDAY,ISTART,FRACROOTTABLE,NOROOTDATES,NOROOTSPEC,DATESROOT,FRACROOTSPEC,NROOTLAYER, NALPHASPEC, &
-                                FALPHATABLESPEC,DATESLIA,NOLIADATES,FALPHASPEC,NSPECIES, &
+                                FALPHATABLESPEC,DATESLIA2,NOLIADATES,FALPHASPEC,NSPECIES, &
                                 ISMAESPA)
         
 
         IF(ISMAESPA)THEN
             CALL INTERPOLATEW(IDAY,ISTART,NOKPDATES,DATESKP,PLANTKTABLE,PLANTK,  &
-                              NOROOTDATES,DATESROOT,NOROOTSPEC,ROOTRADTABLE,ROOTRSLTABLE,ROOTMASSTOTTABLE, &
+                              NOROOTDATES,DATESROOT,NOROOTSPEC,ROOTRADTABLE,ROOTSRLTABLE,ROOTMASSTOTTABLE, &
                               FRACROOTSPEC,LAYTHICK,ROOTRESFRAC,ROOTXSECAREA, ROOTLENSPEC, ROOTRESIST, ROOTMASSSPEC,  &
                               NROOTLAYER,ROOTRAD)    
         ENDIF
@@ -532,7 +532,7 @@ PROGRAM maespa
                        ENDDO
 
                        CALL TRANSD( &
-                        IDAY,NEWCANOPY,IPROGCUR,NOTREESTEST,XSLOPE,YSLOPE, &
+                        IDAY,IOTUTD,NEWCANOPY,IPROGCUR,NOTREESTEST,XSLOPE,YSLOPE, &
                         NZEN,DIFZEN,NAZ,NUMTESTPNT,DEXTTP,DIFSKY, &
                         XLP,YLP,ZLP,RXP,RYP,RZP,DXTP,DYTP,DZTP, &
                         XMAX,YMAX,SHADEHT, &
@@ -1018,7 +1018,7 @@ PROGRAM maespa
                                 NOTREESTEST,SUNLAP,BEXTP,BEXTANGTP,BEXTANGP)
 
                         IWAVE = 1 !(As in original MAESTEST, use only PAR.
-                        CALL SCATTER(IPTEST,IWAVE, &
+                        CALL SCATTER(IPTEST,ITAR,IWAVE, &
                                 MLAYERP(IPTEST),LAYERP(IPTEST),DLAIP,EXPDIFP, &
                                 ZEN(IHOUR),BEXTP, &
                                 DMULT2,SOMULT,BMULT, &
@@ -1026,15 +1026,18 @@ PROGRAM maespa
                                 TAIR(IHOUR),TSOIL(IHOUR), &
                                 ARHO(1,IWAVE),ATAU(1,IWAVE), &    ! Note 1 here instead of LGP().
                                 RHOSOL(IWAVE), &
-                                DIFUP,DIFDN,SCLOST,THDOWNP)
+                                DIFUP,DIFDN,SCLOST,THDOWNP,  &
+                                TCAN2,TLEAFTABLE, &
+                                EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3), &
+                                SOILLONGWAVEIPT)
 
-                        CALL ABSRAD(IPTEST,IWAVE, &
+                        CALL ABSRAD(ITAR,IPTEST,IWAVE, &
                                 NZEN,DEXT,BEXT,BMULT,RELDFP(IPTEST), &
                                 RADABV(IHOUR,IWAVE),FBEAM(IHOUR,IWAVE),ZEN(IHOUR), &
                                 ABSRP(1,IWAVE),DIFDN(IPTEST,IWAVE), &
                                 DIFUP(IPTEST,IWAVE), &
-                                DFLUX,BFLUX,SCATFX)
-
+                                DFLUX,BFLUX,SCATFX,DEXTT,TLEAFTABLE)
+                        
                         ! Output transmittances
                         PAR = RADABV(IHOUR,1)*UMOLPERJ
                         TBEAM = FBEAM(IHOUR,IWAVE)*PAR*SUNLAP
@@ -1297,14 +1300,14 @@ PROGRAM maespa
                          ! Write sunlit leaf area to file.
                          IF(ISUNLA.EQ.1)THEN
                              AREA = DLT(IPT) * VL(IPT)  ! LEAF AREA FOR THIS GRIDPOINT               ! Modification Mathias 27/11/2012
-                             WRITE(USUNLA, 112) IDAY, IHOUR, ITREE, IPT, SUNLA, &
+                             WRITE(USUNLA, 11221) IDAY, IHOUR, ITREE, IPT, SUNLA, &
                                   AREA, BEXT, &
                                   FBEAM(IHOUR,1), ZEN,ABSRP(LGP(IPT),1),ABSRP(LGP(IPT),2),ABSRP(LGP(IPT),3), &
                                   BFLUX(IPT,1), DFLUX(IPT,1), BFLUX(IPT,2),DFLUX(IPT,2),DFLUX(IPT,3), &
                                   SCLOST(IPT,1),SCLOST(IPT,2),SCLOST(IPT,3),DOWNTH(IPT),RADABV(IHOUR,1),RADABV(IHOUR,2),RADABV(IHOUR,3)
                                     
                          ENDIF
-112      FORMAT(4(1X,I4), 7(1X,F12.3), 13(1X,F12.3))
+11221      FORMAT(4(1X,I4), 7(1X,F12.3), 13(1X,F12.3))
                     
                     END DO ! End loop over grid points
                     
@@ -1523,7 +1526,7 @@ PROGRAM maespa
 
                 ! Calculation of a new VPD and Tair within the canopy based on the heat balance of Chourdhury et al. 1988
                 CALL TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIR(IHOUR),TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,& 
-                                        WINDAH(IHOUR), ZPD, ZHT, Z0HT, , PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP)
+                                        WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP)
 
                 IF ((ABS(TAIRNEW - TAIR(IHOUR)).LT.TOL)) THEN
                     print*, 'ihou',ihour,'convergence', ITERTAIR
