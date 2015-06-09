@@ -662,19 +662,16 @@ END SUBROUTINE INITWATBAL
       TSOILSURFACE = SOILTK - (QE + QC) *DRYTHICK / (0.8)
 
 
-    ! Sensible heat flux (W m-2)
-!      QH = CPAIR * RHO * GAMSOIL * (TAIRK - SOILTK)
-      QH = CPAIR * RHO * GAMSOIL * (TAIRK - TSOILSURFACE)   ! Sensible calculated from soil surface (Choudhury et al. 1988)
+    ! Sensible heat flux (W m-2) calculated from soil surface above the dry thick layer (Choudhury et al. 1988)
+      QH = CPAIR * RHO * GAMSOIL * (TAIRK - TSOILSURFACE)    
 
       
       ! No soil evap if surface is frozen
       IF(SOILTK.LE.FREEZE)QE = 0.
 
       ! Net radiation - emitted longwave varies with surface temp.
-!      ESOIL = ESOILFUN(SOILTK)
+      ! Emission from the soil using the temperature above the dry thick layer
       ESOIL = ESOILFUN(TSOILSURFACE)
-      !QN = (1-SOILALBEDO)*RGLOB - ESOIL
-      !QN = SOILLONGWAVE + (1-RHOSOLSPEC1)*RGLOBUND1 + (1-RHOSOLSPEC2)*RGLOBUND2 
       QN = DOWNTHAV*(1-RHOSOLSPEC3) + (1-RHOSOLSPEC1)*RGLOBUND1 + (1-RHOSOLSPEC2)*RGLOBUND2 - ESOIL 
 
       RETURN

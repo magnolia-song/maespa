@@ -47,7 +47,6 @@ MODULE maestcom
     REAL, PARAMETER :: TCQUARTZ = 7.7      ! thermal conductivity of quartz (W m-1 K-1)
     REAL, PARAMETER :: TCH2O = 0.594       ! thermal conductivity of water (W m-1 K-1)
     REAL, PARAMETER :: TCORG = 0.25        ! thermal conductivity of organic matter (W m-1 K-1)
-    REAL, PARAMETER :: SOILALBEDO = 0.15   ! Albedo of soil, without snow.
     REAL, PARAMETER :: DHEAT = 21.5e-6     ! molecular diffusivity for heat
     REAL, PARAMETER :: EMLEAF = 0.95       ! Emissivity of thermal radiation by leaf
     REAL, PARAMETER :: EMSOIL = 0.95       ! Emissivity of thermal radiation by soil
@@ -113,8 +112,8 @@ MODULE maestcom
     INTEGER, PARAMETER :: UWATUPTHDR = 46
     INTEGER, PARAMETER :: UWATDAYHDR = 47
     INTEGER, PARAMETER :: URESPHDR = 48
-    INTEGER, PARAMETER :: USUNLA = 49    ! modification Mathias 27/11/12
-    INTEGER, PARAMETER :: USWPLAY = 50    ! modification Mathias décembre 2012
+    INTEGER, PARAMETER :: USUNLA = 49    
+    INTEGER, PARAMETER :: USWPLAY = 50    
     
     
 
