@@ -1028,8 +1028,7 @@ PROGRAM maespa
                                 RHOSOL(IWAVE), &
                                 DIFUP,DIFDN,SCLOST,THDOWNP,  &
                                 TCAN2,TLEAFTABLE, &
-                                EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3), &
-                                SOILLONGWAVEIPT)
+                                EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3))
 
                         CALL ABSRAD(ITAR,IPTEST,IWAVE, &
                                 NZEN,DEXT,BEXT,BMULT,RELDFP(IPTEST), &
@@ -1074,7 +1073,7 @@ PROGRAM maespa
                             CALL SCATTER(IPT,ITAR,IWAVE,MLAYER(IPT),LAYER(IPT),DLAI,EXPDIF,ZEN(IHOUR),BEXT,DMULT2,SOMULT,BMULT,&
                                             RADABV(IHOUR,IWAVE),FBEAM(IHOUR,IWAVE),TAIR(IHOUR),PREVTSOIL,ARHO(LGP(IPT),IWAVE),&
                                             ATAU(LGP(IPT),IWAVE),RHOSOL(IWAVE),DIFUP,DIFDN,SCLOST,DOWNTH,TCAN2,TLEAFTABLE,&
-                                            EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3),SOILLONGWAVEIPT)
+                                            EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3))
 
                             ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
                             SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
@@ -1088,7 +1087,6 @@ PROGRAM maespa
                             ! with the EHC) averaged across the grid points.
                             IF(IWAVE.EQ.3) THEN
                                 DOWNTHTREE(ITAR) = SUM(DOWNTH) / NUMPNT
-                                SOILLONGWAVETREE(ITAR) = SUM(SOILLONGWAVEIPT) / NUMPNT
                             END IF
                   
                             ! Calculate absorbed radiation
@@ -1326,8 +1324,7 @@ PROGRAM maespa
                                         FBEAM(IHOUR,3),TAIR(IHOUR),PREVTSOIL, ARHO(LGP(IPT),3),             &
                                         ATAU(LGP(IPT),3),RHOSOL(3),DIFUP,                                   &
                                         DIFDN,SCLOST,DOWNTH,TCAN2,TLEAFTABLE,&
-                                        EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3),&
-                                        SOILLONGWAVEIPT)
+                                        EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3))
                   
                         ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
                         SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
@@ -1336,8 +1333,7 @@ PROGRAM maespa
                         
                         ! Downward thermal flux, averaged across grid points in this tree:
                         DOWNTHTREE(ITAR) = SUM(DOWNTH) / NUMPNT
-                        SOILLONGWAVETREE(ITAR) = SUM(SOILLONGWAVEIPT) / NUMPNT
-                  
+                        
                         ! Calculate absorbed radiation
                         CALL ABSRAD(ITAR,IPT,3,NZEN,DEXT,BEXT,BMULT,RELDF(IPT),RADABV(IHOUR,3),FBEAM(IHOUR,3),ZEN(IHOUR),&
                                     ABSRP(LGP(IPT),3),DIFDN(IPT,3),DIFUP(IPT,3),DFLUX,BFLUX,SCATFX,DEXTT,TLEAFTABLE)
@@ -1457,7 +1453,7 @@ PROGRAM maespa
                                 SCLOSTTREE,THRAB,RADABV,FH2O,PLOTAREA,  &
                                 DOWNTHTREE,RGLOBABV,RGLOBUND,RADINTERC,FRACAPAR,ISIMUS,FH2OUS(IHOUR),THRABUS(IHOUR),   &
                                 PARUSMEAN(IHOUR),SCLOSTTOT,GSCAN,WINDAH(IHOUR),ZHT,Z0HT,ZPD,PRESS(IHOUR),TAIR(IHOUR),       &
-                                VPD(IHOUR),ETMM,ETUSMM,ETMMSPEC,TREEH,SOILLONGWAVETREE,SOILLONGWAVE,RGLOBUND1,RGLOBUND2,DOWNTHAV)            
+                                VPD(IHOUR),ETMM,ETUSMM,ETMMSPEC,TREEH,RGLOBUND1,RGLOBUND2,DOWNTHAV)            
 
                 ! Find soil surface temperature, unless this is input data.
                 ! Note this uses DRYTHICK from previous timestep (or initial value in first go).
@@ -1465,7 +1461,7 @@ PROGRAM maespa
                     VIEWFACTOR = 1.0  ! OBSOLETE...
                     CALL FINDSOILTK(iday, TAIR(IHOUR) + FREEZE, GAMSOIL, PRESS(IHOUR),SOILTK, SOILTEMP(2), VPD(IHOUR)/1000, &
                                     RGLOBUND,THERMCOND(1), LAYTHICK(1),LAYTHICK(2), POREFRAC(1),SOILWP(1),DRYTHICK,TORTPAR,&
-                                    VIEWFACTOR,SOILLONGWAVE,RHOSOLSPEC,RGLOBUND1,RGLOBUND2,DOWNTHAV)
+                                    VIEWFACTOR,RHOSOLSPEC,RGLOBUND1,RGLOBUND2,DOWNTHAV)
                 ELSE
                     SOILTK = TSOIL(IHOUR) + FREEZE
                 ENDIF
@@ -1476,7 +1472,7 @@ PROGRAM maespa
                                     VPD(IHOUR)/1000,RGLOBUND,TAIR(IHOUR) + FREEZE,THERMCOND(1),             &
                                     LAYTHICK(1),LAYTHICK(2),POREFRAC(1),SOILWP(1),DRYTHICK,TORTPAR,VIEWFACTOR,          &
                                     QH,QE,QN,QC,ESOIL,TSOILSURFACE,&
-                                    SOILLONGWAVE,RHOSOLSPEC(1,1),RHOSOLSPEC(2,1),RHOSOLSPEC(3,1), &
+                                    RHOSOLSPEC(1,1),RHOSOLSPEC(2,1),RHOSOLSPEC(3,1), &
                                     RGLOBUND1,RGLOBUND2,DOWNTHAV)
                 !ENDIF
                 
