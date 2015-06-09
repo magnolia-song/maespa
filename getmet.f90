@@ -1334,7 +1334,7 @@ SUBROUTINE THERMAL(TAIR,VPD,FSUN,RADABV,EMSKY)
     IMPLICIT NONE
     INTEGER I
     REAL RADABV(MAXHRS,3),TAIR(MAXHRS),VPD(MAXHRS),FSUN(MAXHRS)
-    REAL TMP,EA,EMCLEAR,EMSKY(MAXHRS)
+    REAL EA,EMCLEAR,EMSKY(MAXHRS)
     REAL, EXTERNAL :: TK
     REAL, EXTERNAL :: SATUR
     
@@ -1353,13 +1353,8 @@ SUBROUTINE THERMAL(TAIR,VPD,FSUN,RADABV,EMSKY)
         ! Monteith and Unsworth correction for cloudy sky. 
         ! The 1.06 SIGT4 - 119 formula seems problematic in some conditions. 
         ! Also suspect I had correction incorrect - check this!!
-        tmp = satur(tair(I))
         EA = SATUR(TAIR(I)) - VPD(I) !Old formula - see comments
-!        IF (IOFORMAT .EQ. 0) THEN
-!            WRITE(UWATTEST,*)EA
-!        ELSE IF(IOFORMAT .EQ. 1) THEN
-!            WRITE(UWATTEST) EA 
-!        ENDIF
+
         EMCLEAR = 0.642*(EA/TK(TAIR(I)))**(1./7.)
         EMSKY(I) = FSUN(I)*EMCLEAR + (1.-FSUN(I))*(0.84+0.16*EMCLEAR)
         RADABV(I,3) = EMSKY(I)*SIGMA*(TK(TAIR(I))**4)

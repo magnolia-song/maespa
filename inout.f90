@@ -2078,12 +2078,9 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
             WRITE (ULAY,610) 'DAY',IDAY,'HOUR',IHOUR
             610   FORMAT (A5,I5,A5,I5)
             IF (FOLLAY(1).GT.0.0) THEN
-                !WRITE (ULAY,600) (PPAR(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                !WRITE (ULAY,600) (PPS(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                !WRITE (ULAY,600) (PTRANSP(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                WRITE (ULAY,600) (PPAR(ITAR,I,IHOUR)/FOLLAY(I),I=1,NOLAY)   ! M. Christina
-                WRITE (ULAY,600) (PPS(ITAR,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                WRITE (ULAY,600) (PTRANSP(ITAR,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
+                WRITE (ULAY,600) (PPAR(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
+                WRITE (ULAY,600) (PPS(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
+                WRITE (ULAY,600) (PTRANSP(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
                 600   FORMAT (10(F10.2,1X))
             ELSE
                 WRITE (ULAY,*) 'NO FOLIAGE AT THIS TIME'
@@ -2094,12 +2091,9 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
             WRITE (ULAY) REAL(IDAY),REAL(IHOUR)
         
             IF (FOLLAY(1).GT.0.0) THEN
-                !WRITE (ULAY) (PPAR(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                !WRITE (ULAY) (PPS(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                !WRITE (ULAY) (PTRANSP(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                WRITE (ULAY) (PPAR(ITAR,I,IHOUR)/FOLLAY(I),I=1,NOLAY)   ! M. Christina
-                WRITE (ULAY) (PPS(ITAR,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
-                WRITE (ULAY) (PTRANSP(ITAR,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
+                WRITE (ULAY) (PPAR(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
+                WRITE (ULAY) (PPS(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
+                WRITE (ULAY) (PTRANSP(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
             ELSE
                 ! No foliage at this time
                 WRITE (ULAY) -999.9
@@ -2232,7 +2226,8 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
                               ESOIL,TOTLAI, WTITLE,                     &
                               RADINTERC1,RADINTERC2,RADINTERC3,         &
                               SCLOSTTOT,SOILWP,FRACAPAR,&
-                                RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN, TSOILSURFACE,GCANOP,ITERTAIR) !rajout soilwp mathias décembre 2012  ! TEST MATHIAS
+                              RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN, &
+                              TSOILSURFACE,GCANOP,ITERTAIR)
 ! Outputs water balance results.
 ! RAD, May 2008
 !**********************************************************************
@@ -3271,7 +3266,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     ENDIF
 
     IF (MODELGS.EQ.1) THEN
-        CALL SUBERROR('JARVIS STOMATAL CONDUCTANCE MODEL IS NOT SUPPORTED IN MAESPA (BUT IT IS IN MAESTRA).', &
+        CALL SUBERROR('JARVIS STOMATAL CONDUCTANCE MODEL IS NO LONGER SUPPORTED IN MAESPA.', &
             IFATAL,IOERROR)
     ENDIF
     
