@@ -108,7 +108,7 @@
 !        IF(MOD(LAYER,2).EQ.1) THEN
 !          CORR = SURFACE(CZ(IPQ),JSHAPE)
 !        ELSE
-!          ! Multiply by cos 45?
+!          ! Multiply by cos 45 degree
 !          CORR = 0.5*SQRT(2.0)*SURFACE(CZ(IPQ),JSHAPE)
 !        ENDIF
 !        ! Factors come from assuming volume of each gridpoint is equal
@@ -371,7 +371,7 @@
         IF(MOD(LAYER,2).EQ.1) THEN
           CORR = SURFACE(CZ(IPQ),JSHAPE)
         ELSE
-          ! Multiply by cos 45?
+          ! Multiply by cos 45 degree
           CORR = 0.5*SQRT(2.0)*SURFACE(CZ(IPQ),JSHAPE) 
         ENDIF
         
@@ -1315,7 +1315,7 @@ END SUBROUTINE EXDIFF
         IF ((RCH.LT.1.01) .AND. (RCH.GT.1.0)) RCH = 1.00 ! numerical tid
         TRD = SURFACE(RCH,JSHAPE)*SQRT(RXQ*RYQ)                  ! TRD i
         IF (TRD.EQ.0.0) THEN 
-            TRD=0.0001 ! glm 17 d?cembre 2012
+            TRD=0.0001 ! glm 17 december 2012
         ENDIF
         
 ! Find beta in vertical direction
