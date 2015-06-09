@@ -548,7 +548,6 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
             
             ! For the same ALEAF could we have a higher stomatal conductance ?
  !           GS2 = G02 + GSDIVA2*ALEAF
- !           print*,'begine',ALEAF, GS, GS2
             
  !           IF (GS2.GT.GS) THEN
                 
@@ -582,10 +581,7 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
 
 !                ALEAF2 = AMIN1(AC,AJ) - RD  ! Solution for Ball-Berry model
 !                GS2 = G02 + GSDIVA2*ALEAF2
-            
-!            print*,'gs',GS,GS2
-!            print*,'aleaf',ALEAF,ALEAF2
-            
+                        
 !                GS = GS2
 !                ALEAF = ALEAF2
 !            ENDIF
