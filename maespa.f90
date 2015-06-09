@@ -2,7 +2,7 @@ PROGRAM maespa
     ! =======================================================
     !  MAESPA: Version 2013
     !  For more information see www.bio.mq.edu.au/maespa 
-	! THIS IS A TEST
+	! THIS IS A TEST - not a test anymore
     ! =======================================================
 
     !------------------------------------------------------------------------
