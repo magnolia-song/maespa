@@ -99,10 +99,12 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     ! Output file for errors and warnings
     OPEN (UERROR, FILE = 'Maeserr.dat', STATUS = 'UNKNOWN')
     
-    ! Read input file as tradition from confile.dat with control switches
+   ! Read input file as tradition from confile.dat with control switches
     INQUIRE(FILE = trim(in_path)//'confile.dat', EXIST=EXT)
     IF(.NOT.EXT)THEN
         CALL SUBERROR('ERROR: CONFILE.DAT DOES NOT EXIST' ,IFATAL,0)
+    ELSE
+        OPEN (UCONTROL, FILE = 'confile.dat', STATUS = 'OLD',IOSTAT=IOERROR)
     ENDIF
     
     ! get locations of input files and where to write the output files
@@ -130,6 +132,8 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     INQUIRE(FILE = trim(in_path)//'trees.dat', EXIST=EXT)
     IF (.NOT.EXT) THEN
         CALL SUBERROR('ERROR: TREES.DAT DOES NOT EXIST', IFATAL, 0)
+    ELSE
+        OPEN (UTREES, FILE = trim(in_path)//'trees.dat', STATUS='OLD', IOSTAT=IOERROR)
     ENDIF
     
     ! Input file with water balance parameters (RAD)
@@ -139,6 +143,7 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
         IWATFILE = 0
     ELSE 
         CALL SUBERROR('MAESPA MODE - watpars.dat FOUND. WATER BALANCE IS SIMULATED.',IWARN,0)
+        OPEN (UWATPARS, FILE = trim(in_path)//'watpars.dat', STATUS='OLD',IOSTAT=IOERROR)      
         IWATFILE = 1
     ENDIF
     
@@ -147,15 +152,12 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
        
     ! Input file for understorey parameters.
     ! Or if filename is missing:
-    INQUIRE (FILE=trim(in_path)//'USTOREY.DAT', EXIST=EXT)
+    INQUIRE (FILE=trim(in_path)//'ustorey.dat', EXIST=EXT)
     IF(.NOT.EXT)THEN
         CALL SUBERROR('USTOREY.DAT NOT FOUND. NO UNDERSTOREY SIMULATED.',IWARN,0)
         IUSTFILE = 0
     ELSE
         IUSTFILE = 1
-    ENDIF
-    
-    IF(EXT)THEN 
         OPEN(USTOREYI, FILE=trim(in_path)//'ustorey.dat', STATUS='UNKNOWN',IOSTAT=IOERROR)
     ENDIF
       
