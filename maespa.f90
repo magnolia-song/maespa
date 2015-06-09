@@ -312,7 +312,7 @@ PROGRAM maespa
                 END DO
                 
                 ! Diffuse transmission to the understorey points.
-                CALL TRANSD(IDAY,IOTUTD,NEWCANOPY,IPROGUS,NOTREES,XSLOPE,YSLOPE,NZEN,DIFZEN,NAZ,NOUSPOINTS, &
+                CALL TRANSD(IDAY,NEWCANOPY,IPROGUS,NOTREES,XSLOPE,YSLOPE,NZEN,DIFZEN,NAZ,NOUSPOINTS, &
                             DEXTTUS,DIFSKY,XLU,YLU,ZLU,RXUS,RYUS,RZUS,DXTUS,DYTUS,DZTUS,XMAX,YMAX,SHADEHT,  &
                             FOLTUS,ZBCUS,JLEAFTUS,BPTTUS,NOAGECTUS,PROPCT,JSHAPETUS,SHAPETUS,NEWTUTD,TUUS,  &
                             TDUS,RELDFUS,DEXT)   
@@ -532,7 +532,7 @@ PROGRAM maespa
                        ENDDO
 
                        CALL TRANSD( &
-                        IDAY,IOTUTD,NEWCANOPY,IPROGCUR,NOTREESTEST,XSLOPE,YSLOPE, &
+                        IDAY,NEWCANOPY,IPROGCUR,NOTREESTEST,XSLOPE,YSLOPE, &
                         NZEN,DIFZEN,NAZ,NUMTESTPNT,DEXTTP,DIFSKY, &
                         XLP,YLP,ZLP,RXP,RYP,RZP,DXTP,DYTP,DZTP, &
                         XMAX,YMAX,SHADEHT, &
@@ -556,7 +556,7 @@ PROGRAM maespa
                 !891     FORMAT (6(F6.2,1X))
 
                 ! Calculate diffuse transmittances
-                CALL TRANSD(IDAY,IOTUTD,NEWCANOPY,IPROG,NOTREES,XSLOPE,YSLOPE,NZEN,DIFZEN,NAZ,NUMPNT,DEXTT,             &
+                CALL TRANSD(IDAY,NEWCANOPY,IPROG,NOTREES,XSLOPE,YSLOPE,NZEN,DIFZEN,NAZ,NUMPNT,DEXTT,             &
                             DIFSKY,XL,YL,ZL,RX,RY,RZ,DXT,DYT,DZT,XMAX,YMAX,SHADEHT,FOLT,ZBC,JLEAFT,BPTT,NOAGECT,PROPCT, &
                             JSHAPET,SHAPET,NEWTUTD,TU,TD,RELDF,DEXT)
 
@@ -1079,7 +1079,9 @@ PROGRAM maespa
                             ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
                             SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
                             SCLOSTTREE(ITAR,2) = SUM(SCLOST(1:NUMPNT,2)) / NUMPNT
-                            ! Store in the same array the lost tranmission at top of canopy.
+                            
+                            ! Assume zero reflectance in TR waveband (Norman 1979)
+                            ! But store in the same array the lost tranmission at top of canopy.
                             SCLOSTTREE(ITAR,3) = SUM(SCLOST(1:NUMPNT,3)) / NUMPNT
 
                             ! Downwelling longwave radiation (calculated for each gridpoint
