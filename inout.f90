@@ -2687,9 +2687,9 @@ SUBROUTINE READLIA(UFILE, NALPHAI, ALPHA, FALPHAI,DATESLIAOUT,NOLIADATES)
             END DO
             CALL ANGLE(ELP,NALPHA,FALPHA)
         END IF
-        !DO  IANG = 1,MAXANG
-        !    FALPHAI(IANG,1) = FALPHA(IANG)     ! M.Christina, FALPHAI calculated below (various dates)
-        !END DO
+        DO  IANG = 1,MAXANG
+            FALPHAI(IANG,1) = FALPHA(IANG)
+        END DO
 
     END IF
 
@@ -2699,7 +2699,7 @@ SUBROUTINE READLIA(UFILE, NALPHAI, ALPHA, FALPHAI,DATESLIAOUT,NOLIADATES)
     IF (AVGANG.LT.0.0.AND.ELP.LT.0.0) THEN        
         DALPHA = PID2/FLOAT(NALPHAI)
         DO IALP = 1,NALPHAI
-            ALPHA(IALP) = (IALP-0.5)*DALPHA     ! bug solved M.Christina 02/2013
+            ALPHA(IALP) = (IALP-0.5)*DALPHA
         END DO
         INDEX = 1
         DO IDATE = 1,NODATESLIA
