@@ -700,7 +700,7 @@ END SUBROUTINE INITWATBAL
       SOILWPFUN = 1.0  ! INIT WITH WRONG VALUE.
 
     IF(WATERCONTENT.EQ.0.) THEN
-      SOILWPFUN = -999.0           ! bug mathias décembre 2012 pour éviter valeure -Infinity qui crée NA dans WEIGHTEDSMP
+      SOILWPFUN = -999.0           
     ELSE 
       IF(RETFUNCTION.EQ.1)THEN
         SOILWPFUN = PSIE*(WATERCONTENT/POROSITY)**(-BPAR)
@@ -1008,7 +1008,7 @@ END SUBROUTINE INITWATBAL
         ENDIF
 
         ! sum of EMAX for each layer
-        TOTESTEVAP = SUM(ESTEVAP(1:NROOTLAYER))  ! modification mathias décembre 2012
+        TOTESTEVAP = SUM(ESTEVAP(1:NROOTLAYER))  
 
         ! Soil water potential is weighted by ESTEVAP.
         IF(TOTESTEVAP.GT.0.)THEN
@@ -2203,22 +2203,22 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
     
       REAL, EXTERNAL :: SATUR
       REAL, EXTERNAL :: TK
-
- 
+      REAL, EXTERNAL :: HEATEVAP
       
       ! total net radiation in the system (W m-2)
       RNETTOT = QN + RADINTERC
 
       ! Latent heat of water vapour at air temperature (J mol-1)
-       LHV = (H2OLV0 - 2.365E3 * TAIRCAN) * H2OMW  ! 
+      LHV = HEATEVAP(TAIRCAN) * H2OMW
     
       ! total latent heat flux in the system en W m-2  (QE J m-2 s-1, ETMM en kg m-2 t-1)
       ETOT = -QE + ETMM / (SPERHR * 1E-06 * 18 * 1E-03) * 1e-06 * LHV
       
       ! Convert from m s-1 to mol m-2 s-1
       CMOLAR = PRESS / (RCONST * TK(TAIRABOVE))
-
-      IF (WIND.LT.0.2) WIND=0.2
+      
+      ! To avoid bug in case of no wind
+      IF (WIND.LT.0.01) WIND=0.01
       
       ! aerodynamic conductance air within canopy - air above canopy from Choudhury 1988
       ZPD2 = 0.75*TREEH
@@ -2237,7 +2237,7 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
                (TREEH/(COAT*(TREEH-ZPD2)))*   (exp(COAT*(1-(ZPD2+Z0H)/TREEH))- 1)))     *CMOLAR
 
        
-      ! calculation of air temperature within the canopy (attention QC est négatif)
+      ! calculation of air temperature within the canopy (Note that Qc <0)
       TAIRNEW = TAIRABOVE +  (RNETTOT - ETOT + QC) / (CPAIR * AIRMA * GCANOP)
 
       ! air vapor pressure
