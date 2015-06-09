@@ -100,8 +100,8 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     OPEN (UERROR, FILE = 'Maeserr.dat', STATUS = 'UNKNOWN')
     
     ! Read input file as tradition from confile.dat with control switches
-    OPEN (UCONTROL, FILE = 'confile.dat', STATUS = 'OLD',IOSTAT=IOERROR)
-    IF(IOERROR.NE.0)THEN
+    INQUIRE(FILE = trim(in_path)//'confile.dat', EXIST=EXT)
+    IF(.NOT.EXT)THEN
         CALL SUBERROR('ERROR: CONFILE.DAT DOES NOT EXIST' ,IFATAL,0)
     ENDIF
     
@@ -110,7 +110,7 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     IF (IOERROR == -1) THEN
         ! i.e. it has reached the end of the file and not found the tag, I am sure 
         ! there is a nicer way to do this
-        WRITE(*,*) 'You have chosen not to set the in/out directories, so using current dir'
+        CALL SUBERROR('You have chosen not to set the in/out directories, so using current directory for output', IWARN, 0)
         REWIND(UCONTROL)
     ENDIF
     
@@ -127,16 +127,18 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     ISIMUSI = ISIMUS
     
     ! Input file with data on tree position and size
-    OPEN (UTREES, FILE = trim(in_path)//'trees.dat', STATUS='OLD', IOSTAT=IOERROR)
-    IF (IOERROR.NE.0) THEN
+    INQUIRE(FILE = trim(in_path)//'trees.dat', EXIST=EXT)
+    IF (.NOT.EXT) THEN
         CALL SUBERROR('ERROR: TREES.DAT DOES NOT EXIST', IFATAL, 0)
     ENDIF
     
     ! Input file with water balance parameters (RAD)
-    OPEN (UWATPARS, FILE = trim(in_path)//'watpars.dat', STATUS='OLD',IOSTAT=IOERROR)      
-    IF(IOERROR.NE.0)THEN
+    INQUIRE (FILE=TRIM(IN_PATH)//'watpars.dat', EXIST=EXT)
+    IF(.NOT.EXT)THEN
+        CALL SUBERROR('MAESTRA MODE - watpars.dat NOT FOUND. WATER BALANCE NOT SIMULATED.',IWARN,0)
         IWATFILE = 0
     ELSE 
+        CALL SUBERROR('MAESPA MODE - watpars.dat FOUND. WATER BALANCE IS SIMULATED.',IWARN,0)
         IWATFILE = 1
     ENDIF
     
@@ -147,7 +149,7 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     ! Or if filename is missing:
     INQUIRE (FILE=trim(in_path)//'USTOREY.DAT', EXIST=EXT)
     IF(.NOT.EXT)THEN
-        CALL SUBERROR('USTOREY.DAT NOT FOUND. NO UNDERSTOREY SIMULATED.',IWARN,IOERROR)
+        CALL SUBERROR('USTOREY.DAT NOT FOUND. NO UNDERSTOREY SIMULATED.',IWARN,0)
         IUSTFILE = 0
     ELSE
         IUSTFILE = 1
