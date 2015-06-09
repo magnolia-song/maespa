@@ -1885,7 +1885,7 @@ END SUBROUTINE INITWATBAL
 !**********************************************************************
 
       SUBROUTINE SCALEUP(IHOUR,USESTAND,NOTARGETS,NOALLTREES,FOLT, &
-                         ITARGETS,TOTLAI,STOCKING,SCLOSTTREE, &
+                         ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,SCLOSTTREE, &
                          THRAB,RADABV,FH2O, &
                          PLOTAREA,DOWNTHTREE, &
                          RGLOBABV,RGLOBUND,RADINTERC, &

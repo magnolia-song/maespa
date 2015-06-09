@@ -2512,14 +2512,14 @@ END SUBROUTINE EXDIFF
 ! Jtot is the no. of layers in EHC (+1 for soil layer)
 ! NB the top layer is JTOT, the bottom layer is 1.
       JTOT = MLAYERI
-!write(uwattest,*)Jtot
-      IF (IWAVE.EQ.3) THEN      ! Call separate subroutine for THERMAL r
+
+      ! Call separate subroutine for THERMAL radiation
+      IF (IWAVE.EQ.3) THEN      
+        
         CALL ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF, &
         RADABV,TAIR,TSOIL,RHOSOL, &
         DIFUP,DIFDN,SCLOST,ESOIL,THDOWN,TCAN2,TLEAFTABLE(ITAR,IPT),TLEAFLAYER,&
             SOILLONGWAVEIPT)
-        
-        
         
         GOTO 1300                  ! End of this subroutine
       END IF
@@ -2613,9 +2613,6 @@ END SUBROUTINE EXDIFF
         SCLOST(IPT,IWAVE) = U(IWAVE,JTOT)*RADABV
       ENDIF
 
-
-
-
       RETURN
       END  !Scatter
 
@@ -2627,7 +2624,7 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
 ! Calculate long-wave radiation absorption or emission.
 ! Note that foliage temperature is assumed equal leaf temperature
 ! calculated at the previous iteration on air temperature within the canopy.
-! Based on Van de Griend (1989) and the infinite reflexion of François (2002)
+! Based on Van de Griend (1989) and the infinite reflexion of Francois (2002)
 !**********************************************************************
 
     USE maestcom
@@ -2643,6 +2640,10 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
     REAL, EXTERNAL :: TK
     REAL, EXTERNAL :: ESOILFUN
                     
+    ! Jtot is the no. of layers in EHC (+1 for soil layer)
+    ! NB the top layer is JTOT, the bottom layer is 1.
+    JTOT = MLAYERI        ! Total number of layers
+
     ! These are temporary arrays within this subroutine.
     ! U(I) is the upwards long-wave flux incident onfrom layer I            
     ! D(I) is the  downwards long-wave flux incident on/from layer I
@@ -2651,11 +2652,7 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
         D(J)=0
         U(J)=0
     END DO
-
-    ! Jtot is the no. of layers in EHC (+1 for soil layer)
-    ! NB the top layer is JTOT, the bottom layer is 1.
-    JTOT = MLAYERI        ! Total number of layers
-
+    
     ! Calculate the values of relative downwards and upwards flux densities
     ! for thermal radiation for the elementary layers.
     ! based on Van de Grien 1989
