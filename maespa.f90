@@ -1079,9 +1079,7 @@ PROGRAM maespa
                             ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
                             SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
                             SCLOSTTREE(ITAR,2) = SUM(SCLOST(1:NUMPNT,2)) / NUMPNT
-                            
-                            ! Assume zero reflectance in TR waveband (Norman 1979)
-                            ! But store in the same array the lost tranmission at top of canopy.
+                            ! Store in the same array the lost tranmission at top of canopy.
                             SCLOSTTREE(ITAR,3) = SUM(SCLOST(1:NUMPNT,3)) / NUMPNT
 
                             ! Downwelling longwave radiation (calculated for each gridpoint

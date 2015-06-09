@@ -2256,7 +2256,7 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
     ! SCLOSTTOT includes leaf and soil reflection that is not re-absor
     ! ESOIL is upward longwave transmission by the soil. It is here as
     ! that canopy T equals air T, so that the canopy is not a net radi
-    RNET = RGLOBABV - SCLOSTTOT - ESOIL
+    RNET = RGLOBABV - SCLOSTTOT !- ESOIL
 
     ! Average FSOIL
     !FSOIL1 = FSOIL1 / REAL(NSUMMED)
