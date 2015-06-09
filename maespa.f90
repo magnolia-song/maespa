@@ -2,9 +2,7 @@ PROGRAM maespa
     ! =======================================================
     !  MAESPA: Version 2013
     !  For more information see www.bio.mq.edu.au/maespa 
-	! THIS IS A TEST - not a test anymore
     ! =======================================================
-  ! This is a 2nd test
 
     !------------------------------------------------------------------------
     ! This file contains the main program.
@@ -629,7 +627,7 @@ PROGRAM maespa
             ITERTAIR = ITERTAIR + 1
             
             ! if we had reached itertairmax, we take the taircan as the one from the previous half-hour
-            IF (ITERTAIR.EQ.ITERMAX) THEN
+            IF (ITERTAIR.EQ.ITERTAIRMAX) THEN
                 TAIR(IHOUR) = PREVTAIRCAN
                 VPD(IHOUR) = PREVVPDCAN
                 TCAN2 = PREVTAIRCAN
@@ -1079,13 +1077,12 @@ PROGRAM maespa
                                             EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3),SOILLONGWAVEIPT)
 
                             ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
-                            ! RAD June 2008.              
                             SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
                             SCLOSTTREE(ITAR,2) = SUM(SCLOST(1:NUMPNT,2)) / NUMPNT
                             
                             ! Assume zero reflectance in TR waveband (Norman 1979)
                             ! But store in the same array the lost tranmission at top of canopy.
-                            SCLOSTTREE(ITAR,3) = SUM(SCLOST(1:NUMPNT,2)) / NUMPNT
+                            SCLOSTTREE(ITAR,3) = SUM(SCLOST(1:NUMPNT,3)) / NUMPNT
 
                             ! Downwelling longwave radiation (calculated for each gridpoint
                             ! with the EHC) averaged across the grid points.
@@ -1128,9 +1125,7 @@ PROGRAM maespa
                             DO ISUNLIT = 1,2 ! Loop over sunlit & shaded leaves
 
                                 IF (ISUNLIT.EQ.1) THEN
-!                                    APAR = (BFLUX(IPT,1)*BEXT + DFLUX(IPT,1))*UMOLPERJ  
-!                                    ANIR = BFLUX(IPT,2)*BEXT + DFLUX(IPT,2)
-                                    APAR = (BFLUX(IPT,1)*BEXTT(1) + DFLUX(IPT,1))*UMOLPERJ      ! guerric 04/14
+                                    APAR = (BFLUX(IPT,1)*BEXTT(1) + DFLUX(IPT,1))*UMOLPERJ
                                     ANIR = BFLUX(IPT,2)*BEXTT(1) + DFLUX(IPT,2)
                                     FAREA = SUNLA
                                 ELSE
@@ -1213,7 +1208,7 @@ PROGRAM maespa
                                                 KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA)                                        
 
    
-                                    !filling voxel table
+                                ! Filling voxel table
                                 CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
                                              TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, ETTABLE, &
                                              HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
@@ -1335,11 +1330,10 @@ PROGRAM maespa
                                         SOILLONGWAVEIPT)
                   
                         ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
-                        ! RAD June 2008.              
                         SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
                         SCLOSTTREE(ITAR,2) = SUM(SCLOST(1:NUMPNT,2)) / NUMPNT
-                        ! Assume zero reflectance in TR waveband (Norman 1979)
-                        SCLOSTTREE(ITAR,3) = 0.
+                        SCLOSTTREE(ITAR,3) = SUM(SCLOST(1:NUMPNT,3)) / NUMPNT
+                        
                         ! Downward thermal flux, averaged across grid points in this tree:
                         DOWNTHTREE(ITAR) = SUM(DOWNTH) / NUMPNT
                         SOILLONGWAVETREE(ITAR) = SUM(SOILLONGWAVEIPT) / NUMPNT
@@ -1348,12 +1342,10 @@ PROGRAM maespa
                         CALL ABSRAD(ITAR,IPT,3,NZEN,DEXT,BEXT,BMULT,RELDF(IPT),RADABV(IHOUR,3),FBEAM(IHOUR,3),ZEN(IHOUR),&
                                     ABSRP(LGP(IPT),3),DIFDN(IPT,3),DIFUP(IPT,3),DFLUX,BFLUX,SCATFX,DEXTT,TLEAFTABLE)
 
-
                         !Set initial values for IPT table
                          CALL ZEROIPTTABLE(TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, &
                                               ETTABLE, HTABLE, GSCTABLE, PSILTABLE, AREATOT,ITAR,IPT)
                         
-
                         ! Absorbed thermal radiation
                         ATHR = DFLUX(IPT,3)
                         RNET = ATHR
@@ -1372,7 +1364,7 @@ PROGRAM maespa
                                             IECO,G0,WLEAF,ITERMAX,GSC,ET,HFX,TLEAF,GBH,ISMAESPA)
 
                             
-                            !filling voxel table
+                            ! Filling voxel table
                             CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
                                          TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, ETTABLE, &
                                          HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
@@ -1447,14 +1439,6 @@ PROGRAM maespa
                     ENDIF
                 ENDDO
             ENDDO
-           
-!            K = 1
-!            DO I = 1,NOALLTREES
-!               IF(IT(I).EQ.ITARGETS(K))THEN
-!               TARGETFOLS(K) = FOLT(I)
-!               K = K + 1
-!               ENDIF
-!            ENDDO
             
             !
             IF(ISMAESPA) THEN

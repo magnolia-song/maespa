@@ -1154,9 +1154,10 @@ END SUBROUTINE EXDIFF
           TMPVAR=(1.0+DIFSKY*COSUP)/(1.0+DIFSKY)
           PTHUP = ADDUP*SINUP*TMPVAR/FLOAT(NAZ)
           WNS = WNS + COSUP*PTHUP
-!              WNS1 = WNS1 + DEXT(J)*PTHUP
-              WNS1 = WNS1 + DEXTT(1,J)*PTHUP   ! guerric 04/14
-              WDS = WDS + SINUP*COSUP*TMPVAR
+          
+          ! Part of pathlength inside target tree, should use target tree extinction coefficient.
+          WNS1 = WNS1 + DEXTT(1,J)*PTHUP
+          WDS = WDS + SINUP*COSUP*TMPVAR
           WNG = WNG + ADDDN*SINDN*COSDN/FLOAT(NAZ)
           WDG = WDG + SINDN*COSDN
 
@@ -1914,12 +1915,13 @@ END SUBROUTINE EXDIFF
       REAL XSLOPE,YSLOPE,TOTLAI,TAUMIN
       REAL DLAI,EXPDIF,WN,WD,DA,CZ,SZ,DAZ
       REAL SLOPE
+      REAL DLAIOLD
 
 ! Initial thickness of canopy layer
 ! Norman (1979) says this should be always < 0.5 and preferably closer to 0.1.
 ! Here for LAI < 5, we try DLAI = 0.1
-      !DLAI = REAL(IFIX(TOTLAI/5.0)+1)*0.1 !! modification Mathias 12/2012
-      DLAI=0.01 ! G Le Maire
+      DLAI = REAL(IFIX(TOTLAI/5.0)+1)*0.1 !! modification Mathias 12/2012
+      !DLAI=0.01 ! G Le Maire
       
 ! Calculate transmittance through one elementary layer with thickness DLAI
 10    KK = 0            ! Initialise variable used to calculate NLAY
@@ -2473,8 +2475,8 @@ END SUBROUTINE EXDIFF
         RADABV,FBEAM,TAIR,TSOIL, &
         ARHO,ATAU,RHOSOL, &
         DIFUP,DIFDN,SCLOST,THDOWN,TCAN2,TLEAFTABLE,&
-          EMSKY,NUMPNT,TOTLAI,FOLLAY,FOLNTR,LGP,ABSRP,&
-          SOILLONGWAVEIPT)
+        EMSKY,NUMPNT,TOTLAI,FOLLAY,FOLNTR,LGP,ABSRP,&
+        SOILLONGWAVEIPT)
 ! This subroutine calculates the scattered radiation using the iterative
 ! method of Norman (1979). Outputs are
 ! DIFUP: the upwards scattered flux below gridpoint IPT
@@ -2519,6 +2521,9 @@ END SUBROUTINE EXDIFF
         RADABV,TAIR,TSOIL,RHOSOL, &
         DIFUP,DIFDN,SCLOST,ESOIL,THDOWN,TCAN2,TLEAFTABLE(ITAR,IPT),TLEAFLAYER,&
             SOILLONGWAVEIPT)
+        
+        
+        
         GOTO 1300                  ! End of this subroutine
       END IF
 
@@ -2606,7 +2611,7 @@ END SUBROUTINE EXDIFF
 1300  IF(IWAVE.EQ.3) THEN
         ! This is actually transmission, not scatter.
         ! For convenience, store it in the same array.
-        SCLOST(IPT,IWAVE) = U(IWAVE,JTOT)*RADABV
+        ! -- Already calculated and output by ABSTHERM3
       ELSE                                           
         SCLOST(IPT,IWAVE) = U(IWAVE,JTOT)*RADABV
       ENDIF
@@ -2851,48 +2856,52 @@ SUBROUTINE ABSTHERM3(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
     ! Calculate the values of relative downwards and upwards flux densities
     ! for thermal radiation for the elementary layers.
     ! based on Van de Grien 1989
-
     D(JTOT) = RADABV ! Thermal flux above the top layer in EHC.
 
     ELEAF = SIGMA * (TK(TCAN2)**4.) ! Emission from leaf (assume Tleaf = Tcanopy)
 !    ELEAF = SIGMA * (TK(TAIR)**4.) ! Emission from leaf (assume Tleaf = Tcanopy)
 
-    TRLEAF = EXPDIF ! leaf transmisivity
-    RFLEAF = (1-EXPDIF)*(1-EMLEAF)  ! leaf reflectivity
+    TRLEAF = EXPDIF !  transmissivity of elementary canopy layer
+    RFLEAF = (1-EXPDIF)*(1-EMLEAF)  ! reflectivity of elementary canopy layer
     RFSOIL = (1-EMSOIL) ! soil reflectivity
     
-    
-    FF = ELEAF * (1.-EXPDIF) *EMLEAF * (EXPDIF*RFLEAF/(1-RFLEAF**2) + 1/(1-RFLEAF**2)) ! Relative emissivity of elementary layer & scatering with one layer
+    ! Relative emissivity of elementary layer & scattering with one layer
+    FF = ELEAF * (1.-EXPDIF) *EMLEAF * (EXPDIF*RFLEAF/(1-RFLEAF**2) + 1/(1-RFLEAF**2))
 
-    ! down rayonnement dont l'origine est l'atmosphere ou la couche superieur
+    ! Downward flux comes from atmosphere or layer above (FF)
     DO J = JTOT-1, 1, -1 
        D(J) = D(J+1)*EXPDIF * (EXPDIF*RFLEAF/(1-RFLEAF**2) + 1/(1-RFLEAF**2)) + FF
     END DO
 
+    ! Downward flux onto soil surface
+    ! Same equation as above, but use soil reflectivity etc.
     D(1) = D(2)*EXPDIF * (1/(1-RFSOIL*RFLEAF)) + ELEAF*(1-EXPDIF)*EMLEAF*(1/(1-RFSOIL*RFLEAF))
 
     ! Soil emission
     ESOIL = ESOILFUN(TSOIL)
 
-    ! Soil reflection
+    ! Soil reflection (upward thermal flux)
     U(1) = (ESOIL + RHOSOL*D(1)) * (1/(1-RFLEAF*RFSOIL) + EXPDIF*RFLEAF/(1-RFLEAF**2)) 
 
-    ! Error corrected from previous version, which here had D(JTOT-1) in lieu of D(1). V. small effect.
+    ! Upward flux in every elementary canopy layer.
     DO J = 2,LAYERI
         U(J) = U(J-1)*EXPDIF * (EXPDIF*RFLEAF/(1-RFLEAF**2) + 1/(1-RFLEAF**2))+ FF 
     END DO
 
-    ! Summarise calculations.
-    ELEAF = SIGMA * (TK(TLEAF)**4.)  ! Emission from leaf 
+    ! Emission from leaf (uses leaf temperature of the current voxel)
+    ELEAF = SIGMA * (TK(TLEAF)**4.)   
 
+    ! Net downward flux
     DIFDN(IPT,3) = (D(LAYERI) - ELEAF *(1-RFLEAF*(1-EXPDIF)*1/(1-RFLEAF**2)))*EMLEAF
 
+    ! Net upward flux
     DIFUP(IPT,3) = (U(LAYERI) - ELEAF *(1-RFLEAF*(1-EXPDIF)*1/(1-RFLEAF**2)))*EMLEAF
     
-    SCLOST(IPT,3) = 0.0   ! Can assume zero scattering in thermal wave
+    ! Upward 'lost' radiation (not just scattering)
+    SCLOST(IPT,3) = U(JTOT)
+    
     DOWNTH(IPT) = D(1)
-    SOILLONGWAVEIPT(IPT) = D(1)-U(1)
-    !SOILLONGWAVEIPT(IPT) = D(1)*EMSOIL - ESOIL * (1 - RFLEAF/(1-RFLEAF*RFSOIL))
+    SOILLONGWAVEIPT(IPT) = D(1) - U(1)
     
     RETURN
 END SUBROUTINE ABSTHERM3
@@ -3111,14 +3120,11 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     END DO
 
     ! Lost scattered radiation
-    ! Take the average across the trees - is the best I can think of (
-    ! Either way, this is a small component.
-    ! Note that SCLOSTTREE was already in W m-2 (soil), so no weighing
+    ! Take the average across the trees
     SCLOSTTOT = SUM(SCLOSTTREE(1:NOTARGETS,1:2)) / NOTARGETS
     SCLOSTTOT1 = SUM(SCLOSTTREE(1:NOTARGETS,1)) / NOTARGETS
     SCLOSTTOT2 = SUM(SCLOSTTREE(1:NOTARGETS,2)) / NOTARGETS
     
-
     ! Average downward thermal flux - averaged across trees:
     DOWNTHAV = SUM(DOWNTHTREE(1:NOTARGETS)) / NOTARGETS
     SOILLONGWAVE = SUM(SOILLONGWAVETREE(1:NOTARGETS))/NOTARGETS
@@ -3127,11 +3133,6 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     RGLOBUND = RGLOBABV12 - RADINTERC12TOT - SCLOSTTOT + DOWNTHAV
     RGLOBUND1 = RADABV(IHOUR,1) - RADINTERC1 - SCLOSTTOT1
     RGLOBUND2 = RADABV(IHOUR,2) - RADINTERC2 - SCLOSTTOT2
-    
-
-    !write(uwattest, 999)rglobund,rglobabv12,radinterc12tot,sclosttot,downthav, &
-        !radinterc1+radinterc2+radinterc3
-999   FORMAT(6(F15.5,1X))
 
     RETURN
 END SUBROUTINE GETRGLOB

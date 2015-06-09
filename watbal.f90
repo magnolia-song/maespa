@@ -244,7 +244,7 @@ END SUBROUTINE INITWATBAL
       ENDDO
           TREEH = TREEH / NOTREES
 
-          GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH, TOTLAI)
+      GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH, TOTLAI)
 
       RETURN
       END
@@ -646,35 +646,26 @@ END SUBROUTINE INITWATBAL
       RHO = RHOFUN(TAIRK)
 
       ! Soil heat flux (flux of heat out of layer 1 into layer 2).
-      !QC = -THERMCOND1 * (SOILTK - SOILTK2)/LAYTHICK1
-      ! Was 0.5*LAYTHICK1; but actually has to transport to middle of next layer (otherwise we get a mismatch!)
-      ! This actually should be the depth from the middle of layer 1 to the middle of layer 1, which
-      ! only is LAYTHICK1 when 1 and 2 have the same thickness!!!
-!	  QC = -THERMCOND1 * (SOILTK - SOILTK2)/(0.5*LAYTHICK1+0.5*LAYTHICK2)   ! M. Christina 09/2013
-	  QC = -THERMCOND1 * (SOILTK - SOILTK2)/(LAYTHICK1)   
-      ! SoilTK = Temperature jsut below drythick, SOILTK2 = T in the middle of layer 1)
+      ! SoilTK = Temperature jsut below drythick, SOILTK2 = T at the bottom of the first layer.
+      QC = -THERMCOND1 * (SOILTK - SOILTK2)/LAYTHICK1
 
       ! Latent heat flux (W m-2)
       QE = QEFLUX(SOILTK,TAIRK,VPDKPA,POREFRAC1,SOILWP1, &
                   GAMSOIL,PRESSPA,DRYTHICK,TORTPAR)
 
       ! soil surface temperature assuming a dry thermal conductivity of 0.8 W m-1 K-1 (Choudhury et al. 1988)
+      ! Note: sensible heat flux is above the dry layer, latent heat flux below the dry layer.
       TSOILSURFACE = SOILTK - (QE + QC) *DRYTHICK / (0.8)
 
-
-    ! Sensible heat flux (W m-2)
-!      QH = CPAIR * RHO * GAMSOIL * (TAIRK - SOILTK)
+      ! Sensible heat flux (W m-2)
       QH = CPAIR * RHO * GAMSOIL * (TAIRK - TSOILSURFACE)   ! Sensible calculated from soil surface (Choudhury et al. 1988)
 
-      
       ! No soil evap if surface is frozen
       IF(SOILTK.LE.FREEZE)QE = 0.
 
       ! Net radiation - emitted longwave varies with surface temp.
-!      ESOIL = ESOILFUN(SOILTK)
+      ! Uses reflectance as input to phy.dat.
       ESOIL = ESOILFUN(TSOILSURFACE)
-      !QN = (1-SOILALBEDO)*RGLOB - ESOIL
-      !QN = SOILLONGWAVE + (1-RHOSOLSPEC1)*RGLOBUND1 + (1-RHOSOLSPEC2)*RGLOBUND2 
       QN = DOWNTHAV*(1-RHOSOLSPEC3) + (1-RHOSOLSPEC1)*RGLOBUND1 + (1-RHOSOLSPEC2)*RGLOBUND2 - ESOIL 
 
       RETURN
@@ -866,16 +857,11 @@ END SUBROUTINE INITWATBAL
                 
                         KS = ROOTLEN(I)*LAYTHICK(I)*2.0*pi*KSOIL/LOGRR
                 
-                    SOILR1(I) = 1/KS   *0.001   ! M. Christina to have in MPA s m2 mmol-1
-                
-                        ! As in SPA:
-                        !RS2 = LOG(RS/ROOTRAD)/(2.0*PI*ROOTLEN(I)*LAYTHICK(I)*LSOIL)
-                        ! convert from MPa s m2 m-3 to MPa s m2 mmol-1
-                        !SOILR1(I) = RS2*1E-6*18*0.001
+                        ! Convert to MPa s m2 mmol-1
+                        SOILR1(I) = 1/KS * 0.001   
 
                         ! Note : this component is calculated but not used (see wateruptakelayer proc). More research needed!
                         ! Second component of below ground resistance related to root hydraulics.
-                    
                         SOILR2(I) = ROOTRESCONS * DEPTH / ROOTLEN(I)
                     ELSE
                         SOILR2(I) = 0.0
@@ -908,7 +894,7 @@ END SUBROUTINE INITWATBAL
           ! Total soil conductance
           KS = TOTROOT*2.0*pi*KSOIL/LOGRR
           
-          SOILR1(1) = 1/KS
+          SOILR1(1) = 1/KS * 0.001
           
           SOILR2(1) = ROOTRESCONS * (SUM(LAYTHICK(1:NROOTLAYER))/2) / MEANROOTLEN
 
@@ -973,15 +959,12 @@ END SUBROUTINE INITWATBAL
         DO I=1,NROOTLAYER
 
                 !Depth of the layer M. Christina 09/2013
-                DEPTH = 0.
-                DO J=1,I
-                    DEPTH = DEPTH + LAYTHICK(J)
-                END DO
+                DEPTH = SUM(LAYTHICK(1:I)) - LAYTHICK(I)/2
 
                 ! Estimated maximum uptake rate with the current soil watyer
                 ! if aboveground resistance is zero.
                 IF(SOILRRES(I).GT.0.0)THEN
-                    ESTEVAP(I)=(SOILWP(I)-MINROOTWP)/SOILRRES(I)
+                    ESTEVAP(I)=(SOILWP(I) - MINROOTWP - (GRAV * 1E-03)*(TREEHEIGHT+DEPTH))/SOILRRES(I)
                 ELSE
                     ESTEVAP(I)=0.0   !  When no roots present
                 ENDIF
@@ -1430,8 +1413,7 @@ END SUBROUTINE INITWATBAL
 
         ! Vapor pressure in soil airspace (kpa) depends on soil water po
         ! See Jones 1992 p.110 (Eq. 5.11).
-!        ESURF = ESAT*EXP(1E6*SOILWP1*H2OVW/(RCONST*SOILTK))
-        ESURF = ESAT!*EXP(1E6*SOILWP1*H2OVW/(RCONST*SOILTK))    ! assumed saturated as C&M  M. Christina September 2014
+        ESURF = ESAT*EXP(1E6*SOILWP1*H2OVW/(RCONST*SOILTK))
 
         ! Diffusion coefficient for water vapor (m2 s-1)
         ! Jones 1992, Appendix 2.
@@ -1455,8 +1437,6 @@ END SUBROUTINE INITWATBAL
         ! Latent energy flux from soil surface (Choudhury and Monteith 1
         QEFLUX = GWSTOT * LAMBDASOIL * (RHO / PRESSKPA) * (H2OMW/AIRMA) &
                  * (EA - ESURF)
-!        QEFLUX = GWSTOT  * (RHO / PRESSKPA) * (H2OMW/AIRMA) &
-!                 * (EA - ESURF) * LAMBDASOIL        ! modified  M.Christina September 2014
 
         ! Turn off potential dew formation here if QEFLUX is larger than
         ! Problems arise when soil water potential in top layer is very
@@ -1845,21 +1825,6 @@ END SUBROUTINE INITWATBAL
         REAL KE,ALPHA,BPAR,DRYLAMBDA,POREFRAC,TCSOLID
         REAL FRACORGANIC,WETLAMBDA,SR,FRACWATER,SOILWP
         INTEGER I
-
-! Seemed to give unrealistically high values in wet soils (see also
-! Peters-Lidard et al. 1998 (J. Atmosph. Sci.).
-!C Soil thermal conductivity from McCumber and Pielke (1981, JGR),
-!C see also e.g. Xinmei and Lyans (1995, JAppMet).
-!C       For conversion of soil water potential from MPa to pF.
-!        CONV = -GRAV * 1E-05
-!
-!        PF = LOG10(SOILWP / CONV)
-!
-!        IF(PF.LE.5.1) THEN
-!           THERMCONDFUN = 418 * EXP(-(PF+2.7))
-!        ELSE
-!           THERMCONDFUN = 0.171
-!        ENDIF
 
 
 ! Lu et al 2007 (SSSAJ). They test their model against lots of data, and base it
