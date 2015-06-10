@@ -156,7 +156,7 @@ END SUBROUTINE INITWATBAL
                             WIND, ZHT, Z0HT, GAMSOIL, &
                             WEIGHTEDSWP,TOTESTEVAP,   &
                             FRACUPTAKE,TOTSOILRES,ALPHARET,WS,WR,NRET,ZBC,RZ,&
-                            ZPD, NOTREES)   ! M. Christina, added ZBC, RZ, for gravitational potential calculation
+                            ZPD, NOTREES, EXTWIND) 
 
 ! Calculates soil water potential, hydraulic conductivity,
 ! soil-to-root hydraulic conductance (leaf specific), thermal
@@ -182,7 +182,7 @@ END SUBROUTINE INITWATBAL
       REAL MINROOTWP,KTOT,SOILZPD,GAMSOIL,TOTESTEVAP
       REAL SOILMOISTURE,ROOTRESIST,ROOTRESFRAC,ROOTRAD,TOTLAI
       REAL WIND,ZHT,Z0HT,WEIGHTEDSWP,TOTSOILRES
-      REAL ZBC(MAXT),RZ(MAXT)
+      REAL ZBC(MAXT),RZ(MAXT), EXTWIND, GBCANMS1
       REAL TREEH,ZPD    ! for aerodynamic conductance calculation
       INTEGER J, NOTREES
       
@@ -190,7 +190,7 @@ END SUBROUTINE INITWATBAL
       REAL, EXTERNAL :: THERMCONDFUN
       REAL, EXTERNAL :: SOILWPFUN
       REAL, EXTERNAL :: SOILCONDFUN2
-      REAL, EXTERNAL :: GBCANMS
+!      REAL, EXTERNAL :: GBCANMS
       
 ! Update soil water potential,soil conductivity, soil thermal conductivity and
 ! soil to root conductance for each soil layer.
@@ -237,17 +237,11 @@ END SUBROUTINE INITWATBAL
 ! assuming turbulent transfer (so that conductance is the same for
 ! momentum, heat and mass transfer (Jones 1992)).
       SOILZPD = 0.0  ! Reference height is the soil surface.
-      !GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,SOILZPD)
-      !GAMSOIL = WIND*0.008   ! Modification G Le Maire July 2013
 
       ! average canopy height calculation
-      TREEH = 0.0
-      DO J = 1,notrees 
-          TREEH = TREEH + ZBC(J)+RZ(J)
-      ENDDO
-          TREEH = TREEH / NOTREES
+      TREEH = (sum(ZBC(1:NOTREES)) + sum(RZ(1:NOTREES)) ) / NOTREES
 
-      GAMSOIL = GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH, TOTLAI)
+      CALL GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH, TOTLAI, EXTWIND, GBCANMS1, GAMSOIL)
 
       RETURN
       END
@@ -2153,7 +2147,7 @@ END SUBROUTINE INITWATBAL
 
 
 SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,&
-                         WIND, ZPD, ZHT, Z0HT, DELTA, PRESS, QC,TREEH,TOTLAI, GCANOP)
+                         WIND, ZPD, ZHT, Z0HT, DELTA, PRESS, QC,TREEH,TOTLAI, GCANOP,EVAPSTORE)
 
 ! calculation of air temperature and VPD within the canopy,
 ! applied as Tair et VPDair after
@@ -2166,7 +2160,7 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       REAL VPAIR, VPAIRCANOP, PRESS, CMOLAR, GAMMA,TREEH,TAIRCAN
       
       REAL Cd, X, TOTLAI, Z0, KH, ALPHA
-      REAL COAT, USTAR, Z0H
+      REAL COAT, USTAR, Z0H, EVAPSTORE
     
       REAL, EXTERNAL :: SATUR
       REAL, EXTERNAL :: TK
@@ -2178,8 +2172,8 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       ! Latent heat of water vapour at air temperature (J mol-1)
       LHV = HEATEVAP(TAIRCAN) * H2OMW
     
-      ! total latent heat flux in the system en W m-2  (QE J m-2 s-1, ETMM en kg m-2 t-1)
-      ETOT = -QE + ETMM / (SPERHR * 1E-06 * 18 * 1E-03) * 1e-06 * LHV
+      ! total latent heat flux in the system en W m-2  (QE J m-2 s-1, ETMM en kg m-2 t-1, EVAPSTORE mm t-1)
+      ETOT = -QE + (ETMM + EVAPSTORE) / (SPERHR * 1E-06 * 18 * 1E-03) * 1e-06 * LHV 
       
       ! Convert from m s-1 to mol m-2 s-1
       CMOLAR = PRESS / (RCONST * TK(TAIRABOVE))

@@ -819,7 +819,7 @@ PROGRAM maespa
                                         ROOTRAD,MINROOTWP,TOTLAI,WINDAH(IHOUR),ZHT,Z0HT,GAMSOIL,   &
                                         WEIGHTEDSWP,TOTESTEVAP, &
                                         FRACUPTAKESPEC(1:MAXSOILLAY, ISPEC),TOTSOILRES,ALPHARET,WS,WR,NRET,  &
-										ZBC,RZ,ZPD, NOTREES)
+										ZBC,RZ,ZPD, NOTREES,EXTWIND)
                     
 
                     
@@ -1476,7 +1476,16 @@ PROGRAM maespa
                     QC = 0
                 ENDIF
             
-                                    
+                ! Get the evaporation from the wet canopy
+                CALL CANOPY_BALANCE(PPT(IHOUR),WINDAH(IHOUR),ZHT,Z0HT,ZPD, &
+                            PRESS(IHOUR),TAIR(IHOUR),RADINTERC, &
+                            VPD(IHOUR),THROUGHFALL, &
+                            RUTTERB,RUTTERD,MAXSTORAGE, &
+                            CANOPY_STORE, SURFACE_WATERMM, &
+                            EVAPSTORE, DRAINSTORE)
+
+                
+                
                 IF (ITERTAIRMAX.GT.1) THEN
                     
                     ! average canopy temperature
@@ -1484,7 +1493,7 @@ PROGRAM maespa
                     
                     ! Calculation of a new VPD and Tair within the canopy based on the heat balance of Chourdhury et al. 1988
                     CALL TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIR(IHOUR),TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,& 
-                                            WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP)
+                                            WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP, EVAPSTORE)
 
                     IF ((ABS(TAIRNEW - TAIR(IHOUR)).LT.TOL)) THEN
                         IF(VERBOSE.GE.2)print*, 'ihou',ihour,'convergence', ITERTAIR

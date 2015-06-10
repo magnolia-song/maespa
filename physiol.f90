@@ -918,8 +918,9 @@ REAL FUNCTION GBCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR)
     RETURN
 END FUNCTION GBCAN
 
+
 !**********************************************************************
-REAL FUNCTION GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI)
+SUBROUTINE GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, EXTWIND, GBCANMS1, GBCANMS2)
 ! Canopy boundary layer conductance (from Jones 1992 p 68)
 ! in m s-1
 !**********************************************************************
@@ -929,50 +930,39 @@ REAL FUNCTION GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI)
     REAL WIND,ZHT,Z0HT,ZPD
     
     REAL Cd, X, TOTLAI, ZPD2, TREEH, Z0, KH, ALPHA, Z0HT2
-    REAL GBCANMS1, GBCANMS2
+    REAL GBCANMS1, GBCANMS2, WINDBELOW, EXTWIND
     
+    ! Aerodynamic conductance from the canopy to the atmosphere
+    ! Formula from Jones 1992 p 68, aerodynamic conductance air-canopy - air, adapted from the CASTANEA model (Dufrene et al., 2005)
     ZPD2 = 0.75 * TREEH
     Z0 = 0.1 *  TREEH
 
     IF (Z0HT.GT.0.0) THEN
-    ! Formula from Jones 1992 p 68, aerodynamic conductance air-canopy - air
         GBCANMS1 = WIND*(VONKARMAN**2)/(LOG((ZHT - ZPD2)/Z0))**2
     ELSE
         GBCANMS1 = 0.0
     END IF
-
+    
+    
+    ! Aerodynamic conductance between the soil surface to the the canopy
     ! 2nd conductance term from choudhury et al. 1988   
     Cd = 0.2
     ALPHA = 2
     Z0HT2 = 0.01
-    
-!    X = Cd * TOTLAI
-!    ZPD2 = 1.1 * TREEH * log(1+(X**(1/4)))
-!    
-!    IF (X.GE.0.AND.X.LE.0.2) THEN
-!        Z0 = Z0HT2 + 0.3 * TREEH * (X**(1/2))
-!    ELSE IF (X.GT.0.2.AND.X.LE.1.5) THEN 
-!        Z0 = 0.3 * TREEH *(1-ZPD2/TREEH)
-!    ELSE
-!        Z0 = Z0HT2
-!    END IF
+
+    ! Wind speed below the canopy    
+    WINDBELOW = WIND*EXP(-EXTWIND*TOTLAI)
 
     ! assuming uniforme vegetation
-    KH = (VONKARMAN**2) * (TREEH - ZPD2) * WIND / log((ZHT - ZPD2)/Z0)
+    KH = (VONKARMAN**2) * (TREEH - ZPD2) * WINDBELOW / log((ZHT - ZPD2)/Z0)
 
     !Aerodynamic conductance soir-air below canopy
     GBCANMS2 = ALPHA * KH / ( TREEH * exp(ALPHA) * (exp(-ALPHA * Z0HT2/TREEH)  -  exp(-ALPHA * (ZPD2+Z0) / TREEH) ) )
 
-    IF (TREEH.EQ.0.0) THEN
-        GBCANMS = GBCANMS1
-    ELSE
-        !Total aerodynamic conductance assuming serie
-!       GBCANMS = GBCANMS1 * GBCANMS2 / (GBCANMS1+GBCANMS2)
-        GBCANMS = GBCANMS2
-    END IF
 
     RETURN
-END FUNCTION GBCANMS
+
+END SUBROUTINE GBCANMS
 
 !**********************************************************************
 SUBROUTINE CALCWBIOM(IDAY,HT,DIAM,COEFFT,EXPONT,WINTERC,WBIOM,WBINC)
