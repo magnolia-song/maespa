@@ -112,7 +112,7 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     IF (IOERROR == -1) THEN
         ! i.e. it has reached the end of the file and not found the tag, I am sure 
         ! there is a nicer way to do this
-        CALL SUBERROR('You have chosen not to set the in/out directories, so using current directory for output', IWARN, 0)
+        CALL SUBERROR('FLOCATIONS not set, using current directory for output.', IWARN, 0)
         REWIND(UCONTROL)
     ENDIF
     
@@ -483,6 +483,7 @@ SUBROUTINE write_header_information(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBAL, 430)
             WRITE (UWATBAL, 4301)
             WRITE (UWATBAL, 4302)
+            WRITE (UWATBAL, 4303)
             !WRITE (UWATBAL, 432)
             WRITE (UWATBAL, 990) '  '
             WRITE (UWATBAL, 431)
@@ -835,16 +836,17 @@ SUBROUTINE write_header_information(NSPECIES,SPECIESNAMES, &
     4283 FORMAT('Tsoilsurf: Soil surface temperature               deg C')
     4284 FORMAT('TSoilDry: Soil temperature below the drythick layer  deg C')
     429 FORMAT('soilt1, soilt2: soil T in 1st and 2nd layer        deg C')
-    430 FORMAT('fracw1,fracw2: water content 1st and 2nd layer    m3 m-3')
-    4301 FORMAT('VPDair,VPDaircan: air above and within the canopy VPD  ')
-    4302 FORMAT('Gcan: air-canopy conductance mol m-2 s-1  ')
-
-    431 FORMAT('Columns: day hour wsoil wsoilroot ppt canopystore         &
-                &evapstore drainstore tfall et etmeas discharge overflow  &
-                &weightedswp ktot drythick soilevap                 &
-                &soilmoist fsoil qh qe qn qc rglobund                     &
-                &rglobabv radinterc rnet totlai tair taircan tcan tsoilsurf tsoildry soilt1 soilt2        &
-                &fracw1 fracw2 fracaPAR VPDair VPDaircan GCAN')
+430     FORMAT('fracw1,fracw2: water content 1st and 2nd layer    m3 m-3')
+4301    FORMAT('VPDair,VPDaircan: air above and within the canopy VPD  ')
+4302    FORMAT('Gcan: air-canopy conductance mol m-2 s-1  ')
+4303    FORMAT('Itertair : number of iterations for taircan estimation')        
+        
+    431 FORMAT('Columns: day hour wsoil wsoilroot ppt canopystore '         &
+                'evapstore drainstore tfall et etmeas discharge overflow ' &
+                'weightedswp ktot drythick soilevap '                 &
+                'soilmoist fsoil qh qe qn qc rglobund '                     &
+                'rglobabv radinterc rnet totlai tair taircan tcan tsoilsurf tsoildry soilt1 soilt2 '        &
+                'fracw1 fracw2 fracaPAR VPDair VPDaircan GCAN itertair')
     432 FORMAT('FracaPAR: fraction of absorbed PAR')   
                 
     441 FORMAT('Daily water and heat balance components.')
@@ -2297,8 +2299,8 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
                            RGLOBUND, RGLOBABV, RADINTERC, RNET,     &
                            TOTLAI,TAIRABOVE, TAIRCAN, TCAN,TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3),    & !SOILTEMP(1) is the soil temperature just below the drythick layer
                            FRACWATER(1),FRACWATER(2),FRACAPAR, VPD,VPDCAN,GCANOP,ITERTAIR
-        520   FORMAT (I7,I7,39(F14.4,1X),I7)
-
+520                        FORMAT (I7,I7,39(F14.4,1X),I7)
+                           
         ! Write volumetric water content by layer:
         WRITE (UWATLAY, 521) FRACWATER(1:NLAYER)        !60) M. Christina 12/2013
 
