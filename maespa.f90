@@ -589,7 +589,6 @@ PROGRAM maespa
         DO IHOUR = 1,KHRS
             
             ITERTAIR = 0.
-            DELTA = 0.
             TAIRABOVE = TAIR(IHOUR)
             VPDABOVE = VPD(IHOUR)
 
@@ -600,43 +599,12 @@ PROGRAM maespa
                     AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
                     PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,  &
                     PSILCAN,PSILCANMIN,CICAN, ECANMAX, ACANMAX,AREATOT)
-
-            IF (ITERTAIR.EQ.0.AND.ITERTAIRMAX.GE.1) THEN       ! Not used in the case of no iteration on temperature
-                IF (PREVTAIRCAN.NE.0.0) THEN        ! avoid the case PREVTAICAN = 0 during the first calculation
-                    TAIR(IHOUR) = PREVTAIRCAN
-                    VPD(IHOUR) = PREVVPDCAN
-                END IF
-            END IF
-
-            IF (ITERTAIR.GE.1) THEN
-                TAIR(IHOUR) = TAIR(IHOUR) + (TAIRNEW-TAIR(IHOUR))/2     ! converge slowly
-                VPD(IHOUR) = VPD(IHOUR) + (VPDNEW-VPD(IHOUR))/2
-                !TAIR(IHOUR) = TAIRNEW     
-                !VPD(IHOUR) = VPDNEW
-                DELTA = 5 * GRAV * (ZHT-ZPD) * (TAIRNEW - TAIRABOVE) / (TAIRABOVE * WINDAH(IHOUR)**2)
-            END IF
-            IF (ITERTAIR.EQ.0) THEN
-               TCAN2 = TAIR(IHOUR)
-               DO IDIPT=1,NUMPNT
-                   DO IDTAR = 1,NOTARGETS
-                       TLEAFTABLE(IDTAR,IDIPT)=TAIR(IHOUR)
-                   ENDDO
-               ENDDO
-            ENDIF
-
-            ITERTAIR = ITERTAIR + 1
             
-            ! if we had reached itertairmax, we take the taircan as the one from the previous half-hour
-            IF (ITERTAIR.EQ.ITERTAIRMAX) THEN
-                TAIR(IHOUR) = PREVTAIRCAN
-                VPD(IHOUR) = PREVVPDCAN
-                TCAN2 = PREVTAIRCAN
-                DO IDIPT = 1,NUMPNT
-                    DO IDTAR = 1,NOTARGETS
-                        TLEAFTABLE(IDTAR,IDIPT) = TCAN2
-                    ENDDO
-                ENDDO
-            ENDIF
+            ! Run the iteration on air temperature and vapour pressure within the canopy
+            CALL ITERTCAN(IHOUR, ITERTAIR, ITERTAIRMAX, NUMPNT, NOTARGETS, &
+			                TCAN2, TLEAFTABLE, TAIR, PREVTAIRCAN, VPD, PREVVPDCAN, &
+			                TAIRABOVE, TAIRNEW, VPDNEW)
+
             
             CALL ZEROFSOIL(FSOIL1,NSUMMED,TOTTMP)
             
@@ -1486,34 +1454,31 @@ PROGRAM maespa
                     QC = 0
                 ENDIF
             
-                ! average leaf temperature
-                TCAN2=0.
-                DO I=1,NOTARGETS
-                    TCAN2 = TCAN2 + TCAN(I,IHOUR)
-                ENDDO
-                    TCAN2 = TCAN2 / NOTARGETS
+                                    
+                IF (ITERTAIRMAX.GT.1) THEN
+                    
+                    ! average canopy temperature
+                    TCAN2 = sum(TCAN(1:NOTARGETS, IHOUR)) / NOTARGETS
+                    
+                    ! Calculation of a new VPD and Tair within the canopy based on the heat balance of Chourdhury et al. 1988
+                    CALL TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIR(IHOUR),TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,& 
+                                            WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP)
 
-                ! Calculation of a new VPD and Tair within the canopy based on the heat balance of Chourdhury et al. 1988
-                CALL TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIR(IHOUR),TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,& 
-                                        WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP)
-
-                IF ((ABS(TAIRNEW - TAIR(IHOUR)).LT.TOL)) THEN
-                    print*, 'ihou',ihour,'convergence', ITERTAIR
-                    ITERTAIR = ITERTAIRMAX - 1
-                    PREVTAIRCAN = TAIRNEW
-                    PREVVPDCAN = VPDNEW
-                    GOTO 1112                 
-                ELSE IF ((ITERTAIR.EQ.ITERTAIRMAX)) THEN    
-                    print*, 'ihou',ihour,'no convergence'
-                    !PREVTAIRCAN = TAIRABOVE
-                    !PREVVPDCAN = VPDABOVE
-                    PREVTAIRCAN = PREVTAIRCAN
-                    PREVVPDCAN = PREVVPDCAN
-                    GOTO 1112
-                ELSE
-                    GOTO 1111
-                END IF
-
+                    IF ((ABS(TAIRNEW - TAIR(IHOUR)).LT.TOL)) THEN
+                        print*, 'ihou',ihour,'convergence', ITERTAIR
+                        ITERTAIR = ITERTAIRMAX - 1
+                        PREVTAIRCAN = TAIRNEW
+                        PREVVPDCAN = VPDNEW
+                        GOTO 1112                 
+                    ELSE IF ((ITERTAIR.EQ.ITERTAIRMAX)) THEN    
+                        print*, 'ihou',ihour,'no convergence'
+                        PREVTAIRCAN = PREVTAIRCAN
+                        PREVVPDCAN = PREVVPDCAN
+                        GOTO 1112
+                    ELSE
+                        GOTO 1111
+                    END IF
+                ENDIF
                 
 
 1112            CONTINUE    
@@ -2024,3 +1989,69 @@ END SUBROUTINE SUMDAILY
 
 
 
+SUBROUTINE  ITERTCAN(IHOUR, ITERTAIR, ITERTAIRMAX, NUMPNT, NOTARGETS, &
+			TCAN2, TLEAFTABLE, TAIR, PREVTAIRCAN, VPD, PREVVPDCAN, &
+			TAIRABOVE, TAIRNEW, VPDNEW)
+
+USE maestcom
+IMPLICIT NONE
+INTEGER ITERTAIR, ITERTAIRMAX, IHOUR
+INTEGER IDIPT, IDTAR, NUMPNT, NOTARGETS
+REAL TCAN2, TLEAFTABLE(MAXT,MAXP)
+REAL TAIR(MAXHRS), PREVTAIRCAN, VPD(MAXHRS), PREVVPDCAN
+REAL TAIRABOVE, WINDAH(MAXHRS)
+REAL TAIRNEW, VPDNEW
+
+! when itertairmax = 1, no iteration on air temperature within the canopy
+IF (ITERTAIRMAX.LE.1) THEN
+		TCAN2 = TAIR(IHOUR)
+		PREVTAIRCAN = TAIR(IHOUR)
+		PREVVPDCAN = VPD(IHOUR) 
+		DO IDIPT=1,NUMPNT
+			DO IDTAR = 1,NOTARGETS
+				TLEAFTABLE(IDTAR,IDIPT)=TAIR(IHOUR)
+			ENDDO
+		ENDDO
+ENDIF
+
+IF (ITERTAIRMAX.GT.1) THEN
+
+	! initialization of leaf and air temperature values
+	IF (ITERTAIR.EQ.0) THEN
+		TCAN2 = TAIR(IHOUR)
+		DO IDIPT=1,NUMPNT
+			DO IDTAR = 1,NOTARGETS
+				TLEAFTABLE(IDTAR,IDIPT)=TAIR(IHOUR)
+			ENDDO
+		ENDDO
+
+		! We used the calculation of TAIRCAN of the previous time step
+		! avoid the case PREVTAICAN = 0 during the first calculation
+		IF (PREVTAIRCAN.NE.0.0) THEN        
+                    TAIR(IHOUR) = PREVTAIRCAN
+                    VPD(IHOUR) = PREVVPDCAN
+		END IF
+	END IF
+
+	IF (ITERTAIR.GE.1) THEN
+		TAIR(IHOUR) = TAIR(IHOUR) + (TAIRNEW-TAIR(IHOUR))/2     
+		VPD(IHOUR) = VPD(IHOUR) + (VPDNEW-VPD(IHOUR))/2
+	END IF
+
+	ITERTAIR = ITERTAIR + 1
+            
+	! if we had reached itertairmax, we take the taircan as the one from the previous half-hour
+	IF (ITERTAIR.EQ.ITERTAIRMAX) THEN
+		TAIR(IHOUR) = PREVTAIRCAN
+		VPD(IHOUR) = PREVVPDCAN
+		TCAN2 = PREVTAIRCAN
+		DO IDIPT = 1,NUMPNT
+			DO IDTAR = 1,NOTARGETS
+				TLEAFTABLE(IDTAR,IDIPT) = TCAN2
+            ENDDO
+		ENDDO
+	ENDIF
+
+ENDIF
+
+END SUBROUTINE ! 
