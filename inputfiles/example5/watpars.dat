@@ -27,7 +27,7 @@ expinf = 0.0
 &rootpars
 rootresfrac = 0.4
 rootrad = 0.0001
-rootdens = 0.5e6
+rootsrl = 20
 rootmasstot = 1000
 nrootlayer = 10
 norootspec = 2

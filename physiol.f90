@@ -33,13 +33,13 @@
 
 
 !**********************************************************************
-SUBROUTINE PSTRANSPIF(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
+SUBROUTINE PSTRANSPIF(IDAY,IHOUR,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
                     IECO,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ,RD0, &
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
-                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT, &
                     TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI, &
-                    ISMAESPA)
+                    ISMAESPA,ISNIGHT)
 !
 ! 'Interface' to PSTRANSP (new subroutine, Feb. 2011). 
 ! Calculates (numericall) the leaf water potential for the Tuzet model; 
@@ -51,8 +51,8 @@ SUBROUTINE PSTRANSPIF(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,
 
     INTEGER MODELGS,SOILDATA,WSOILMETHOD,ITER
     INTEGER IECO,ITERMAX,NSIDES,VFUN
-    integer iday,ihour
-    REAL JMAX25,I0,LHV,MINROOTWP,KTOT,PSIL,K10F
+    INTEGER IDAY,IHOUR
+    REAL JMAX25,I0,LHV,MINROOTWP,KTOT,PSIL,K10F,GNIGHT
     REAL TLEAF,TAIR,DLEAF,VPD,VMLEAF,VMFD,RHLEAF,RH,CS,CA
     REAL SLOPE,GRADN,RDFIPT,TUIPT,TDIPT,GBHU,PRESS,WIND
     REAL WLEAF,PAR,TMOVE,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC
@@ -64,28 +64,33 @@ SUBROUTINE PSTRANSPIF(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,
     REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
     REAL PSILIN,PLANTK,TOTSOILRES,MINLEAFWP,CI
     REAL TMP,VPARA,VPARB,VPARC,VPDMIN,GK
-    LOGICAL ISMAESPA
+    LOGICAL ISMAESPA,ISNIGHT
 
 
     ! Find leaf water potential that matches Tuzet model (tuzet gs = f(psi), and psi = f(gs)).
     ! The result is PSILIN, which is then used below to (re-)estimate all gas exchange variables.
     IF(MODELGS.EQ.6)THEN
     
-        CALL PSILFIND(RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
+        ! Do not find leaf water potential at night.
+        IF(.NOT.ISNIGHT)THEN
+            CALL PSILFIND(RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
                     IECO,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ,RD0, &
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,  &
-                    WEIGHTEDSWP,HMSHAPE,PSILIN,ETEST, IDAY, IHOUR)  ! modification mathias mars iday ihour
+                    WEIGHTEDSWP,HMSHAPE,PSILIN,ETEST, IDAY, IHOUR)
+        ELSE
+            PSILIN = WEIGHTEDSWP   ! Not entirely correct due to nighttime transpiration, but has no consequences.
+        ENDIF
     
     ENDIF
     
-    CALL PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
+    CALL PSTRANSP(IDAY,IHOUR,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
                     IECO,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ,RD0, &
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
-                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,   &
-                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA)
+                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
     
 
 END SUBROUTINE PSTRANSPIF
@@ -94,10 +99,10 @@ END SUBROUTINE PSTRANSPIF
 SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25,&
                     IECO,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ,RD0, &
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
-                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT, &
                     TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,  &
-                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA)
+                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
 ! This subroutine calculates leaf photosynthesis and transpiration.
 ! These may be calculated by
 ! (1) assuming leaf temperature = air temperature, Cs = Ca and Ds = Da
@@ -111,9 +116,9 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
 
     INTEGER MODELGS,SOILDATA,WSOILMETHOD,ITER
     INTEGER IECO,ITERMAX,NSIDES,VFUN
-    integer iday,ihour
+    INTEGER IDAY,IHOUR
     REAL JMAX25,I0,LHV,MINROOTWP,KTOT,PSIL,K10F
-    REAL PLANTK,TOTSOILRES,MINLEAFWP
+    REAL PLANTK,TOTSOILRES,MINLEAFWP,GNIGHT
     REAL TLEAF,TAIR,DLEAF,VPD,VMLEAF,VMFD,RHLEAF,RH,CS,CA
     REAL SLOPE,GRADN,RDFIPT,TUIPT,TDIPT,GBHU,PRESS,WIND
     REAL WLEAF,PAR,TMOVE,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC
@@ -123,9 +128,8 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     REAL SMD1,SMD2,WC1,WC2,SWPEXP,FSOIL,G0,D0L,GAMMA,G1
     REAL GSC,ALEAF,RD,WEIGHTEDSWP,GBHF,GBH,GH,VMFD0,GBV,GSV,GV
     REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
-    REAL PSILIN,CI,VPARA,VPARB,VPARC,VPDMIN,GK
-    logical failconv
-    LOGICAL ISMAESPA
+    REAL PSILIN,CI,VPARA,VPARB,VPARC,VPDMIN,GK,RD0ACC
+    LOGICAL ISMAESPA,ISNIGHT,FAILCONV
     CHARACTER*70 errormessage
     
     REAL, EXTERNAL :: SATUR
@@ -133,15 +137,14 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     REAL, EXTERNAL :: GBHFORCED
     REAL, EXTERNAL :: GBHFREE
     REAL, EXTERNAL :: PENMON
+    REAL, EXTERNAL :: RESP
 
-    failconv = .FALSE.
+    FAILCONV = .FALSE.
     
     ! Hydraulic conductance of the entire soil-to-leaf pathway
     IF(ISMAESPA)THEN
         KTOT = 1./(TOTSOILRES + 1./PLANTK)
     ENDIF
-    
-    !write(uwattest, *)ktot,plantk
 
     ! Set initial values of leaf temp and surface CO2 & VPD
     TLEAF = TAIR
@@ -162,15 +165,24 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
 
     !**********************************************************************
     ITER = 0  ! Counter for iterations - finding leaf temperature
-    100   CONTINUE  ! Return point for iterations
+100 CONTINUE  ! Return point for iterations
 
+    IF(.NOT.ISNIGHT)THEN
     CALL PHOTOSYN(PAR,TLEAF,TMOVE,CS,RHLEAF,DLEAF,VMLEAF,JMAX25,IECO,EAVJ,EDVJ,DELSJ,VCMAX25,&
                     EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ,RD0,Q10F,K10F,RTEMP,DAYRESP,TBELOW,&
                     MODELGS,GSREF,GSMIN,I0,D0,VK1,VK2,VPD1,VPD2,VMFD0,GSJA,GSJB,T0,TREF,TMAX,&
                     WSOILMETHOD,SOILMOISTURE,EMAXLEAF,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,&
                     G0,D0L,GAMMA,VPDMIN,G1,GK,GSC,ALEAF,RD,MINLEAFWP,KTOT,WEIGHTEDSWP, & 
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,HMSHAPE,PSILIN,PSIL,CI,ISMAESPA)
-     
+    ELSE
+        ! Nighttime calculations
+        GSC = GNIGHT
+        PSIL = WEIGHTEDSWP
+        CI = CS
+        RD = RESP(RD0,RD0ACC,TLEAF,TMOVE,Q10F,K10F,RTEMP,DAYRESP,TBELOW)
+        ALEAF = -RD
+    ENDIF
+    
     ! Boundary layer conductance for heat - single sided, free convection
     GBHF = GBHFREE(TAIR,TLEAF,PRESS,WLEAF)
     ! Total boundary layer conductance for heat
@@ -180,26 +192,32 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     GH = 2.*(GBH + GRADN)
     ! Total conductance for water vapour
     GBV = GBVGBH*GBH
+    
+    ! Stomatal conductance to water vapour
     GSV = GSVGSC*GSC
-    !      GV = NSIDES*(GBV*GSV)/(GBV+GSV) ! already one-sided value
+    
+    ! Boundary + stomatal conductance to water vapour
     GV = (GBV*GSV)/(GBV+GSV)
 
-    !  Call Penman-Monteith equation
+    ! Call Penman-Monteith equation
     ET = PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)
 
     ! End of subroutine if no iterations wanted.
-    !IF (ITERMAX.EQ.0.OR.ALEAF.LE.0.0) GOTO 200
     IF (ITERMAX.EQ.0) GOTO 200
 
     ! Otherwise, calculate new TLEAF, DLEAF, RHLEAF & CS
     GBC = GBH/GBHGBC
-    CS = CA - ALEAF/GBC
+    IF(.NOT.ISNIGHT)THEN
+        CS = CA - ALEAF/GBC
+    ENDIF
     TDIFF = (RNET - ET*LHV) / (CPAIR * AIRMA * GH)
     TLEAF1 = TAIR + TDIFF/4
     
-    ! on recalcule ET modification mathias avril 2013
+    ! Now recalculate boundary layer conductance, ET with new TLEAF
+    ! Helps convergence to TLEAF.
     ! Boundary layer conductance for heat - single sided, free convection
-    GBHF = GBHFREE(TAIR,TLEAF1,PRESS,WLEAF)         ! modification TLEAF in TLEAF1 M. christina 01/2014
+    GBHF = GBHFREE(TAIR,TLEAF1,PRESS,WLEAF)
+    
     ! Total boundary layer conductance for heat
     GBH = GBHU + GBHF
 
@@ -208,26 +226,22 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     ! Total conductance for water vapour
     GBV = GBVGBH*GBH
     GSV = GSVGSC*GSC
-    !      GV = NSIDES*(GBV*GSV)/(GBV+GSV) ! already one-sided value
     GV = (GBV*GSV)/(GBV+GSV)
 
     !  Call Penman-Monteith equation
     ET = PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)
-    ! fin de la modification
 
     DLEAF = ET * PRESS / GV
     RHLEAF = 1. - DLEAF/SATUR(TLEAF1)
     VMLEAF = DLEAF/PRESS*1E-3
 
-    !if(abs(tleaf-tleaf1).gt.5.and.iter.gt.itermax)write(uwattest,*)tleaf,tleaf1
-
     ! Check to see whether convergence achieved or failed
     IF (ABS(TLEAF - TLEAF1).LT.TOL/4) GOTO 200
 
     IF (ITER.GT.ITERMAX) THEN
-        write(errormessage, '(I4,A,I2,A)') IDAY,'  ', IHOUR, ' FAILED CONVERGENCE IN PSTRANSP'
-        CALL SUBERROR(errormessage,IWARN,0)
-        failconv = .TRUE.
+        WRITE(ERRORMESSAGE, '(I4,A,I2,A)') IDAY,'  ', IHOUR, ' FAILED CONVERGENCE IN PSTRANSP'
+        CALL SUBERROR(ERRORMESSAGE,IWARN,0)
+        FAILCONV = .TRUE.
 	    GOTO 200
     END IF
 
@@ -236,12 +250,13 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     ITER = ITER + 1
     GOTO 100
 
-    200   FHEAT = RNET - LHV*ET
-          
-    !      FHEAT = (TLEAF - TAIR)*2.*GBH*CPAIR*AIRMA  !BM 12/05 Not correct - use energy bal instead
-    ET = ET*1E6  ! Return ET,EI in umol m-2 s-1
+    ! Sensible heat flux
+200 FHEAT = RNET - LHV*ET
+    
+    ! Return ET,EI in umol m-2 s-1
+    ET = ET*1E6  
 
-    IF(ISMAESPA)THEN
+    IF(ISMAESPA.AND.(.NOT.ISNIGHT))THEN
         ! Simple transpiration rate assuming perfect coupling (for comparison).
         ETEST = 1E6 * (VPD/PRESS) * GSV
     
@@ -254,143 +269,8 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     ENDIF
     
     RETURN
-END SUBROUTINE PSTRANSP
+    END SUBROUTINE PSTRANSP
 
-     SUBROUTINE PSTRANSPNIGHT(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,&
-                    IECO, G0,WLEAF, ITERMAX,GSC, ET,FHEAT, &
-                    TLEAF,GBH, ISMAESPA)
-! This subroutine calculates leaf photosynthesis and transpiration.
-! These may  be calculated by
-! (1) assuming leaf temperature = air temperature, Cs = Ca and Ds = Da
-! (2) using iterative scheme of Leuning et al (1995) (PC&E 18:1183-1200)
-! to calculate leaf temp, Cs & Ca.
-! Setting ITERMAX = 0 gives (1); ITERMAX > 0 (suggest 100) gives (2).
-!**********************************************************************
-      
-    USE maestcom
-    IMPLICIT NONE
-
-    INTEGER MODELGS,SOILDATA,WSOILMETHOD,ITER
-    INTEGER IECO,ITERMAX,NSIDES,VFUN
-    integer iday,ihour
-    REAL JMAX25,I0,LHV,MINROOTWP,KTOT,PSIL,K10F
-    REAL PLANTK,TOTSOILRES,MINLEAFWP
-    REAL TLEAF,TAIR,DLEAF,VPD,VMLEAF,VMFD,RHLEAF,RH,CS,CA
-    REAL SLOPE,GRADN,RDFIPT,TUIPT,TDIPT,GBHU,PRESS,WIND
-    REAL WLEAF,PAR,TMOVE,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC
-    REAL DELSC,TVJUP,TVJDN,THETA,AJQ,RD0,Q10F,RTEMP,DAYRESP
-    REAL TBELOW,GSREF,GSMIN,D0,VK1,VK2,VPD1,VPD2,VMDF0
-    REAL GSJA,GSJB,T0,TREF,TMAX,SOILMOISTURE,EMAXLEAF
-    REAL SMD1,SMD2,WC1,WC2,SWPEXP,FSOIL,G0,D0L,GAMMA,G1
-    REAL GSC,ALEAF,RD,WEIGHTEDSWP,GBHF,GBH,GH,VMFD0,GBV,GSV,GV
-    REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
-    REAL PSILIN,CI,VPARA,VPARB,VPARC,VPDMIN,GK
-    logical failconv
-    LOGICAL ISMAESPA
-    CHARACTER*70 errormessage
-    
-    REAL, EXTERNAL :: SATUR
-    REAL, EXTERNAL :: GRADIATION
-    REAL, EXTERNAL :: GBHFORCED
-    REAL, EXTERNAL :: GBHFREE
-    REAL, EXTERNAL :: PENMON
-
-    failconv = .FALSE.
-    
-    
-    ! Set initial values of leaf temp and surface CO2 & VPD
-    TLEAF = TAIR
-    DLEAF = VPD
-    VMLEAF = VMFD
-    RHLEAF = RH
-
-    ! Following calculations do not depend on TLEAF
-    ! Latent heat of water vapour at air temperature (J mol-1)
-    LHV = (H2OLV0 - 2.365E3 * TAIR) * H2OMW
-    ! Const s in Penman-Monteith equation  (Pa K-1)
-    SLOPE = (SATUR(TAIR + 0.1) - SATUR(TAIR)) / 0.1
-    ! Radiation conductance (mol m-2 s-1)
-    GRADN = GRADIATION(TAIR,RDFIPT,TUIPT,TDIPT)
-    ! Boundary layer conductance for heat - single sided, forced convection
-    GBHU = GBHFORCED(TAIR,PRESS,WIND,WLEAF)
-
-    !**********************************************************************
-    ITER = 0  ! Counter for iterations - finding leaf temperature
-    100   CONTINUE  ! Return point for iterations
-
-     
-    ! Boundary layer conductance for heat - single sided, free convection
-    GBHF = GBHFREE(TAIR,TLEAF,PRESS,WLEAF)
-    ! Total boundary layer conductance for heat
-    GBH = GBHU + GBHF
-
-    ! Total conductance for heat - two-sided
-    GH = 2.*(GBH + GRADN)
-    ! Total conductance for water vapour
-    GBV = GBVGBH*GBH
-    GSV = GSVGSC*G0
-    !      GV = NSIDES*(GBV*GSV)/(GBV+GSV) ! already one-sided value
-    GV = (GBV*GSV)/(GBV+GSV)
-
-    !  Call Penman-Monteith equation
-    ET = PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)
-
-    ! End of subroutine if no iterations wanted.
-    !IF (ITERMAX.EQ.0.OR.ALEAF.LE.0.0) GOTO 200
-    IF (ITERMAX.EQ.0) GOTO 200
-
-    ! Otherwise, calculate new TLEAF, DLEAF, RHLEAF & CS
-    GBC = GBH/GBHGBC
-    TDIFF = (RNET - ET*LHV) / (CPAIR * AIRMA * GH)
-    TLEAF1 = TAIR + TDIFF/4
-    
-    ! on recalcule ET modification mathias avril 2013
-    ! Boundary layer conductance for heat - single sided, free convection
-    GBHF = GBHFREE(TAIR,TLEAF1,PRESS,WLEAF)         ! modification TLEAF in TLEAF1 M. christina 01/2014
-    ! Total boundary layer conductance for heat
-    GBH = GBHU + GBHF
-
-    ! Total conductance for heat - two-sided
-    GH = 2.*(GBH + GRADN)
-    ! Total conductance for water vapour
-    GBV = GBVGBH*GBH
-    GSV = GSVGSC*G0
-    !      GV = NSIDES*(GBV*GSV)/(GBV+GSV) ! already one-sided value
-    GV = (GBV*GSV)/(GBV+GSV)
-
-    !  Call Penman-Monteith equation
-    ET = PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)
-    ! fin de la modification
-
-    DLEAF = ET * PRESS / GV
-    RHLEAF = 1. - DLEAF/SATUR(TLEAF1)
-    VMLEAF = DLEAF/PRESS*1E-3
-
-    !if(abs(tleaf-tleaf1).gt.5.and.iter.gt.itermax)write(uwattest,*)tleaf,tleaf1
-
-    ! Check to see whether convergence achieved or failed
-    IF (ABS(TLEAF - TLEAF1).LT.TOL/4) GOTO 200
-
-    IF (ITER.GT.ITERMAX) THEN
-        write(errormessage, '(I4,A,I2,A)') IDAY,'  ', IHOUR, ' FAILED CONVERGENCE IN PSTRANSP'
-        CALL SUBERROR(errormessage,IWARN,0)
-        failconv = .TRUE.
-	    GOTO 200
-    END IF
-
-    ! Update temperature & do another iteration
-    TLEAF = TLEAF1
-    ITER = ITER + 1
-    GOTO 100
-
-    200   FHEAT = RNET - LHV*ET
-          
-    !      FHEAT = (TLEAF - TAIR)*2.*GBH*CPAIR*AIRMA  !BM 12/05 Not correct - use energy bal instead
-    ET = ET*1E6  ! Return ET,EI in umol m-2 s-1
-    
-    RETURN
-END SUBROUTINE PSTRANSPNIGHT
-   
 
 !**********************************************************************
 SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
@@ -917,55 +797,6 @@ REAL FUNCTION ETCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING)
     RETURN
 END FUNCTION ETCAN
 
-REAL FUNCTION ETCANNIGHT(WIND,ZHT,PRESS,TAIR,RNET,VPD,TREEH,EXTWIND,&
-                        WLEAF,TOTLAI,PAR,DMEAN,g0)
-! Calculate transpiration by applying Penman-Monteith to whole canopy at night.
-! Returns umol m-2 s-1.
-!**********************************************************************
-
-    USE maestcom
-    IMPLICIT NONE
-    REAL LHV,WIND,ZHT,Z0HT2,ZPD2,PRESS,TAIR,RNET,VPD,GB,GC
-    REAL TREEH, EXTWIND, WINDH, WLEAF,TOTLAI,g0,PAR
-    REAL SLOPE,GH,GV,DMEAN,CMOLAR
-    REAL, EXTERNAL :: HEATEVAP
-    REAL, EXTERNAL :: SATUR
-    REAL, EXTERNAL :: PENMON
-    REAL, EXTERNAL :: TK
-
-    ! Convert from m s-1 to mol m-2 s-1
-    CMOLAR = PRESS / (RCONST * TK(TAIR))
-
-    ! wind speed just above the canopy
-!    ZPD2 = 0.75*TREEH
-!    Z0HT2 = 0.1*TREEH
-!    WINDH = WIND/VONKARMAN * log((ZHT-TREEH)/Z0HT2)
-
-    ! Get boundary layer conductance
-    GB = (2*0.01/EXTWIND)*(WIND/WLEAF)**(1/2)*(1-EXP(-EXTWIND/2)) * CMOLAR * TOTLAI
-
-    ! Get night stomatal conductance
-    GC = (g0*TOTLAI) ! + GB/CMOLAR*IRR*(1-EXP(-DMEAN*TOTLAI))) *CMOLAR
-
-    IF (GB*GC.GT.0.0) THEN
-        ! Latent heat of water vapour at air temperature (J mol-1)
-        LHV = HEATEVAP(TAIR) * H2OMW
-
-        ! Const s in Penman-Monteith equation  (Pa K-1)
-        SLOPE = (SATUR(TAIR + 0.1) - SATUR(TAIR)) / 0.1
-
-        ! Call Penman-Monteith
-        GH = GB
-        GV = 1./(1./GC + 1./GB)
-        ETCANNIGHT = PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)*1E6
-    ELSE
-        ETCANNIGHT = 0.0
-    END IF
-
-    RETURN
-    END FUNCTION ETCANNIGHT
-
-
 !**********************************************************************
 REAL FUNCTION PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)
 ! This subroutine calculates evapotranspiration by leaves using the Penman-Monteith equation.
@@ -1465,8 +1296,8 @@ REAL FUNCTION PSILOBJFUN(PSILIN, EXTRAPARS, EXTRAINT)
         REAL GSC,ALEAF,RD,WEIGHTEDSWP,GBHF,GBH,GH,VMFD0,GBV,GSV,GV
         REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
         REAL PSILIN,TOTSOILRES,PLANTK,MINLEAFWP,CI,GK
-        REAL VPARA,VPARB,VPARC,VPDMIN
-        LOGICAL ISMAESPA
+        REAL VPARA,VPARB,VPARC,VPDMIN,GNIGHT
+        LOGICAL ISMAESPA,ISNIGHT
         integer iday,ihour
         REAL EXTRAPARS(EXTRAPARDIM)
         INTEGER EXTRAINT(10)
@@ -1538,17 +1369,19 @@ REAL FUNCTION PSILOBJFUN(PSILIN, EXTRAPARS, EXTRAINT)
           GK = EXTRAPARS(55)
           
           ISMAESPA = .TRUE.
+          ISNIGHT = .FALSE.
 
         MINLEAFWP = 0  ! Not used in tuzet.
         CI = 0
         KTOT = 0  ! output, not needed.
+        GNIGHT = 0.01  ! not needed as input because psilfind not executed during the night
         
         CALL PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,PRESS,JMAX25, &
              IECO,EAVJ,EDVJ,DELSJ,VCMAX25,EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ,RD0, &
              Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
-             SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+             SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
              VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,  &
-             TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP, WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA)
+             TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP, WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
         
         PSILOBJFUN = PSILIN - PSIL
 

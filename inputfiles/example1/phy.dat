@@ -24,7 +24,7 @@ condunits = 'H2O'
 /
 
 &bbmgs
-dates = '01/01/02'
+datesgs = '01/01/02'
 g0 = 0.001
 g1 = 6.9
 nsides = 2

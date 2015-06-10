@@ -22,7 +22,7 @@ condunits = 'H2O'
 
 Ball-Berry parameters
 &bbgs
-dates = '01/01/01'
+datesgs = '01/01/01'
 g0 = 0.03
 g1 = 7.3
 nsides = 2

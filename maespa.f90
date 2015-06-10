@@ -104,7 +104,7 @@ PROGRAM maespa
                     Q10WTABLESPEC,RMFRSPEC,RMCRSPEC,Q10RSPEC,RTEMPRSPEC,EFFYRFSPEC,RMBSPEC,     &
                     Q10BSPEC,RTEMPBSPEC,GSREFSPEC,GSMINSPEC,PAR0SPEC,D0SPEC,VK1SPEC,VK2SPEC,    &
                     VPD1SPEC,VPD2SPEC,VMFD0SPEC,GSJASPEC,GSJBSPEC,T0SPEC,TREFSPEC,TMAXSPEC,     &
-                    SMD1SPEC,SMD2SPEC,WC1SPEC, WC2SPEC,SWPEXPSPEC,G0TABLESPEC,G1TABLESPEC,      &
+                    SMD1SPEC,SMD2SPEC,WC1SPEC, WC2SPEC,SWPEXPSPEC,GNIGHTSPEC,G0TABLESPEC,G1TABLESPEC,      &
                     GKSPEC,NOGSDATESSPEC,DATESGSSPEC,D0LSPEC,GAMMASPEC,VPDMINSPEC,WLEAFTABLESPEC,&
                     DATESWLEAFSPEC,NOWLEAFDATESSPEC,NSIDESSPEC,           &
                     SFSPEC,PSIVSPEC,VPARASPEC,VPARBSPEC,VPARCSPEC,VFUNSPEC,in_path)
@@ -426,6 +426,7 @@ PROGRAM maespa
                 WC1 = WC1SPEC(ISPEC)          
                 WC2 = WC2SPEC(ISPEC)          
                 SWPEXP = SWPEXPSPEC(ISPEC)       
+                GNIGHT = GNIGHTSPEC(ISPEC)
                 G0TABLE = G0TABLESPEC(1:maxdate,ISPEC)
                 G1TABLE = G1TABLESPEC(1:maxdate,ISPEC)              
                 DATESGS = DATESGSSPEC(1:maxdate,ISPEC)
@@ -838,6 +839,8 @@ PROGRAM maespa
                 ! Test to see if daylight hours or if any foliage
                 IF ((ABS(ZEN(IHOUR)) <  PI/2.0 ) .AND. (RADABV(IHOUR,1) > 1.0) .AND. (FOLT(1) > 0.0)) THEN
                     
+                    ISNIGHT = .FALSE.
+                    
                     ! Get slope correction factor
                     CALL SLOPES(IHOUR,TTIMD,EQNTIM,ALAT,DEC,XSLOPE,YSLOPE,BEAR,ZEN(IHOUR),BMULT,DMULT2,SOMULT)
 
@@ -871,7 +874,7 @@ PROGRAM maespa
                             CALL TRANSB(IHOUR,IPROGUS,ZEN(IHOUR),AZ(IHOUR),XSLOPE,YSLOPE,FBEAM,BEXTTUS,XLU(IPTUS),  &
                                         YLU(IPTUS),ZLU(IPTUS),RXUS,RYUS,RZUS,DXTUS,DYTUS,DZTUS,XMAX,YMAX,SHADEHT,   &
                                         FOLTUS,ZBCUS,JLEAFTUS,BPTTUS,NOAGECTUS,PROPCTUS,JSHAPETUS,SHAPETUS,NOTREES, &
-                                        SUNLA,BEXTUS,BEXTANGTUS,BEXTANGUS)  ! BEXTUS not used...
+                                        SUNLA,BEXTUS,BEXTANGTUS,BEXTANGUS)  
                 
                             ! Output transmittances (Note IWAVE=1 only).
                             PAR = RADABV(IHOUR,1)
@@ -1108,26 +1111,23 @@ PROGRAM maespa
                                     IF (IOHIST.EQ.1) CALL CATEGO(AREA,APAR,HISTO,BINSIZE,ITAR)
                                     
                                     ! Call physiology routine
-                                    CALL PSTRANSPIF(iday,ihour,RELDF(IPT),TU(IPT),TD(IPT),RNET, &
+                                    CALL PSTRANSPIF(IDAY,IHOUR,RELDF(IPT),TU(IPT),TD(IPT),RNET, &
                                                     WINDAH(IHOUR)*WINDLAY(LGP(IPT)), APAR, &
                                                     TAIR(IHOUR),TMOVE,CA(IHOUR),RH(IHOUR),VPD(IHOUR),VMFD(IHOUR),PRESS(IHOUR),  &
                                                     JMAX25(LGP(IPT),IAGE),IECO,EAVJ,EDVJ,DELSJ,VCMAX25(LGP(IPT),IAGE),EAVC,     &
                                                     EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),RD0(LGP(IPT),IAGE),Q10F,    &
                                                     K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,        &
-                                                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF, &
+                                                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF, &
                                                     NSIDES,VPARA,VPARB,VPARC,VFUN, &
                                                     SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK,TOTSOILRES, &
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
-                                                    HMSHAPE,PSIL,ETEST,CI,ISMAESPA)                                    
+                                                    HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)                                    
                                     
-                                    !filling voxel table
+                                    ! Filling voxel table
                                     CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
                                                  TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, ETTABLE, &
                                                  HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
 
-                                    
-
-892     FORMAT (1(I10),6(F10.5,1X))
                                     ! Sum (or average) outputs for the hour
                                     CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL,&
                                                 PSIL,CI,AREA,IHOUR,LGP(IPT),ITAR,&
@@ -1138,7 +1138,7 @@ PROGRAM maespa
                             END DO ! End loop over sunlit / shaded leaves
                         ELSE IF ((MODELSS.EQ.1).OR.(FBEAM(IHOUR,1).EQ.0.0)) THEN 
                             
-                            ! Voxel output initialisation. Christina Mathias July 2014
+                            ! Voxel output initialisation. 
                             CALL ZEROIPTTABLE(TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, &
                                               ETTABLE, HTABLE, GSCTABLE, PSILTABLE, AREATOT,ITAR,IPT)
                             
@@ -1167,11 +1167,11 @@ PROGRAM maespa
                                                 TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),RD0(LGP(IPT),IAGE),Q10F,   &
                                                 K10F,RTEMP,DAYRESP,TBELOW,MODELGS,                              &
                                                 WSOILMETHOD,EMAXLEAF,                                           &
-                                                SOILMOISTURE,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,    &
+                                                SOILMOISTURE,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,    &
                                                 GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,VPARA,VPARB,VPARC,VFUN,SF,PSIV,            &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,                              &
                                                 GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,  &
-                                                KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA)                                        
+                                                KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)                                        
 
    
                                 ! Filling voxel table
@@ -1190,11 +1190,11 @@ PROGRAM maespa
  
                         ELSE IF ((MODELSS.EQ.2).AND.(FBEAM(IHOUR,1).NE.0.0)) THEN 
                             
-                            ! Voxel output initialisation. Christina Mathias July 2014
+                            ! Voxel output initialisation. 
                             CALL ZEROIPTTABLE(TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, &
                                               ETTABLE, HTABLE, GSCTABLE, PSILTABLE, AREATOT,ITAR,IPT)
 
-                            !Calculation total leaf area of the voxel, to use in SUMIPT
+                            ! Calculation total leaf area of the voxel, to use in SUMIPT
                             DO ISUNLIT = 1,NALPHA+1
                                 IF (ISUNLIT.GT.NALPHA) THEN
                                     FAREA = 1.0 - SUNLA
@@ -1238,13 +1238,13 @@ PROGRAM maespa
                                                         EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),           &
                                                         RD0(LGP(IPT),IAGE),Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,      &
                                                         WSOILMETHOD,EMAXLEAF,SOILMOISTURE,SMD1,SMD2,WC1,WC2,            &
-                                                        SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                                                        SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                                                         VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                         ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                         TOTSOILRES,MINLEAFWP, &
-                                                        WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA)
+                                                        WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
 
-                                       !filling voxel table
+                                       ! Filling voxel table
                                         CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
                                                      TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, ETTABLE, &
                                                      HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
@@ -1262,7 +1262,7 @@ PROGRAM maespa
 
                          ! Write sunlit leaf area to file.
                          IF(ISUNLA.EQ.1)THEN
-                             AREA = DLT(IPT) * VL(IPT)  ! LEAF AREA FOR THIS GRIDPOINT               ! Modification Mathias 27/11/2012
+                             AREA = DLT(IPT) * VL(IPT)  ! LEAF AREA FOR THIS GRIDPOINT
                              WRITE(USUNLA, 11221) IDAY, IHOUR, ITREE, IPT, SUNLA, &
                                   AREA, BEXT, &
                                   FBEAM(IHOUR,1), ZEN,ABSRP(LGP(IPT),1),ABSRP(LGP(IPT),2),ABSRP(LGP(IPT),3), &
@@ -1283,6 +1283,8 @@ PROGRAM maespa
                     
                 ELSE ! Night-time
     
+                    ISNIGHT = .TRUE.
+                    
                     ! Loop over grid points 
                     DO IPT = 1,NUMPNT
 
@@ -1307,7 +1309,7 @@ PROGRAM maespa
                                     ABSRP(LGP(IPT),3),DIFDN(IPT,3),DIFUP(IPT,3),DFLUX,BFLUX,SCATFX,DEXTT,TLEAFTABLE)
 
                         !Set initial values for IPT table
-                         CALL ZEROIPTTABLE(TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, &
+                        CALL ZEROIPTTABLE(TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, &
                                               ETTABLE, HTABLE, GSCTABLE, PSILTABLE, AREATOT,ITAR,IPT)
                         
                         ! Absorbed thermal radiation
@@ -1322,11 +1324,29 @@ PROGRAM maespa
               
                         DO IAGE = 1,NOAGEP ! Loop over age classes
                             AREA = DLI(IAGE,IPT) * VL(IPT) ! m2
-                                 
-                            CALL PSTRANSPNIGHT(iday,ihour,RELDF(IPT),TU(IPT),TD(IPT),RNET,WINDAH(IHOUR)*WINDLAY(LGP(IPT)),&
-                                            TAIR(IHOUR),TMOVE,CA(IHOUR),RH(IHOUR),VPD(IHOUR),VMFD(IHOUR),PRESS(IHOUR),&
-                                            IECO,G0,WLEAF,ITERMAX,GSC,ET,HFX,TLEAF,GBH,ISMAESPA)
+                            APAR = 0.0
+                            
+                        
+                            !CALL PSTRANSPNIGHT(iday,ihour,RELDF(IPT),TU(IPT),TD(IPT),RNET,WINDAH(IHOUR)*WINDLAY(LGP(IPT)),&
+                            !                TAIR(IHOUR),TMOVE,CA(IHOUR),RH(IHOUR),VPD(IHOUR),VMFD(IHOUR),PRESS(IHOUR),&
+                            !                IECO,G0,WLEAF,ITERMAX,GSC,ET,HFX,TLEAF,GBH,ISMAESPA)
 
+                            ! Night-time call to PSTRANSP (most parameters not used but passed for consistency).
+                            ! Note : DAYRESP set to 1.0.
+                            CALL PSTRANSPIF(IDAY,IHOUR,RELDF(IPT),TU(IPT),TD(IPT),RNET, &
+                                                WINDAH(IHOUR)*WINDLAY(LGP(IPT)),  &
+                                                APAR,TAIR(IHOUR),TMOVE,CA(IHOUR),RH(IHOUR),VPD(IHOUR),          &
+                                                VMFD(IHOUR),PRESS(IHOUR),JMAX25(LGP(IPT),IAGE),IECO,            &
+                                                EAVJ,EDVJ,DELSJ,VCMAX25(LGP(IPT),IAGE),                         &
+                                                EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),           &
+                                                RD0(LGP(IPT),IAGE),Q10F,K10F,RTEMP,1.0,TBELOW,MODELGS,      &
+                                                WSOILMETHOD,EMAXLEAF,SOILMOISTURE,SMD1,SMD2,WC1,WC2,            &
+                                                SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                                                VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
+                                                ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
+                                                TOTSOILRES,MINLEAFWP, &
+                                                WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
+                                                                    
                             
                             ! Filling voxel table
                             CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
