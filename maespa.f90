@@ -42,7 +42,7 @@ PROGRAM maespa
     USE maindeclarations
     
     IMPLICIT NONE
-    REAL, EXTERNAL :: AVERAGEVAL,CALCRMW,TK,ETCAN,RESP,GRESP,ETCANNIGHT
+    REAL, EXTERNAL :: AVERAGEVAL,CALCRMW,TK,ETCAN,RESP,GRESP
    
     ! Set program flag
     IPROG = INORMAL
@@ -1489,22 +1489,9 @@ PROGRAM maespa
                 ! average leaf temperature
                 TCAN2=0.
                 DO I=1,NOTARGETS
-                    tcan2 = tcan2 + TCAN(I,IHOUR)
+                    TCAN2 = TCAN2 + TCAN(I,IHOUR)
                 ENDDO
-                    tcan2 = tcan2 / NOTARGETS
-
-                ! Test to see if daylight hours or if any foliage ! 
-!                IF ((ABS(ZEN(IHOUR)) >  PI/2.0 ) .AND. (RADABV(IHOUR,1) < 1.0)) THEN
-!                        DMEAN = 0.0
-!                        DO IZEN=1,NZEN
-!                            DMEAN = DMEAN + DEXTT(1,IZEN)   ! guerric 04/14
-!                        END DO
-!                        DMEAN = DMEAN/REAL(NZEN)
-
-!                    ETMM = ETCANNIGHT(WINDAH(IHOUR),ZHT,PRESS(IHOUR),TAIR(IHOUR),RADINTERC,VPD(IHOUR),  &
-!                                      TREEH,EXTWIND,WLEAF,TOTLAI,&
-!                                      RADABV(IHOUR,1),DMEAN,g0) *SPERHR * 1E-06 * 18 * 1E-03 ! *kg m-2 s-1
-!                END IF
+                    TCAN2 = TCAN2 / NOTARGETS
 
                 ! Calculation of a new VPD and Tair within the canopy based on the heat balance of Chourdhury et al. 1988
                 CALL TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIR(IHOUR),TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,& 
