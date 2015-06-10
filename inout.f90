@@ -1162,8 +1162,15 @@ SUBROUTINE READSOILEVAPPARS(UFILE, DRYTHICKMINI, TORTPARI)
     REWIND(UFILE)
     READ (UFILE, SOILETPARS, IOSTAT = IOERROR)
 
+    ! If TORTPAR > 1, it is defined as 'true' tortuosity. The MAESPA default is < 1, which is really the
+    ! inverse tortuosity. Note QEFLUX assumes inverse tortuosity. Fix input here if needed.
+    IF(TORTPAR.GT.1.0) THEN
+        TORTPAR = 1.0 / TORTPAR
+    ENDIF
+    
+    
     IF (IOERROR.NE.0) THEN
-        CALL SUBERROR('ERROR READING SOIL EVAP PARAMETERS',IFATAL,IOERROR)
+        CALL SUBERROR('ERROR READING SOIL EVAPORATION PARAMETERS (SOILETPARS)',IFATAL,IOERROR)
     END IF
 
     DRYTHICKMINI=DRYTHICKMIN

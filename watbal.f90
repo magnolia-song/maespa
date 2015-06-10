@@ -1427,8 +1427,7 @@ END SUBROUTINE INITWATBAL
 
         ! Soil conductance to water vapour diffusion, m s-1.
         ! Choudhury and Monteith (1988), Eq. 41b.
-!        GWS = EFFDIFF * (POREFRAC1 / DRYTHICK)
-        GWS = DIFF * POREFRAC1 / (TORTPAR*DRYTHICK)     ! M. Christina septembre 2014
+        GWS = EFFDIFF * (POREFRAC1 / DRYTHICK)
 
         ! Total conductance.
         GWSTOT = 1. / (1./GAMSOIL + 1./GWS)
