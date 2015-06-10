@@ -1057,7 +1057,7 @@ END SUBROUTINE INITWATBAL
         ! Error check.
         FRACSUM = SUM(FRACUPTAKE(1:NROOTLAYER))
         IF(FRACSUM.GT.0.AND.FRACSUM.LT.(1.0 - 1E-05))THEN
-            CALL SUBERROR('Warning: FRACUPTAKE sum is greater than 1.0.',IWARN,0)
+            WRITE(*,*)'Warning: FRACUPTAKE sum is',FRACSUM
         ENDIF
 
         ! Use Taylor-Keppler root water uptake distribution.
@@ -1242,7 +1242,7 @@ END SUBROUTINE INITWATBAL
         GCAN = 1E09  ! an arbitrary large number (~Inf).
 
 ! Set VPD to near zero if it is raining (otherwise get very high wet evaporation rates).
-        IF(PPT.GT.0.0)VPDPA = 1
+!        IF(PPT.GT.0.0)VPDPA = 1
 
 ! Potential evaporation from a wet canopy in mu mol m-2 s-1.
         POTEVAPMUMOL = ETCAN(WIND,ZHT,Z0HT,ZPD, &
@@ -1637,9 +1637,8 @@ END SUBROUTINE INITWATBAL
         
         ! Error check:
         CHECKSUM = SUM(FRACIN(1:NLAYER))
-        IF(ABS(CHECKSUM - 1.0).GT.1E-06)THEN
-            CALL SUBERROR('WARNING: FRACIN does not sum to one', IWARN, 0)
-        ENDIF
+        IF(ABS(CHECKSUM - 1.0).GT.1E-06)WRITE(*,*) &
+                   'WARNING: FRACIN does not sum to one'
 
         ! Initialize pool of water that does not fit, and gets carried t
         WLEFTOVER = 0.0
