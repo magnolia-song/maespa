@@ -21,7 +21,7 @@ condunits='H2O'
 Stomatal conductance model for Medlyn et al. 2011 (GCB).
 Used when MODELGS=4 in confile.dat
 &bbmgs
-dates='01/01/08'
+datesgs='01/01/08'
 g0 = 0.01
 g1 = 4.5
 nsides = 1
