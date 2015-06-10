@@ -301,6 +301,7 @@ END FUNCTION RHOFUN
 ! Bisection routine; finds the root of FUNC in the interval (X1,X2)
 !**********************************************************************
     USE maestcom
+    USE switches
     IMPLICIT NONE
 
     INTEGER ITMAX,ITER
@@ -318,9 +319,11 @@ END FUNCTION RHOFUN
     IF((FA.GT.0..AND.FB.GT.0.).OR.(FA.LT.0..AND.FB.LT.0.))THEN
         FA=FUNC(A, EXTRAPARS, EXTRAINT)
         FB=FUNC(B, EXTRAPARS, EXTRAINT)
-        !WRITE(*,*)' 	    FA		  FB		  X1		    X2'
-        !WRITE(*,*)FA,FB,X1,X2
-        !WRITE(*,*)'ROOT MUST BE BRACKETED FOR ZBRENT'
+        IF(VERBOSE.GE.3)THEN
+            WRITE(*,*)' 	    FA		  FB		  X1		    X2'
+            WRITE(*,*)FA,FB,X1,X2
+            WRITE(*,*)'ROOT MUST BE BRACKETED FOR ZBRENT'
+        ENDIF
         FA=FUNC(A, EXTRAPARS, EXTRAINT)
         FB=FUNC(B, EXTRAPARS, EXTRAINT)
     ENDIF
@@ -380,7 +383,7 @@ END FUNCTION RHOFUN
         ENDIF
         FB=FUNC(B, EXTRAPARS, EXTRAINT)
     END DO
-    !WRITE(*,*) 'ZBRENT EXCEEDING MAXIMUM ITERATIONS'
+    IF(VERBOSE.GE.3)WRITE(*,*) 'ZBRENT EXCEEDING MAXIMUM ITERATIONS'
     ZBRENT=B
     RETURN
 END FUNCTION ZBRENT
@@ -395,6 +398,7 @@ SUBROUTINE ODEINT(YSTART,NVAR,X1,X2,EPS,H1,HMIN,NOK,NBAD,DERIVS,EXTRAPARS)
 !**********************************************************************
 
     USE maestcom
+    USE switches
     IMPLICIT NONE
 
     INTEGER NBAD,NOK,NVAR
@@ -454,7 +458,9 @@ SUBROUTINE ODEINT(YSTART,NVAR,X1,X2,EPS,H1,HMIN,NOK,NBAD,DERIVS,EXTRAPARS)
         ENDIF
         RETURN
     ENDIF
-    IF(ABS(HNEXT).LT.HMIN) WRITE(*,*)'STEPSIZE SMALLER THAN MINIMUM IN ODEINT'
+    IF(ABS(HNEXT).LT.HMIN.AND.VERBOSE.GE.3)THEN
+        WRITE(*,*)'STEPSIZE SMALLER THAN MINIMUM IN ODEINT'
+    ENDIF
         H=HNEXT
     END DO
     RETURN
@@ -504,6 +510,7 @@ SUBROUTINE RKQS(Y,DYDX,N,X,HTRY,EPS,YSCAL,HDID,HNEXT,DERIVS,EXTRAPARS)
 !**********************************************************************
 
     USE maestcom
+    USE switches
     IMPLICIT NONE                                                            
     INTEGER N                                                                     
     REAL EPS,HDID,HNEXT,HTRY,X,DYDX(N),Y(N),YSCAL(N)                              
@@ -533,7 +540,7 @@ SUBROUTINE RKQS(Y,DYDX,N,X,HTRY,EPS,YSCAL,HDID,HNEXT,DERIVS,EXTRAPARS)
         H=SIGN(MAX(ABS(HTEMP),0.1*ABS(H)),H)
         XNEW=X+H
         IF(XNEW.EQ.X)THEN
-            WRITE(*,*) 'STEPSIZE UNDERFLOW IN RKQS'
+            IF(VERBOSE.GE.3)WRITE(*,*) 'STEPSIZE UNDERFLOW IN RKQS'
         ENDIF
         GOTO 111
     ELSE

@@ -9,6 +9,7 @@ MODULE switches
     INTEGER :: IOWATBAL     ! Controls water balance output
     INTEGER :: IOFORMAT     ! default, write is ascii
     INTEGER :: ISUNLA       ! Controls output of sunlit leaf areas
+    INTEGER :: VERBOSE      ! Controls messages written to screen
 
     
 END MODULE switches 

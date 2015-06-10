@@ -1063,7 +1063,7 @@ END SUBROUTINE INITWATBAL
         ! Error check.
         FRACSUM = SUM(FRACUPTAKE(1:NROOTLAYER))
         IF(FRACSUM.GT.0.AND.FRACSUM.LT.(1.0 - 1E-05))THEN
-            WRITE(*,*)'Warning: FRACUPTAKE sum is',FRACSUM
+            CALL SUBERROR('Warning: FRACUPTAKE sum is greater than 1.0.',IWARN,0)
         ENDIF
 
         ! Use Taylor-Keppler root water uptake distribution.
@@ -1643,8 +1643,9 @@ END SUBROUTINE INITWATBAL
         
         ! Error check:
         CHECKSUM = SUM(FRACIN(1:NLAYER))
-        IF(ABS(CHECKSUM - 1.0).GT.1E-06)WRITE(*,*) &
-                   'WARNING: FRACIN does not sum to one'
+        IF(ABS(CHECKSUM - 1.0).GT.1E-06)THEN
+            CALL SUBERROR('WARNING: FRACIN does not sum to one', IWARN, 0)
+        ENDIF
 
         ! Initialize pool of water that does not fit, and gets carried t
         WLEFTOVER = 0.0

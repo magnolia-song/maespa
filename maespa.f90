@@ -82,7 +82,7 @@ PROGRAM maespa
                     MODELGS, MODELJM, MODELRD, MODELSS, MODELRW, ITERMAX, IOHIST,   &
                     BINSIZE,ICC, CO2INC, TINC,IOTC, TOTC, WINDOTC, PAROTC,          &
                     FBEAMOTC, IWATFILE, IUSTFILE, ISIMUS, NSPECIES, SPECIESNAMES,   &
-                    PHYFILES, STRFILES,ITERTAIRMAX )
+                    PHYFILES, STRFILES,ITERTAIRMAX)
     
     ! Get input from canopy structure file
     CALL INPUTSTR(NSPECIES,STRFILES,JLEAFSPEC,BPTTABLESPEC,RANDOMSPEC,NOAGECSPEC,    &
@@ -182,7 +182,7 @@ PROGRAM maespa
     
     IDAY = 0
     DO WHILE (ISTART + IDAY <= IEND)
-        WRITE(*,105) IDAY
+        IF(VERBOSE.GE.1)WRITE(*,105) IDAY
         105 FORMAT('  DAY:',I5)
        
         !**********************************************************************
@@ -1487,13 +1487,13 @@ PROGRAM maespa
                                             WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP)
 
                     IF ((ABS(TAIRNEW - TAIR(IHOUR)).LT.TOL)) THEN
-                        print*, 'ihou',ihour,'convergence', ITERTAIR
+                        IF(VERBOSE.GE.2)print*, 'ihou',ihour,'convergence', ITERTAIR
                         ITERTAIR = ITERTAIRMAX - 1
                         PREVTAIRCAN = TAIRNEW
                         PREVVPDCAN = VPDNEW
                         GOTO 1112                 
                     ELSE IF ((ITERTAIR.EQ.ITERTAIRMAX)) THEN    
-                        print*, 'ihou',ihour,'no convergence'
+                        IF(VERBOSE.GE.2)print*, 'ihou',ihour,'no convergence'
                         PREVTAIRCAN = PREVTAIRCAN
                         PREVVPDCAN = PREVVPDCAN
                         GOTO 1112
