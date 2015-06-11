@@ -14,6 +14,7 @@ MODULE maestcom
     INTEGER, PARAMETER :: MAXANG = 20!11          ! Maximum no. of zenith & leaf angles
     INTEGER, PARAMETER :: MAXD = 13           ! For resp prog
     INTEGER, PARAMETER :: MAXDATE = 45!30      ! Maximum no. of dates for tree or physiol parameters
+    INTEGER, PARAMETER :: MAXECHLAYER = 1000   ! Maximum number of elementary layers in equiv. horizontal canopy (EHC,ASSIGN,CHART)
     !INTEGER, PARAMETER :: maxdate = 5        ! Maximum no. of dates for physiol parameters
     !INTEGER, PARAMETER :: MAXMET = 18         ! Maximum columns in met data file
     ! changed by mgdk, just to try and compile, not 18 but MHET has 20?!!
