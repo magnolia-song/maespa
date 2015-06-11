@@ -156,7 +156,7 @@ END SUBROUTINE INITWATBAL
                             WIND, ZHT, Z0HT, GAMSOIL, &
                             WEIGHTEDSWP,TOTESTEVAP,   &
                             FRACUPTAKE,TOTSOILRES,ALPHARET,WS,WR,NRET,ZBC,RZ,&
-                            ZPD, NOTREES, EXTWIND) 
+                            ZPD, NOTREES, EXTWIND,IWATTABLAYER,ISIMWATTAB) 
 
 ! Calculates soil water potential, hydraulic conductivity,
 ! soil-to-root hydraulic conductance (leaf specific), thermal
@@ -185,6 +185,7 @@ END SUBROUTINE INITWATBAL
       REAL ZBC(MAXT),RZ(MAXT), EXTWIND, GBCANMS1
       REAL TREEH,ZPD    ! for aerodynamic conductance calculation
       INTEGER J, NOTREES
+      INTEGER IWATTABLAYER,ISIMWATTAB
       
       REAL, EXTERNAL :: SOILCONDFUN
       REAL, EXTERNAL :: THERMCONDFUN
@@ -198,13 +199,25 @@ END SUBROUTINE INITWATBAL
           SOILWP(I) = SOILWPFUN(FRACWATER(I),PSIE(I),BPAR(I), &
              POREFRAC(I),ALPHARET(I),WS(I),WR(I),NRET(I),RETFUNCTION)
           SOILCOND(I) = SOILCONDFUN(FRACWATER(I),KSAT(I), &
-             BPAR(I),POREFRAC(I),WS(I),WR(I),NRET(I),RETFUNCTION)
+             BPAR(I),POREFRAC(I),WS(I),WR(I),ALPHARET(I),NRET(I),RETFUNCTION)
           THERMCOND(I) = THERMCONDFUN(I, SOILWP(I), FRACWATER(I), &
                                       POREFRAC(I), BPAR(I), &
                                       FRACORGANIC(I),RETFUNCTION)
-
       ENDDO
-      
+
+! all layer below the water table are saturated with water (around 40% normaly)
+      IF ((ISIMWATTAB.EQ.1).AND.(IWATTABLAYER.LE.NLAYER)) THEN
+          DO I = IWATTABLAYER, NLAYER
+              SOILWP(I) = SOILWPFUN(WS(I),PSIE(I),BPAR(I), &
+                 WS(I),ALPHARET(I),WS(I),WR(I),NRET(I),RETFUNCTION)
+              SOILCOND(I) = SOILCONDFUN(WS(I),KSAT(I), &
+                 BPAR(I),WS(I),WS(I),WR(I),ALPHARET(I),NRET(I),RETFUNCTION)
+              THERMCOND(I) = THERMCONDFUN(I, SOILWP(I), WS(I), &
+                                          WS(I), BPAR(I), &
+                                          FRACORGANIC(I),RETFUNCTION)
+          ENDDO
+      END IF              
+
 ! Calculate soil conductivity and soil-to-root resistance if using measured soil water content.
       IF(USEMEASSW.EQ.1)THEN
 
@@ -262,7 +275,8 @@ END SUBROUTINE INITWATBAL
                               KSAT,BPAR,WSOIL,WSOILROOT,DISCHARGE, &
                               DRYTHICKMIN,DRYTHICK,QEMM,OVERFLOW, &
                               WATERGAIN,WATERLOSS,PPTGAIN,KEEPWET, &
-                              EXPINF,WS,WR,NRET,RETFUNCTION)
+                              EXPINF,WS,WR,PSIE,ALPHARET,NRET,RETFUNCTION,SOILWP,&
+                              IWATTABLAYER,ISIMWATTAB,PLATDRAIN,WATCAPIL)
 
 ! Do water balance for layered soil.
 ! Replaces subroutines WATERFLUXES and WATERTHERMAL in SPA
@@ -294,6 +308,10 @@ END SUBROUTINE INITWATBAL
         REAL WATERCONTENT,ICECONTENT
         REAL, EXTERNAL :: HEATEVAP
         REAL WS(MAXSOILLAY),WR(MAXSOILLAY),NRET(MAXSOILLAY)
+        REAL PSIE(MAXSOILLAY), ALPHARET(MAXSOILLAY)
+        INTEGER IWATTABLAYER,ISIMWATTAB,K 
+        REAL WATERGAINCAPIL(MAXSOILLAY), SOILWP(MAXSOILLAY)
+        REAL LDRAIN(MAXSOILLAY),PLATDRAIN, WATCAPIL
         
 !       Conversions
         SOILTC = SOILTK - FREEZE
@@ -308,6 +326,7 @@ END SUBROUTINE INITWATBAL
         WATERLOSS = 0.
         WATERGAIN = 0.
         SNOW = 0.
+        DISCHARGE = 0.
 
 !       mm t-1 (mm per timestep)
         QEMM = (-QE/LAMBDASOIL)*SPERHR
@@ -384,16 +403,42 @@ END SUBROUTINE INITWATBAL
         check4 = sum(waterloss(1:nrootlayer))
         
   
+!       Calculate capilary rising to each layer
+        IF (ISIMWATTAB.EQ.1) THEN
+            DO J = 1,NLAYER
+                CALL SOIL_CAPILARY(J, POREFRAC, FRACWATER, LAYTHICK,SOILWP, &
+                                   KSAT, BPAR,WS,WR,NRET,PSIE,ALPHARET,RETFUNCTION, &
+                                   IWATTABLAYER, WATERGAINCAPIL,WATERGAIN,WATERLOSS)
+            END DO
+            ! capilary rising from the wat tab layer
+            WATCAPIL = 1000 * WATERGAINCAPIL(IWATTABLAYER-1)  
+        ELSE 
+            WATERGAINCAPIL = 0.0
+            WATCAPIL = 0.0
+        END IF        
         
 !       Calculate drainage for each soil layer
-        DO J = 1,NLAYER
+        ! Attention if there is capillary rising there should not have drainage
+        DO J = 1,NLAYER     
         CALL SOIL_BALANCE(J, POREFRAC, ICEPROP, FRACWATER, &
                           LAYTHICK, DRAINLIMIT(J), WATERLOSS, WATERGAIN, &
-                          KSAT(J), BPAR(J),WS(J),WR(J),NRET(J),RETFUNCTION)
+                          KSAT(J), BPAR(J),WS(J),WR(J),ALPHARET(J),NRET(J),RETFUNCTION,&
+                          LDRAIN,PLATDRAIN, WATERGAINCAPIL)
+
         ENDDO
         
-! Loss of water at lowest soil layer (discharge, or deep drainage) (mm).
-        DISCHARGE = 1000 * WATERGAIN(NLAYER + 1)
+        ! Loss of water at lowest soil layer (discharge, or deep drainage) (mm).
+        IF (ISIMWATTAB.EQ.0) THEN
+            DISCHARGE = 1000 * WATERGAIN(NLAYER + 1)
+            DO K=1,nlayer
+                DISCHARGE=DISCHARGE 
+            ENDDO
+        ELSE
+            ! Discharge = lateral drainage from the water table
+            DO K=1,IWATTABLAYER-1
+                DISCHARGE=DISCHARGE + 1000*LDRAIN(K)
+            ENDDO
+        END IF
 
 !       Infiltration of water reaching the surface
 !       NOTE: WATERGAIN and WATERLOSS are not updated here.
@@ -403,9 +448,12 @@ END SUBROUTINE INITWATBAL
         CALL INFILTRATE(SURFACE_WATERMM,NLAYER,POREFRAC,FRACWATER, &
                         LAYTHICK,WATERGAIN,WATERLOSS, &
                         EXPINF,PPTGAIN,OVERFLOW)
+
+
+        IF (ISIMWATTAB.EQ.0)  IWATTABLAYER = NLAYER+1  ! to avoid bug
         
 !       Add and subtract gains and losses for each layer
-        DO J = 1,NLAYER
+        DO J = 1,MIN(NLAYER,IWATTABLAYER-1)
 
           ! Option to not change initial soil water.
           IF(KEEPWET.NE.1)THEN
@@ -415,8 +463,36 @@ END SUBROUTINE INITWATBAL
 
           ICECONTENT = (FRACWATER(J)*ICEPROP(J))*LAYTHICK(J)
 
-          WATERCONTENT = MAX(0., WATERCONTENT + WATERGAIN(J) + &
-              PPTGAIN(J) - WATERLOSS(J))
+            IF (RETFUNCTION.EQ.3) THEN
+
+              IF (ISIMWATTAB.EQ.1) THEN
+                  IF (J.EQ.1) THEN
+                      WATERCONTENT = MAX(WR(J)*LAYTHICK(J), WATERCONTENT + WATERGAIN(J) + &
+                        PPTGAIN(J) - WATERLOSS(J) + WATERGAINCAPIL(J))
+                  ELSE    
+                      WATERCONTENT = MAX(WR(J)*LAYTHICK(J), WATERCONTENT + WATERGAIN(J) + &
+                        PPTGAIN(J) - WATERLOSS(J) + WATERGAINCAPIL(J) - WATERGAINCAPIL(J-1))
+                  END IF
+              ELSE
+                      WATERCONTENT = MAX(WR(J)*LAYTHICK(J), WATERCONTENT + WATERGAIN(J) + &
+                  PPTGAIN(J) - WATERLOSS(J))
+                
+              END IF              
+            ELSE
+              IF (ISIMWATTAB.EQ.1) THEN
+                  IF (J.EQ.1) THEN
+                      WATERCONTENT = MAX(0., WATERCONTENT + WATERGAIN(J) + &
+                        PPTGAIN(J) - WATERLOSS(J) + WATERGAINCAPIL(J))
+                  ELSE    
+                      WATERCONTENT = MAX(0., WATERCONTENT + WATERGAIN(J) + &
+                        PPTGAIN(J) - WATERLOSS(J) + WATERGAINCAPIL(J) - WATERGAINCAPIL(J-1))
+                  END IF
+              ELSE
+                      WATERCONTENT = MAX(0., WATERCONTENT + WATERGAIN(J) + &
+                  PPTGAIN(J) - WATERLOSS(J))
+                
+              END IF
+            ENDIF
 
           ! Volumetric water content
           FRACWATER(J) = (WATERCONTENT+ICECONTENT) / LAYTHICK(J)
@@ -435,10 +511,20 @@ END SUBROUTINE INITWATBAL
 ! Do error checking here...
         ENDDO
 
-! Total soil water storage in rooted zone
+! Layers below the IWATTABLAYER are by definition saturated with water
+        DO J=MIN(NLAYER+1,IWATTABLAYER),NLAYER+1
+            FRACWATER(J) = WS(J)
+        END DO
+
+! Total soil water storage 
         WSOILROOT = 0.
         DO J = 1,NROOTLAYER
+!         Total soil water storage in rooted zone
           WSOILROOT = WSOILROOT + FRACWATER(J)*LAYTHICK(J)*1000
+        END DO
+        DO J = 1,MIN(NLAYER,(IWATTABLAYER-1))
+!         Total soil water storage (mm)
+          WSOIL = WSOIL + FRACWATER(J)*LAYTHICK(J)*1000
         ENDDO
 
         RETURN
@@ -722,7 +808,7 @@ END SUBROUTINE INITWATBAL
 
 !**********************************************************************
 
-      REAL FUNCTION SOILCONDFUN(WATERCONTENT,KSAT,BPAR,POROSITY,WS,WR,N,RETFUNCTION)
+      REAL FUNCTION SOILCONDFUN(WATERCONTENT,KSAT,BPAR,POROSITY,WS,WR,ALPHARET,N,RETFUNCTION)
 
 ! Soil hydraulic conductivity, using the Campbell (1974) equation. or the van Genutchen equation
 ! Inputs:
@@ -735,7 +821,7 @@ END SUBROUTINE INITWATBAL
       IMPLICIT NONE
       INTEGER RETFUNCTION
       REAL KSAT,WATERCONTENT,BPAR,POROSITY
-      REAL WS,WR,N,ALPHAPOT
+      REAL WS,WR,N,ALPHAPOT,ALPHARET
 
       IF (RETFUNCTION.EQ.1.OR.RETFUNCTION.EQ.2) THEN
         ! Campbell 1974
@@ -744,10 +830,9 @@ END SUBROUTINE INITWATBAL
         ! van genuchten
           IF (WATERCONTENT.LE.WR) THEN
               SOILCONDFUN = 0
-          ELSE IF (WATERCONTENT.GT.WS) THEN
+          ELSE IF (WATERCONTENT.GE.WS) THEN
               SOILCONDFUN = KSAT
           ELSE
-!              ALPHAPOT = (( (WS - WR)/(WATERCONTENT-WR) )**(N/(N-1)) - 1) ** (1/N)
               ALPHAPOT = (( (WS - WR)/(WATERCONTENT-WR) )**(N/(N-1)) - 1) ** (1/N)
               SOILCONDFUN = KSAT * (1 - ALPHAPOT**(N-1) * ( 1+ ALPHAPOT**N )**(-1+1/N) ) **2   &
                             / (1 + ALPHAPOT**N)**(1/2 - 1/(2*N))
@@ -1450,7 +1535,8 @@ END SUBROUTINE INITWATBAL
         SUBROUTINE SOIL_BALANCE(J, POREFRAC,ICEPROP,FRACWATER, &
                                 LAYTHICK, &
                                 DRAINLIMIT, WATERLOSS, WATERGAIN, &
-                                KSAT, BPAR,WS,WR,NRET,RETFUNCTION)
+                                KSAT, BPAR,WS,WR,ALPHARET,NRET,RETFUNCTION,&
+                                LDRAIN,PLATDRAIN,WATERGAINCAPIL)
 
 ! Integrator for soil gravitational drainage.
 ! J is the current soil layer.
@@ -1464,16 +1550,18 @@ END SUBROUTINE INITWATBAL
         INTEGER RETFUNCTION
         REAL DXSAV,EPS,H1,HMIN,X(KMAXX),Y(NMAX,KMAXX),X1,X2
         REAL YSTART(1),KSAT,BPAR,LIQUID,UNSAT,NEWWF,CHANGE
-        REAL WS,WR,NRET
+        REAL WS,WR,NRET,ALPHARET
         REAL POREFRAC(MAXSOILLAY),ICEPROP(MAXSOILLAY)
         REAL LAYTHICK(MAXSOILLAY)
-        REAL FRACWATER(MAXSOILLAY)
+        REAL FRACWATER(MAXSOILLAY), WATERGAINCAPIL(MAXSOILLAY)
         REAL WATERLOSS(MAXSOILLAY), WATERGAIN(MAXSOILLAY)
         REAL EXTRAPARS(EXTRAPARDIM)   ! Soil parameters to be passed to ODEINT.
-        REAL DRAINLIMIT
+        REAL DRAINLIMIT, LDRAIN(MAXSOILLAY),PLATDRAIN, PLATDRAINDEPTH
         
         ! Names of functions/subroutines to be passed to ODEINT
         EXTERNAL SOILSTOR
+        REAL, EXTERNAL :: SOILCONDFUN   ! Mathias
+        REAL KSOIL
         
         ! I probably want to get rid of common blocks,
         ! instead make these pars in maestcom???
@@ -1496,6 +1584,14 @@ END SUBROUTINE INITWATBAL
         UNSAT = MAX(0.,(POREFRAC(J+1) - FRACWATER(J+1)) * &
              LAYTHICK(J+1)/LAYTHICK(J))
 
+        ! Lateral drainage only for almost saturated layers (soil layers within the water table)
+        PLATDRAINDEPTH = 0.
+        IF(J.NE.1) THEN
+            IF(FRACWATER(J+1).GE.(POREFRAC(J+1)-0.005)) THEN
+                PLATDRAINDEPTH = PLATDRAIN
+            ENDIF
+        ENDIF 
+
         ! Array of parameters to be passed to ODEINT
         EXTRAPARS(1) = KSAT
         EXTRAPARS(2) = BPAR
@@ -1507,6 +1603,8 @@ END SUBROUTINE INITWATBAL
         EXTRAPARS(8) = WR
         EXTRAPARS(9) = NRET 
         EXTRAPARS(10)= RETFUNCTION
+        EXTRAPARS(11)= PLATDRAINDEPTH
+        EXTRAPARS(12)= ALPHARET
 
         ! If there is liquid water, integrate the drainage routine.
         IF((LIQUID.GT.0.).AND.(FRACWATER(J).GT. &
@@ -1524,9 +1622,20 @@ END SUBROUTINE INITWATBAL
 
                 ! Convert from waterfraction to absolute amount (m)
                 CHANGE = (FRACWATER(J) - NEWWF) * LAYTHICK(J)
-                WATERGAIN(J+1) = WATERGAIN(J+1) + CHANGE
-                WATERLOSS(J) = WATERLOSS(J) + CHANGE
 
+                ! If there is capillary rising there should not have drainage
+                IF (WATERGAINCAPIL(J).GT.0.0) THEN
+                        CHANGE = 0.0
+                END IF
+                WATERGAIN(J+1) = WATERGAIN(J+1) + CHANGE 
+
+                KSOIL = SOILCONDFUN(FRACWATER(J),KSAT,BPAR,POREFRAC(J),&
+                                    WS,WR,ALPHARET,NRET,RETFUNCTION)
+                
+                LDRAIN(J) = KSOIL*SPERHR * (PLATDRAINDEPTH)  ! lateral drainage decrease with soilwater content
+                
+                WATERLOSS(J) = WATERLOSS(J) + CHANGE + LDRAIN(J)
+                
         ENDIF
         
         RETURN
@@ -1548,6 +1657,7 @@ END SUBROUTINE INITWATBAL
         REAL DRAINAGE,KSAT,LIQUID,KSOIL
         REAL EXTRAPARS(EXTRAPARDIM)
         REAL BPAR,SOILPOR,DRAINLIMIT,UNSAT,WS,WR,NRET
+        REAL PLATDRAIN2,ALPHARET
         REAL, EXTERNAL :: SOILCONDFUN
 
         ! Extra parameters in an array:
@@ -1561,10 +1671,12 @@ END SUBROUTINE INITWATBAL
         WR=EXTRAPARS(8)
         NRET=EXTRAPARS(9)
         RETFUNCTION = EXTRAPARS(10)
+        PLATDRAIN2 = EXTRAPARS(11)
+        ALPHARET = EXTRAPARS(12)
 
         ! Soil hydraulic conductivity and drainage.
-        KSOIL = SOILCONDFUN(Y(1),KSAT,BPAR,SOILPOR,WS,WR,NRET,RETFUNCTION)
-        DRAINAGE = KSOIL*SPERHR
+        KSOIL = SOILCONDFUN(Y(1),KSAT,BPAR,SOILPOR,WS,WR,ALPHARET,NRET,RETFUNCTION)
+        DRAINAGE = KSOIL*SPERHR * (1-PLATDRAIN2)
 
         ! Gravitational drainage above a given percentage of porosity.
         IF(Y(1).LE.DRAINLIMIT*SOILPOR)THEN
@@ -1583,6 +1695,73 @@ END SUBROUTINE INITWATBAL
 
         ! Waterloss from this layer
         DYDT(1)= -DRAINAGE
+
+        RETURN
+    END
+
+
+
+    
+            SUBROUTINE SOIL_CAPILARY(J, POREFRAC, FRACWATER, LAYTHICK,SOILWP, &
+                               KSAT, BPAR,WS,WR,NRET,PSIE, ALPHARET, &
+                                RETFUNCTION, IWATTABLAYER, &
+                                WATERGAINCAPIL, WATERGAIN,WATERLOSS)
+
+! Determines capilary rising Christina august 2014
+!**********************************************************************
+
+        USE maestcom
+        IMPLICIT NONE
+        INTEGER J, RETFUNCTION, IWATTABLAYER, TIME
+        REAL WATERGAINCAPIL(MAXSOILLAY),SOILWP(MAXSOILLAY),FRACWATER(MAXSOILLAY)
+        REAL KSAT(MAXSOILLAY),KSOIL,LAYTHICK(MAXSOILLAY)
+        REAL BPAR(MAXSOILLAY),POREFRAC(MAXSOILLAY),WS(MAXSOILLAY)
+        REAL WR(MAXSOILLAY),NRET (MAXSOILLAY), SWP1,SWP2,SWCLAY
+        REAL PSIE(MAXSOILLAY), ALPHARET(MAXSOILLAY)
+        REAL KSOIL1,KSOIL2,WATERFLUXCAPIL, UNSAT,DELTASWP
+        REAL WATERGAIN(MAXSOILLAY), WATERLOSS(MAXSOILLAY)
+        REAL, EXTERNAL :: SOILCONDFUN
+        REAL, EXTERNAL :: SOILWPFUN
+        
+
+        ! Hydraulic conductivity layer below and above at the beginning and Soil Water potential
+        ! the +0.00001 term is to avoid extrem case when roots dry the layer juste above the water table
+
+        KSOIL1 = SOILCONDFUN(FRACWATER(J),KSAT(J),BPAR(J),POREFRAC(J)+0.00001,&
+                            WS(J)+0.00001,WR(J)-0.00001,ALPHARET(J),NRET(J),RETFUNCTION)
+        KSOIL2 = SOILCONDFUN(FRACWATER(J+1),KSAT(J+1),BPAR(J+1),POREFRAC(J+1)+0.00001,&
+                            WS(J+1)+0.00001,WR(J+1)-0.00001,ALPHARET(J+1),NRET(J+1),RETFUNCTION)
+        SWP2 = SOILWPFUN(FRACWATER(J+1),PSIE(J+1),BPAR(J+1), &
+             POREFRAC(J+1)+0.00001,ALPHARET(J+1),WS(J+1)+0.00001, &
+             WR(J+1)-0.00001,NRET(J+1),RETFUNCTION)
+        SWP1 = SOILWPFUN(FRACWATER(J),PSIE(J),BPAR(J), &
+             POREFRAC(J)+0.00001,ALPHARET(J),WS(J)+0.00001,WR(J)-0.00001,NRET(J),RETFUNCTION)
+        
+        DELTASWP = (SWP2 - SWP1) * 1000000/(1000*9.81*0.5*(LAYTHICK(J)+LAYTHICK(J+1)))
+        IF((DELTASWP.GT.1).AND.(J.GT.5)) THEN
+            
+            ! We apply the Richards equations at a 1 second time step over the step within MAESPA
+            SWCLAY = FRACWATER(J)
+            DO TIME = 1,SPERHR!(60*15)
+                KSOIL = SOILCONDFUN(max(WR(J)+0.005,SWCLAY),KSAT(J),BPAR(J),POREFRAC(J)+0.00001,&
+                                WS(J)+0.00001,WR(J),ALPHARET(J),NRET(J),RETFUNCTION) 
+                SWP1 = SOILWPFUN(SWCLAY,PSIE(J),BPAR(J), &
+                 POREFRAC(J)+0.00001,ALPHARET(J),WS(J)+0.00001,WR(J)-0.00001,NRET(J),RETFUNCTION)
+            
+            
+                SWCLAY = SWCLAY - KSOIL * (1  -  (SWP2 - SWP1) * &
+                                    1000000/(1000*9.81*0.5*(LAYTHICK(J)+LAYTHICK(J+1))))
+            ENDDO
+        
+            WATERFLUXCAPIL = (SWCLAY - FRACWATER(J)) * LAYTHICK(J)
+
+            UNSAT =(POREFRAC(J)-FRACWATER(J)+WATERGAIN(J)-WATERLOSS(J))*LAYTHICK(J) 
+            WATERGAINCAPIL(J) = min(WATERFLUXCAPIL, UNSAT)
+        
+        ELSE
+            WATERGAINCAPIL(J) = 0.
+        ENDIF
+        
 
         RETURN
         END
