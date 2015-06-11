@@ -991,7 +991,7 @@ PROGRAM maespa
                                 FOLTP,ZBCP,JLEAFTP,BPTTP,NOAGECTP,PROPCTP,JSHAPETP,SHAPETP, &
                                 NOTREESTEST,SUNLAP,BEXTP,BEXTANGTP,BEXTANGP)
 
-                        IWAVE = 1 !(As in original MAESTEST, use only PAR.
+                        IWAVE = 1 !(As in original MAESTEST, output only PAR.
                         CALL SCATTER(IPTEST,ITAR,IWAVE, &
                                 MLAYERP(IPTEST),LAYERP(IPTEST),DLAIP,EXPDIFP, &
                                 ZEN(IHOUR),BEXTP, &
@@ -1018,12 +1018,8 @@ PROGRAM maespa
                         TSCAT = DIFDN(IPTEST,IWAVE)
                         TTOT = TBEAM + TDIFF + TSCAT
       
-                        APARSUN = (BFLUX(IPTEST,1)*BEXTP + DFLUX(IPTEST,1))*UMOLPERJ
-                        APARSH = DFLUX(IPTEST,1)*UMOLPERJ
-                        APARMEAN = SUNLAP * APARSUN + (1-SUNLAP)*APARSH
-
                         WRITE (UPOINTSO,501) IDAY,IHOUR,IPTEST,XLP(IPTEST),YLP(IPTEST),ZLP(IPTEST), &
-                            PAR,FBEAM(IHOUR,1),SUNLAP,TDP(IPTEST),TSCAT,TTOT,APARSUN,APARSH,APARMEAN
+                            PAR,FBEAM(IHOUR,1),TDP(IPTEST),TSCAT,TBEAM,TDIFF,TTOT
 501                         FORMAT(3(I5,1X),12(F12.5,1X))
                             
                         ENDDO  
