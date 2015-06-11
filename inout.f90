@@ -5398,7 +5398,7 @@ SUBROUTINE open_file(fname, unit, action, file_format, status)
       WRITE (UPOINTSO, 993) 'TTOT: total radiation (PAR) (umol m-2 s-1)'
 
       WRITE(UPOINTSO,993)' '
-      WRITE (UPOINTSO,994)'DAY HR PT  X  Y  Z  PAR  FBEAM   SUNLA  TD   TSCAT  TBEAM TDIFF TTOT ' 
+      WRITE (UPOINTSO,994)'Columns: DAY HR PT  X  Y  Z  PAR  FBEAM   SUNLA  TD   TSCAT  TBEAM TDIFF TTOT ' 
 
       RETURN
       END ! GetPointsF
