@@ -39,7 +39,7 @@ SUBROUTINE PSTRANSPIF(IDAY,IHOUR,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,
                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT, &
                     TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI, &
-                    ISMAESPA,ISNIGHT)
+                    ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
 !
 ! 'Interface' to PSTRANSP (new subroutine, Feb. 2011). 
 ! Calculates (numericall) the leaf water potential for the Tuzet model; 
@@ -64,6 +64,8 @@ SUBROUTINE PSTRANSPIF(IDAY,IHOUR,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,
     REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
     REAL PSILIN,PLANTK,TOTSOILRES,MINLEAFWP,CI
     REAL TMP,VPARA,VPARB,VPARC,VPDMIN,GK
+    REAL G02,G12
+    INTEGER NEWTUZET
     LOGICAL ISMAESPA,ISNIGHT
 
 
@@ -78,7 +80,7 @@ SUBROUTINE PSTRANSPIF(IDAY,IHOUR,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,  &
-                    WEIGHTEDSWP,HMSHAPE,PSILIN,ETEST, IDAY, IHOUR)
+                    WEIGHTEDSWP,HMSHAPE,PSILIN,ETEST, IDAY, IHOUR,G02,G12,NEWTUZET)
         ELSE
             PSILIN = WEIGHTEDSWP   ! Not entirely correct due to nighttime transpiration, but has no consequences.
         ENDIF
@@ -90,7 +92,7 @@ SUBROUTINE PSTRANSPIF(IDAY,IHOUR,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,   &
-                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
+                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
     
 
 END SUBROUTINE PSTRANSPIF
@@ -102,7 +104,8 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT, &
                     TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,  &
-                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
+                    WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT, &
+                    G02,G12,NEWTUZET)
 ! This subroutine calculates leaf photosynthesis and transpiration.
 ! These may be calculated by
 ! (1) assuming leaf temperature = air temperature, Cs = Ca and Ds = Da
@@ -130,6 +133,8 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
     REAL PSILIN,CI,VPARA,VPARB,VPARC,VPDMIN,GK,RD0ACC
     LOGICAL ISMAESPA,ISNIGHT,FAILCONV
+    INTEGER NEWTUZET
+    REAL G02,G12 
     CHARACTER*70 errormessage
     
     REAL, EXTERNAL :: SATUR
@@ -173,7 +178,7 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
                     MODELGS,GSREF,GSMIN,I0,D0,VK1,VK2,VPD1,VPD2,VMFD0,GSJA,GSJB,T0,TREF,TMAX,&
                     WSOILMETHOD,SOILMOISTURE,EMAXLEAF,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,&
                     G0,D0L,GAMMA,VPDMIN,G1,GK,GSC,ALEAF,RD,MINLEAFWP,KTOT,WEIGHTEDSWP, & 
-                    VPARA,VPARB,VPARC,VFUN,SF,PSIV,HMSHAPE,PSILIN,PSIL,CI,ISMAESPA)
+                    VPARA,VPARB,VPARC,VFUN,SF,PSIV,HMSHAPE,PSILIN,PSIL,CI,ISMAESPA,G02,G12,NEWTUZET)
     ELSE
         ! Nighttime calculations
         GSC = GNIGHT
@@ -281,8 +286,8 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
         EMAXLEAF,SMD1,SMD2,WC1,WC2, &
         SOILDATA,SWPEXP, &
         FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,GS,ALEAF,RD,MINLEAFWP,KTOT,WEIGHTEDSWP, &
-        VPARA,VPARB,VPARC,VFUN,SF,PSIV,HMSHAPE,PSILIN,PSIL,CI,ISMAESPA)!, &
-!        G02,G12,NEWTUZET)
+        VPARA,VPARB,VPARC,VFUN,SF,PSIV,HMSHAPE,PSILIN,PSIL,CI,ISMAESPA, &
+        G02,G12,NEWTUZET)
 ! This subroutine calculates photosynthesis according to the ECOCRAFT
 ! agreed formulation of the Farquhar & von Caemmerer (1982) equations.
 ! Stomatal conductance may be calculated according to the Jarvis,
@@ -362,9 +367,15 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
         IF (MODELGS.EQ.2) THEN
             ! Ball-Berry model
             GSDIVA = G1 * RH / (CS - GAMMA) * FSOIL
+            IF (NEWTUZET.EQ.1) THEN
+                GSDIVA2 = G12 * RH / (CS - GAMMA) * FSOIL
+            END IF
         ELSE IF (MODELGS.EQ.3) THEN
             ! Ball-Berry-Leuning model
             GSDIVA = G1 / (CS - GAMMA) / (1 + VPD/D0L) * FSOIL
+            IF (NEWTUZET.EQ.1) THEN
+                GSDIVA2 = G12 / (CS - GAMMA) / (1 + VPD/D0L) * FSOIL
+            END IF
         ELSE IF (MODELGS.EQ.4) THEN
             IF(VPD.LT.VPDMIN)THEN
                 VPDG = VPDMIN/1000.0
@@ -378,6 +389,9 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
             ! NOTE: 1.6 (from corrigendum to Medlyn et al 2011) is missing here,
             ! because we are calculating conductance to CO2!
             GSDIVA = (1.0 + G1 / VPDG**(1-GK)) / CS
+            IF (NEWTUZET.EQ.1) THEN
+                GSDIVA2 = (1.0 + G12 / VPDG**(1-GK)) / CS
+            END IF
             
         ELSE IF (MODELGS.EQ.6) THEN
             IF(VPD.LT.VPDMIN)THEN
@@ -387,9 +401,9 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
             ENDIF
             FPSIF = FPSIL(PSILIN,SF,PSIV)
             GSDIVA = (G1 / (CS - GAMMA)) * FPSIF
-!            IF (NEWTUZET.EQ.1) THEN
-!                GSDIVA2 = (G12/ (CS -GAMMA)) * FPSIF
-!            END IF
+            IF (NEWTUZET.EQ.1) THEN
+                GSDIVA2 = (G12/ (CS -GAMMA)) * FPSIF
+            END IF
         END IF
 
         ! Following calculations are used for both BB & BBL models.
@@ -423,49 +437,49 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
         ALEAF = AMIN1(AC,AJ) - RD  ! Solution for Ball-Berry model
         GS = G0 + GSDIVA*ALEAF
         
-        ! if new tuzet model calculate the second possibility with different g0 and g1
- !       IF (NEWTUZET.EQ.1) THEN
+        ! if new gs model calculate the second possibility with different g0 and g1
+        IF (NEWTUZET.EQ.1) THEN
             
             ! For the same ALEAF could we have a higher stomatal conductance ?
- !           GS2 = G02 + GSDIVA2*ALEAF
+            GS2 = G02 + GSDIVA2*ALEAF
             
- !           IF (GS2.GT.GS) THEN
+            IF (GS2.GT.GS) THEN
                 
                 ! Solution when Rubisco activity is limiting
- !               A = G02 + GSDIVA2 * (VCMAX - RD)
- !               B = (1. - CS*GSDIVA2) * (VCMAX - RD) + G02 * (KM - CS)- &
- !                   GSDIVA2 * (VCMAX*GAMMASTAR + KM*RD)
- !               C = -(1. - CS*GSDIVA2) * (VCMAX*GAMMASTAR + KM*RD) - G02*KM*CS
+                A = G02 + GSDIVA2 * (VCMAX - RD)
+                B = (1. - CS*GSDIVA2) * (VCMAX - RD) + G02 * (KM - CS)- &
+                    GSDIVA2 * (VCMAX*GAMMASTAR + KM*RD)
+                C = -(1. - CS*GSDIVA2) * (VCMAX*GAMMASTAR + KM*RD) - G02*KM*CS
 
- !               CIC = QUADP(A,B,C,IQERROR)
+                CIC = QUADP(A,B,C,IQERROR)
 
-!                IF ((IQERROR.EQ.1).OR.(CIC.LE.0.0).OR.(CIC.GT.CS)) THEN
-!                    AC = 0.0
-!                ELSE
-!                    AC = VCMAX * (CIC - GAMMASTAR) / (CIC + KM)
-!                END IF
+                IF ((IQERROR.EQ.1).OR.(CIC.LE.0.0).OR.(CIC.GT.CS)) THEN
+                    AC = 0.0
+                ELSE
+                    AC = VCMAX * (CIC - GAMMASTAR) / (CIC + KM)
+                END IF
  
                 ! Solution when electron transport rate is limiting
-!                A = G02 + GSDIVA2 * (VJ - RD)
-!                B = (1. - CS*GSDIVA2) * (VJ - RD) + G02 * (2.*GAMMASTAR - CS) &
-!                    - GSDIVA2 * (VJ*GAMMASTAR + 2.*GAMMASTAR*RD)
-!                C = -(1. - CS*GSDIVA2) * GAMMASTAR * (VJ + 2.*RD) &
-!                    - G02*2.*GAMMASTAR*CS
-!                CIJ = QUADP(A,B,C,IQERROR)
+                A = G02 + GSDIVA2 * (VJ - RD)
+                B = (1. - CS*GSDIVA2) * (VJ - RD) + G02 * (2.*GAMMASTAR - CS) &
+                    - GSDIVA2 * (VJ*GAMMASTAR + 2.*GAMMASTAR*RD)
+                C = -(1. - CS*GSDIVA2) * GAMMASTAR * (VJ + 2.*RD) &
+                    - G02*2.*GAMMASTAR*CS
+                CIJ = QUADP(A,B,C,IQERROR)
 
- !               AJ = VJ * (CIJ - GAMMASTAR) / (CIJ + 2.*GAMMASTAR)
- !               IF (AJ-RD.LT.1E-6) THEN        ! Below light compensation point
- !                   CIJ = CS
- !                   AJ = VJ * (CIJ - GAMMASTAR) / (CIJ + 2.*GAMMASTAR)
- !               END IF
+                AJ = VJ * (CIJ - GAMMASTAR) / (CIJ + 2.*GAMMASTAR)
+                IF (AJ-RD.LT.1E-6) THEN        ! Below light compensation point
+                    CIJ = CS
+                    AJ = VJ * (CIJ - GAMMASTAR) / (CIJ + 2.*GAMMASTAR)
+                END IF
 
-!                ALEAF2 = AMIN1(AC,AJ) - RD  ! Solution for Ball-Berry model
-!                GS2 = G02 + GSDIVA2*ALEAF2
+                ALEAF2 = AMIN1(AC,AJ) - RD  ! Solution for Ball-Berry model
+                GS2 = G02 + GSDIVA2*ALEAF2
                         
-!                GS = GS2
-!                ALEAF = ALEAF2
-!            ENDIF
-!        ENDIF  ! newtuzet
+                GS = GS2
+                ALEAF = ALEAF2
+            ENDIF
+        ENDIF  ! new model gs
 
         ! Set nearly zero conductance (for numerical reasons).
         GSMIN = 1E-09
@@ -1152,7 +1166,7 @@ SUBROUTINE PSILFIND(RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,P
                     Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                     VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP,  &
-                    WEIGHTEDSWP,HMSHAPE,PSILIN,ETEST,iday,ihour)
+                    WEIGHTEDSWP,HMSHAPE,PSILIN,ETEST,iday,ihour,G02,G12,NEWTUZET)
                     
 !**********************************************************************
         USE maestcom
@@ -1174,6 +1188,8 @@ SUBROUTINE PSILFIND(RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,P
         REAL ET,RNET,GBC,TDIFF,TLEAF1,FHEAT,ETEST,SF,PSIV,HMSHAPE
         REAL PSILIN,T1,T2,XACC,GK,TMP,VPDMIN
         REAL EXTRAPARS(EXTRAPARDIM)
+        REAL G02,G12
+        INTEGER NEWTUZET
         INTEGER EXTRAINT(10)
         REAL, EXTERNAL :: ZBRENT
         REAL, EXTERNAL :: PSILOBJFUN
@@ -1247,6 +1263,9 @@ SUBROUTINE PSILFIND(RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH,VPD,VMFD,P
         EXTRAPARS(53) = VPARC
         EXTRAPARS(54) = VPDMIN
         EXTRAPARS(55) = GK
+        EXTRAPARS(56) = NEWTUZET
+        EXTRAPARS(57) = G02
+        EXTRAPARS(58) = G12
         
         ! Set bounds for root-finding
         T1 = -100.0
@@ -1288,7 +1307,8 @@ REAL FUNCTION PSILOBJFUN(PSILIN, EXTRAPARS, EXTRAINT)
         REAL PSILIN,TOTSOILRES,PLANTK,MINLEAFWP,CI,GK
         REAL VPARA,VPARB,VPARC,VPDMIN,GNIGHT
         LOGICAL ISMAESPA,ISNIGHT
-        integer iday,ihour
+        integer iday,ihour, NEWTUZET
+        REAL G02,G12
         REAL EXTRAPARS(EXTRAPARDIM)
         INTEGER EXTRAINT(10)
         LOGICAL EXTRALOGIC(10)
@@ -1357,6 +1377,9 @@ REAL FUNCTION PSILOBJFUN(PSILIN, EXTRAPARS, EXTRAINT)
           VPARC = EXTRAPARS(53)
           VPDMIN = EXTRAPARS(54)
           GK = EXTRAPARS(55)
+          NEWTUZET = EXTRAPARS(56)
+          G02 = EXTRAPARS(57)
+          G12 = EXTRAPARS(58)
           
           ISMAESPA = .TRUE.
           ISNIGHT = .FALSE.
@@ -1371,7 +1394,8 @@ REAL FUNCTION PSILOBJFUN(PSILIN, EXTRAPARS, EXTRAINT)
              Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,    &
              SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
              VPARA,VPARB,VPARC,VFUN,SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,FHEAT,  &
-             TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP, WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
+             TLEAF,GBH,PLANTK,TOTSOILRES,MINLEAFWP, WEIGHTEDSWP,KTOT,HMSHAPE,PSILIN,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,&
+             G02,G12,NEWTUZET)
         
         PSILOBJFUN = PSILIN - PSIL
 

@@ -330,5 +330,9 @@ MODULE MAINDECLARATIONS
     ! New species dependent parameters
     REAL MINLEAFWPSPEC(MAXSP),MINLEAFWP
     
+    !New gs model where two conductance are calculated
+    INTEGER NEWTUZET
+    REAL G02, G02TABLE(maxdate), G02TABLESPEC(maxdate,maxsp)
+    REAL G12, G12TABLE(maxdate), G12TABLESPEC(maxdate,maxsp)
     
 END MODULE

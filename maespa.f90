@@ -107,7 +107,8 @@ PROGRAM maespa
                     SMD1SPEC,SMD2SPEC,WC1SPEC, WC2SPEC,SWPEXPSPEC,GNIGHTSPEC,G0TABLESPEC,G1TABLESPEC,      &
                     GKSPEC,NOGSDATESSPEC,DATESGSSPEC,D0LSPEC,GAMMASPEC,VPDMINSPEC,WLEAFTABLESPEC,&
                     DATESWLEAFSPEC,NOWLEAFDATESSPEC,NSIDESSPEC,           &
-                    SFSPEC,PSIVSPEC,VPARASPEC,VPARBSPEC,VPARCSPEC,VFUNSPEC,in_path)
+                    SFSPEC,PSIVSPEC,VPARASPEC,VPARBSPEC,VPARCSPEC,VFUNSPEC, &
+                    G02TABLE,G12TABLE,NEWTUZET,in_path)
     
     ! Cannot use Tuzet with MAESTRA (because plantk is in watpars.dat!)
     IF(.NOT.ISMAESPA.AND.MODELGS.EQ.6)THEN
@@ -1123,7 +1124,7 @@ PROGRAM maespa
                                                     NSIDES,VPARA,VPARB,VPARC,VFUN, &
                                                     SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK,TOTSOILRES, &
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
-                                                    HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)                                    
+                                                    HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                    
                                     
                                     ! Filling voxel table
                                     CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
@@ -1173,7 +1174,7 @@ PROGRAM maespa
                                                 GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,VPARA,VPARB,VPARC,VFUN,SF,PSIV,            &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,                              &
                                                 GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,  &
-                                                KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)                                        
+                                                KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                        
 
    
                                 ! Filling voxel table
@@ -1244,7 +1245,7 @@ PROGRAM maespa
                                                         VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                         ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                         TOTSOILRES,MINLEAFWP, &
-                                                        WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
+                                                        WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
 
                                        ! Filling voxel table
                                         CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
@@ -1347,7 +1348,7 @@ PROGRAM maespa
                                                 VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                 TOTSOILRES,MINLEAFWP, &
-                                                WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT)
+                                                WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
                                                                     
                             
                             ! Filling voxel table

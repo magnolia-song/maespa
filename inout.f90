@@ -1643,7 +1643,7 @@ SUBROUTINE INPUTPHY(NSPECIES,PHYFILES,MODELJM,MODELRD,MODELGS,MODELRW,          
                     GSJA,GSJB,T0,TREF,TMAX,SMD1,SMD2,WC1, WC2, SWPEXP,              &
                     GNIGHT,G0TABLE,G1TABLE,GK,NOGSDATES,DATESGS,D0L,GAMMA,VPDMIN,WLEAFTABLE, &
                     DATESWLEAF,NOWLEAFDATES,NSIDES,       &
-                    SF,PSIV,VPARA,VPARB,VPARC,VFUN,in_path)
+                    SF,PSIV,VPARA,VPARB,VPARC,VFUN,G02TABLE,G12TABLE,NEWTUZET,in_path)
 ! This routine reads in input data on physiology (from UPHY).
 ! Some parameters can change with time: JMAX25, VCMAX25, RD0
 ! - for these, arrays of dates and values are read in, and must
@@ -1699,6 +1699,8 @@ SUBROUTINE INPUTPHY(NSPECIES,PHYFILES,MODELJM,MODELRD,MODELGS,MODELRW,          
     REAL K10F(MAXSP),SF(MAXSP),PSIV(MAXSP)
     REAL VPARA(MAXSP),VPARB(MAXSP),VPARC(MAXSP)
     REAL VPDMIN(MAXSP),GK(MAXSP)
+    REAL G02TABLE(MAXDATE,MAXSP),G12TABLE(MAXDATE,MAXSP)
+    INTEGER NEWTUZET
     
     CHARACTER(*) in_path
     CHARACTER PHYFILES(MAXSP)*30
@@ -1726,7 +1728,8 @@ SUBROUTINE INPUTPHY(NSPECIES,PHYFILES,MODELJM,MODELRD,MODELGS,MODELRW,          
                     TMAX(I), SMD1(I), SMD2(I), WC1(I), WC2(I), SWPEXP(I),   &
                     GNIGHT(I), G0TABLE(1,I), G1TABLE(1,I),  GK(I),         &
                     NOGSDATES(I), DATESGS(1,I), D0L(I),GAMMA(I),VPDMIN(I),   &
-                    WLEAFTABLE(1,I), NSIDES(I), SF(I), PSIV(I),DATESWLEAF(1,I),NOWLEAFDATES(I))
+                    WLEAFTABLE(1,I), NSIDES(I), SF(I), PSIV(I),DATESWLEAF(1,I),NOWLEAFDATES(I),&
+                    G02TABLE(1,I),G12TABLE(1,I),NEWTUZET)
         
           CALL READLEAFN(UPHY, MODELJM, MODELRD, NOLAY, NOAGEP(I),  &
                             NONDATES(I), DATESN(1,I),      &
@@ -3252,7 +3255,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
                     GSREFI,GSMINI,PAR0I,D0I,VK1I,VK2I,VPD1I,VPD2I,VMFD0I,           &
                     GSJAI,GSJBI,T0I,TREFI,TMAXI,SMD1I,SMD2I,WC1I,WC2I,SWPEXPI,      &
                     GNIGHTI, G0TABLEI,G1TABLEI,GKI,NOGSDATES,DATESGSI,D0LI,GAMMAI,VPDMINI, &
-                    WLEAFTABLEI,NSIDESI,SF,PSIV,DATESWLEAFI,NOWLEAFDATES)
+                    WLEAFTABLEI,NSIDESI,SF,PSIV,DATESWLEAFI,NOWLEAFDATES,&
+                    G02TABLEI,G12TABLEI,NEWTUZETI)
 ! Get stomatal conductance parameters.
 ! Required input: File unit (UFILE), Stom cond model (MODELGS).
 !**********************************************************************
@@ -3277,14 +3281,16 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     REAL PAR0I,D0I,VPD1I,VPD2I,VK1I,VK2I,VMFD0I
     REAL GSJAI,GSJBI,T0I,TREFI,TMAXI,WLEAFI,SF,PSIV,SFI,PSIVI
     REAL VPDMIN,VPDMINI
+    REAL G02TABLEI(maxdate),G12TABLEI(maxdate),G20(maxdate),G21(maxdate),G02I(maxdate),G12I(maxdate)
+    INTEGER NEWTUZET, NEWTUZETI
     
     NAMELIST /BBGS/ DATESGS,GNIGHT,G0,G1,GAMMA,WLEAF,NSIDES, &
-                    SMD1,SMD2,WC1,WC2,SWPEXP,DATESWLEAF
+                    SMD1,SMD2,WC1,WC2,SWPEXP,DATESWLEAF,G20,G21
     NAMELIST /BBLGS/DATESGS, GNIGHT,G0,G1,D0L,GAMMA,WLEAF,NSIDES, &
-                    SMD1,SMD2,WC1,WC2,SWPEXP,DATESWLEAF
-    NAMELIST /BBMGS/DATESGS, GNIGHT,G0,G1,GAMMA,VPDMIN,GK,WLEAF,NSIDES,WC1,WC2,DATESWLEAF
-    NAMELIST /BBTUZ/DATESGS, GNIGHT,G0,G1,SF,PSIV,GAMMA,VPDMIN,WLEAF,NSIDES,DATESWLEAF
-    NAMELIST /BBGSCON/ NODATESGS,CONDUNITS,NODATESWLEAF
+                    SMD1,SMD2,WC1,WC2,SWPEXP,DATESWLEAF,G20,G21
+    NAMELIST /BBMGS/DATESGS, GNIGHT,G0,G1,GAMMA,VPDMIN,GK,WLEAF,NSIDES,WC1,WC2,DATESWLEAF,G20,G21
+    NAMELIST /BBTUZ/DATESGS, GNIGHT,G0,G1,SF,PSIV,GAMMA,VPDMIN,WLEAF,NSIDES,DATESWLEAF,G20,G21
+    NAMELIST /BBGSCON/ NODATESGS,CONDUNITS,NODATESWLEAF,NEWTUZET
     
     ! Defaults
     GSMIN = 0.001
@@ -3300,6 +3306,9 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     GK = 0.5
     NODATESGS = 1
     NODATESWLEAF = 1
+    G20 = 0.
+    G21 = 0.
+    NEWTUZET = 0
 
     DATESGS(1) = '01/01/99'     
     DATESWLEAF(1) = '01/01/99'   
@@ -3336,6 +3345,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
             G0 = G0 / GSVGSC
             G1 = G1 / GSVGSC
+            G20 = G20 / GSVGSC
+            G21 = G21 / GSVGSC
             GNIGHT = GNIGHT / GSVGSC
             CALL SUBERROR('GS PARAMETERS FOR H2O WERE CONVERTED TO CO2.', IWARN,0)
         ELSE
@@ -3345,6 +3356,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
+        G02TABLEI = G20
+        G12TABLEI = G21
         GAMMAI = GAMMA
         VPDMINI = VPDMIN
         SMD1I = SMD1
@@ -3355,6 +3368,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         NOGSDATES = NODATESGS
         NOWLEAFDATES = NODATESWLEAF
         WLEAFTABLEI = WLEAF
+        NEWTUZETI = NEWTUZET 
+        
     ELSE IF (MODELGS.EQ.3) THEN   ! Ball-Berry Leuning model parameter
         READ (UFILE, BBLGS, IOSTAT = IOERROR)
         DO IDATE = 1,NODATESGS
@@ -3374,6 +3389,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
             G0 = G0 / GSVGSC
             G1 = G1 / GSVGSC
+            G20 = G20 / GSVGSC
+            G21 = G21 / GSVGSC
             GNIGHT = GNIGHT / GSVGSC
             CALL SUBERROR('GS PARAMETERS FOR H2O WERE CONVERTED TO CO2.',IWARN,0)
         ELSE
@@ -3383,6 +3400,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
+        G02TABLEI = G20
+        G12TABLEI = G21
         GAMMAI = GAMMA
         D0LI = D0L
         SMD1I = SMD1
@@ -3393,6 +3412,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         NOGSDATES = NODATESGS
         NOWLEAFDATES = NODATESWLEAF
         WLEAFTABLEI = WLEAF
+        NEWTUZETI = NEWTUZET
         IF (D0L.LT.0.0) CALL SUBERROR('ERROR IN GS PARAMETERS: D0L MUST BE > 0', IFATAL,0)
 
     ELSE IF (MODELGS.EQ.4) THEN   ! Ball-Berry-Medlyn parameters
@@ -3418,8 +3438,11 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
+        G02TABLEI = G20
+        G12TABLEI = G21
         GAMMAI = GAMMA
         GKI = GK
+        NEWTUZETI = NEWTUZET
         IF(VPDMIN.GT.1.0)THEN
             CALL SUBERROR('VPDMIN PARAMETER ASSUMED TO BE INPUT IN Pa.', IWARN,0)
         ELSE
@@ -3451,6 +3474,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
             G0 = G0 / GSVGSC
             G1 = G1 / GSVGSC
+            G20 = G20 / GSVGSC
+            G21 = G21 / GSVGSC
             GNIGHT = GNIGHT / GSVGSC
             CALL SUBERROR('GS PARAMETERS FOR H2O WERE CONVERTED TO CO2.', IWARN,0)
         ELSE
@@ -3460,6 +3485,8 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
+        G02TABLEI = G20
+        G12TABLEI = G21
         GAMMAI = GAMMA
         VPDMINI = VPDMIN*1000
         SFI = SF
@@ -3467,6 +3494,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         NOGSDATES = NODATESGS
         NOWLEAFDATES = NODATESWLEAF
         WLEAFTABLEI = WLEAF
+        NEWTUZETI = NEWTUZET
     END IF
     
     IF (IOERROR.NE.0) THEN
