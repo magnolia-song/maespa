@@ -5383,7 +5383,7 @@ SUBROUTINE open_file(fname, unit, action, file_format, status)
       OPEN (UPOINTSO, FILE = 'testflx.dat', STATUS = 'UNKNOWN')
 ! Write headings to output file
 991   FORMAT (A12,A60) ! For writing comments to output files.
-992   FORMAT (1X,3(A3,1X),9(A12,1X))
+992   FORMAT (1X,3(A3,1X),11(A12,1X))
 993   FORMAT (A60)
 994   FORMAT (A90)
 
@@ -5404,13 +5404,13 @@ SUBROUTINE open_file(fname, unit, action, file_format, status)
         'SUNLA: sunlit leaf area at grid point (fraction)'
       WRITE (UPOINTSO, 993) &
          'TD: diffuse transmittance to grid point (fraction)'
-      WRITE (UPOINTSO, 993) 'TSCAT: scattered radiation (umol m-2 s-1)'
-      WRITE (UPOINTSO, 993) 'TTOT: total radiation (umol m-2 s-1)'
-      WRITE (UPOINTSO, 993) 'APARSUN : Absorped PAR for sunlit foliage (umol m-2 s-1)'
-      WRITE (UPOINTSO, 993) 'APARSH : Absorped PAR for shaded foliage (umol m-2 s-1)'
-      WRITE (UPOINTSO, 993) 'APAR : Absorped PAR (umol m-2 s-1)'
+      WRITE (UPOINTSO, 993) 'TSCAT: scattered radiation (PAR) (umol m-2 s-1)'
+	  WRITE (UPOINTSO, 993) 'TBEAM: direct radiation (PAR) (umol m-2 s-1)'
+	  WRITE (UPOINTSO, 993) 'TDIFF: diffuse radiation (PAR) (umol m-2 s-1)'
+      WRITE (UPOINTSO, 993) 'TTOT: total radiation (PAR) (umol m-2 s-1)'
+
       WRITE(UPOINTSO,993)' '
-      WRITE (UPOINTSO,994)'DAY HR PT  X  Y  Z  PAR  FBEAM   SUNLA  TD   TSCAT  TTOT APARSUN APARSH APAR ' 
+      WRITE (UPOINTSO,994)'Columns: DAY HR PT  X  Y  Z  PAR  FBEAM   SUNLA  TD   TSCAT  TBEAM TDIFF TTOT ' 
 
       RETURN
       END ! GetPointsF
