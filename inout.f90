@@ -971,7 +971,8 @@ SUBROUTINE INPUTCON(ISTART, IEND, NSTEP,                                    &
                     IOHIST, BINSIZE, ICC, CO2INC, TINC,                     &
                     IOTC, TOTC, WINDOTC, PAROTC, FBEAMOTC,                  &
                     IWATFILE, IUSTFILE, ISIMUS,                             &
-                    NSPECIES, SPECIESNAMES, PHYFILES, STRFILES,ITERTAIRMAX)
+                    NSPECIES, SPECIESNAMES, PHYFILES, STRFILES,ITERTAIRMAX, &
+                    NECHLAY)
 ! Read in the information from the control file.
 !**********************************************************************
 
@@ -981,7 +982,7 @@ SUBROUTINE INPUTCON(ISTART, IEND, NSTEP,                                    &
     REAL DIFZEN(MAXANG)
     INTEGER PPLAY,ISTART,IEND,NSTEP,NUMPNT,NOLAY,PPLY,NZEN,NAZ,MODELGS
     INTEGER MODELJM,MODELRD,MODELSS,MODELRW,ITERMAX,NSPECIES,ITERTAIRMAX
-    INTEGER ISIMUS,IUSTFILE,IOTC,IOHIST,IWATFILE,ICC
+    INTEGER ISIMUS,IUSTFILE,IOTC,IOHIST,IWATFILE,ICC,NECHLAY
     CHARACTER SPECIESNAMES(MAXSP)*30
     CHARACTER PHYFILES(MAXSP)*30
     CHARACTER STRFILES(MAXSP)*30
@@ -992,7 +993,7 @@ SUBROUTINE INPUTCON(ISTART, IEND, NSTEP,                                    &
     CALL READDATES(UCONTROL, ISTART, IEND, NSTEP)
     CALL READSPECIES(UCONTROL, NSPECIES, SPECIESNAMES,PHYFILES, STRFILES)
     CALL READZEN(UCONTROL, NUMPNT, NOLAY, PPLAY, NZEN, NAZ, DIFZEN)
-    CALL READMODEL(UCONTROL, MODELGS, MODELJM, MODELRD,MODELSS, MODELRW, ITERMAX, ISIMUS,ITERTAIRMAX)
+    CALL READMODEL(UCONTROL, MODELGS, MODELJM, MODELRD,MODELSS, MODELRW, ITERMAX, ISIMUS,ITERTAIRMAX,NECHLAY)
     
     ! Don't simulate water balance or understorey if files missing.
     IF(IUSTFILE.EQ.0)ISIMUS = 0
@@ -3077,7 +3078,7 @@ END SUBROUTINE READBETA
 
 !**********************************************************************
 SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
-                    SSMODI, RWMODI, ITERMAXI, ISIMUSI,ITERTAIRMAXI)
+                    SSMODI, RWMODI, ITERMAXI, ISIMUSI,ITERTAIRMAXI,NECHLAYI)
 ! Read in flags which control the physiological models used.
 ! MODELGS - controls model of stomatal conductance
 ! MODELJM - whether JMAX,VCMAX read in (0) or calculated from leaf N (1)
@@ -3091,10 +3092,10 @@ SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
     IMPLICIT NONE
     INTEGER UFILE,GSMODI,JMMODI,RDMODI,SSMODI,RWMODI,ITERMAXI,ITERTAIRMAX,ITERTAIRMAXI
     INTEGER MODELGS,MODELJM,MODELRD,MODELRW,MODELSS
-    INTEGER ITERMAX,ISIMUS,IOERROR,ISIMUSI
+    INTEGER ITERMAX,ISIMUS,IOERROR,ISIMUSI,NECHLAY,NECHLAYI
     
     NAMELIST /MODEL/ MODELGS,MODELJM,MODELRD,MODELRW, &
-                        MODELSS,ITERMAX,ISIMUS,ITERTAIRMAX
+                        MODELSS,ITERMAX,ISIMUS,ITERTAIRMAX,NECHLAY
     
 
     ! Default values
@@ -3104,8 +3105,9 @@ SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
     MODELRW = 0     ! RW values read in directly
     MODELSS = 0     ! sunlit & shade calculations separate
     ITERMAX = 0     ! The leaf temperature is not calculated
-    ISIMUS = 0      ! No understorey simulation (RAD).
-    ITERTAIRMAX = 20
+    ISIMUS = 0      ! No understorey simulation.
+    ITERTAIRMAX = 20 ! Maximum number of iterations for canopy air temperature
+    NECHLAY = 15    ! (Max.) Number of layers in ECH (used to calculate DLAI from TOTLAI in CHART)
 
     ! Read file
     REWIND (UFILE)
@@ -3121,6 +3123,7 @@ SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
     ITERMAXI = ITERMAX
     ISIMUSI = ISIMUS
     ITERTAIRMAXI = ITERTAIRMAX
+    NECHLAYI = NECHLAY
 
     RETURN
 END SUBROUTINE READMODEL

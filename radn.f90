@@ -1843,7 +1843,7 @@ END SUBROUTINE EXDIFF
 
 !**********************************************************************
       SUBROUTINE EHC(NUMPNT,TU,TD, &
-        TOTLAI,XSLOPE,YSLOPE,NAZ,NZEN,DIFZEN,DEXT, &
+        TOTLAI,XSLOPE,YSLOPE,NAZ,NZEN,NECHLAY,DIFZEN,DEXT, &
         DLAI,EXPDIF,LAYER,MLAYER &
         )
 ! This subroutine sets up the equivalent horizontal canopy.
@@ -1851,17 +1851,17 @@ END SUBROUTINE EXDIFF
 
       USE maestcom
       IMPLICIT NONE
-      INTEGER LAYER(MAXP),MLAYER(MAXP)
+      INTEGER LAYER(MAXP),MLAYER(MAXP),NECHLAY
       INTEGER NUMPNT,NAZ,NZEN,NLAY
       
       REAL TU(MAXP),TD(MAXP)
       REAL DIFZEN(MAXANG),DEXT(MAXANG)
-      REAL RTA(50),TAUMIN,XSLOPE,YSLOPE,TOTLAI,DLAI
+      REAL RTA(MAXECHLAYER),TAUMIN,XSLOPE,YSLOPE,TOTLAI,DLAI
       REAL EXPDIF
 
       CALL TDUMIN(TU,TD,NUMPNT,TAUMIN)
 
-      CALL CHART(XSLOPE,YSLOPE,NAZ,NZEN,DIFZEN,DEXT, &
+      CALL CHART(XSLOPE,YSLOPE,NAZ,NZEN,NECHLAY,DIFZEN,DEXT, &
         TOTLAI,TAUMIN, &
         RTA,NLAY,DLAI,EXPDIF)
 
@@ -1897,7 +1897,7 @@ END SUBROUTINE EXDIFF
 
 !**********************************************************************
       SUBROUTINE CHART(XSLOPE,YSLOPE,NAZ, &
-        NZEN,DIFZEN,DEXT,TOTLAI,TAUMIN, &
+        NZEN,NECHLAY,DIFZEN,DEXT,TOTLAI,TAUMIN, &
         RTA,NLAY,DLAI,EXPDIF)
 ! This subroutine calculates the number of elemenraty layers in the EHC
 ! and the transmittance of diffuse radiation through the EHC.
@@ -1910,9 +1910,9 @@ END SUBROUTINE EXDIFF
 
       USE maestcom
       IMPLICIT NONE
-      INTEGER NAZ,NZEN,NLAY,KK,I,J
+      INTEGER NAZ,NZEN,NLAY,KK,I,J,NECHLAY
       REAL DIFZEN(MAXANG),DEXT(MAXANG)
-      REAL RTA(50)
+      REAL RTA(MAXECHLAYER)
       REAL XSLOPE,YSLOPE,TOTLAI,TAUMIN
       REAL DLAI,EXPDIF,WN,WD,DA,CZ,SZ,DAZ
       REAL SLOPE
@@ -1921,8 +1921,22 @@ END SUBROUTINE EXDIFF
 ! Initial thickness of canopy layer
 ! Norman (1979) says this should be always < 0.5 and preferably closer to 0.1.
 ! Here for LAI < 5, we try DLAI = 0.1
-      DLAI = REAL(IFIX(TOTLAI/5.0)+1)*0.1 !! modification Mathias 12/2012
-      !DLAI=0.01 ! G Le Maire
+      !DLAI = REAL(IFIX(TOTLAI/5.0)+1)*0.1 !! modification Mathias 12/2012
+      !! DLAI = 0.01 ! G Le Maire
+      !
+      !! For very spare canopies, DLAI could be > TOTLAI
+      !IF(DLAI.GT.(TOTLAI/5.0))THEN
+      !
+      !    DLAI = TOTLAI / NECHLAY
+      !    
+      !ENDIF   
+      
+      DLAI = TOTLAI / NECHLAY
+      
+      ! For high LAI canopies, make sure DLAI does not go too large.
+      IF(DLAI.GT.0.1)THEN
+          DLAI = 0.1
+      ENDIF
       
 ! Calculate transmittance through one elementary layer with thickness DLAI
 10    KK = 0            ! Initialise variable used to calculate NLAY
@@ -1950,8 +1964,8 @@ END SUBROUTINE EXDIFF
 ! Check to see not too many elementary layers - if so, try again with
 ! higher DLAI.
 30    KK = KK + 1
-      IF (KK.GT.50) THEN
-        DLAI = DLAI + 0.1
+      IF (KK.GT.MAXECHLAYER) THEN
+        DLAI = DLAI + 0.02
         GO TO 10
       END IF
 
@@ -1988,7 +2002,7 @@ END SUBROUTINE EXDIFF
       IMPLICIT NONE
       INTEGER NUMPNT,NLAY,Z1,Z2,IPT,ILAYER
       INTEGER LAYER(MAXP), MLAYER(MAXP)
-      REAL RTA(50)
+      REAL RTA(MAXECHLAYER)
       REAL TU(MAXP),TD(MAXP),DIFMU,DIFUP,DIFMD,DIFDN
     
 ! Z1 = no of layers above the equivalent layer in the EHC

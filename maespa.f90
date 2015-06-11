@@ -82,7 +82,7 @@ PROGRAM maespa
                     MODELGS, MODELJM, MODELRD, MODELSS, MODELRW, ITERMAX, IOHIST,   &
                     BINSIZE,ICC, CO2INC, TINC,IOTC, TOTC, WINDOTC, PAROTC,          &
                     FBEAMOTC, IWATFILE, IUSTFILE, ISIMUS, NSPECIES, SPECIESNAMES,   &
-                    PHYFILES, STRFILES,ITERTAIRMAX)
+                    PHYFILES, STRFILES,ITERTAIRMAX,NECHLAY)
     
     ! Get input from canopy structure file
     CALL INPUTSTR(NSPECIES,STRFILES,JLEAFSPEC,BPTTABLESPEC,RANDOMSPEC,NOAGECSPEC,    &
@@ -543,7 +543,7 @@ PROGRAM maespa
                         NEWTUTD,TUP,TDP,RELDFP,DEXTP)
       
                         CALL EHC(NUMTESTPNT,TUP,TDP, &
-                         TOTLAI,XSLOPE,YSLOPE,NAZ,NZEN,DIFZEN,DEXTP, &
+                         TOTLAI,XSLOPE,YSLOPE,NAZ,NZEN,NECHLAY,DIFZEN,DEXTP, &
                          DLAIP,EXPDIFP,LAYERP,MLAYERP &
                        )     
                        RANPOINTS = 1
@@ -803,7 +803,7 @@ PROGRAM maespa
                    
                 ! If the diffuse transmittances have changed, must set up the EHC
                 IF (NEWTUTD.EQ.1.AND.TOTLAI.GT.0) THEN
-                    CALL EHC(NUMPNT,TU,TD,TOTLAI,XSLOPE,YSLOPE,NAZ,NZEN,DIFZEN,DEXT,DLAI,EXPDIF,LAYER,MLAYER)
+                    CALL EHC(NUMPNT,TU,TD,TOTLAI,XSLOPE,YSLOPE,NAZ,NZEN,NECHLAY,DIFZEN,DEXT,DLAI,EXPDIF,LAYER,MLAYER)
                 END IF
                 
                 IF(ISMAESPA)THEN
