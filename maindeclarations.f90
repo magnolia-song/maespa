@@ -343,4 +343,7 @@ MODULE MAINDECLARATIONS
     INTEGER RFAGEBEGIN(maxsp),ROOTFRONTLIMIT
     REAL RFPAR1(maxsp),RFPAR2(maxsp),RFPAR3(maxsp),ROOTFRONT(maxsp)
     
+    ! soil dry thermal conductivity
+    REAL DRYTHERM
+    
 END MODULE

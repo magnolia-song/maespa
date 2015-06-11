@@ -574,7 +574,7 @@ END SUBROUTINE INITWATBAL
                             THERMCOND1, LAYTHICK1, LAYTHICK2, POREFRAC1, &      ! layerthick2 M. Christina 09/2013, proposition when 2 width layers differs
                             SOILWP1,DRYTHICK,TORTPAR,VIEWFACTOR,&
                             RHOSOLSPEC,RGLOBUND1, &
-                            RGLOBUND2,DOWNTHAV)
+                            RGLOBUND2,DOWNTHAV,DRYTHERM)
 
 ! Finds the soil surface temperature from energy balance, by
 ! calling the ZBRENT routine, which uses the ENERGY function.
@@ -590,7 +590,7 @@ END SUBROUTINE INITWATBAL
       REAL TAIRK,GAMSOIL,PRESSPA,SOILTK,SOILTK2,VPDKPA
       REAL RGLOB,THERMCOND1,POREFRAC1,SOILWP1
       REAL DRYTHICK,TORTPAR
-      REAL T1,T2,XACC,TEST
+      REAL T1,T2,XACC,TEST, DRYTHERM
       REAL RHOSOLSPEC(1:3,MAXSP),RGLOBUND1,RGLOBUND2,DOWNTHAV
       REAL, EXTERNAL :: ENERGYFUN
       REAL, EXTERNAL :: ZBRENT
@@ -617,6 +617,7 @@ END SUBROUTINE INITWATBAL
       EXTRAPARS(19) = RGLOBUND2 
       EXTRAPARS(20) = RHOSOLSPEC(3,1)
       EXTRAPARS(21) = DOWNTHAV
+      EXTRAPARS(22) = DRYTHERM
      
 ! Set bounds for root-finding (quite liberal bounds!).
       T1 = TAIRK - 50.
@@ -655,7 +656,8 @@ END SUBROUTINE INITWATBAL
       REAL RGLOB,TAIRK,THERMCOND1,POREFRAC1,SOILWP1,DRYTHICK
       REAL TORTPAR,QE,QH,QN,QC,ESOIL,SOILTK, TSOILSURFACE
       REAL RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,RGLOBUND1,RGLOBUND2,DOWNTHAV
-
+      REAL DRYTHERM
+      
       ! Get parameters from EXTRAPARS array:
       GAMSOIL = EXTRAPARS(1)
       PRESSPA = EXTRAPARS(2)
@@ -678,6 +680,7 @@ END SUBROUTINE INITWATBAL
       RGLOBUND2 = EXTRAPARS(19)
       RHOSOLSPEC3 = EXTRAPARS(20)
       DOWNTHAV = EXTRAPARS(21)
+      DRYTHERM = EXTRAPARS(22)
 
 ! Subroutine that actually does all the work.
       CALL ENERGYCALC(SOILTK,GAMSOIL,PRESSPA,SOILTK2, &
@@ -686,7 +689,7 @@ END SUBROUTINE INITWATBAL
                         VIEWFACTOR, &
                         QH,QE,QN,QC,ESOIL,TSOILSURFACE,&
                         RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,&
-                        RGLOBUND1,RGLOBUND2,DOWNTHAV)
+                        RGLOBUND1,RGLOBUND2,DOWNTHAV,DRYTHERM)
 
 ! Energy balance:
       ENERGYFUN = QH + QE + QN + QC
@@ -702,7 +705,7 @@ END SUBROUTINE INITWATBAL
                             DRYTHICK,TORTPAR, &
                             VIEWFACTOR,QH,QE,QN,QC,ESOIL,TSOILSURFACE,&
                             RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,&
-                            RGLOBUND1,RGLOBUND2,DOWNTHAV)
+                            RGLOBUND1,RGLOBUND2,DOWNTHAV,DRYTHERM)
 
 ! Calculate components of the soil energy balance.
 ! For arguments, subscript (1 or 2) refers to soil layer (1 = surface).
@@ -715,11 +718,12 @@ END SUBROUTINE INITWATBAL
       REAL VPDKPA,RGLOB,TAIRK,THERMCOND1,POREFRAC1,SOILWP1
       REAL DRYTHICK,TORTPAR,QH,QE,QN,QC,ESOIL,TAIRC
       REAL RHO,QEFLUX, TSOILSURFACE
-      REAL RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,RGLOBUND1,RGLOBUND2,DOWNTHAV
+      REAL RHOSOLSPEC1,RHOSOLSPEC2,RHOSOLSPEC3,RGLOBUND1,RGLOBUND2,DOWNTHAV, DRYTHERM
 
       REAL, EXTERNAL :: RHOFUN
       REAL, EXTERNAL :: ESOILFUN
-
+      REAL, EXTERNAL :: THERMCONDFUN
+    
       ! Conversions
       TAIRC = TAIRK - FREEZE
 
@@ -734,9 +738,15 @@ END SUBROUTINE INITWATBAL
       QE = QEFLUX(SOILTK,TAIRK,VPDKPA,POREFRAC1,SOILWP1, &
                   GAMSOIL,PRESSPA,DRYTHICK,TORTPAR)
 
-      ! soil surface temperature assuming a dry thermal conductivity of 0.8 W m-1 K-1 (Choudhury et al. 1988)
+      ! Thermal conductivity of the dry layer (W/m/K)
+      ! Note that as we assumed FRACWATER = 0. in this thin dry layer, the only parameter required is POREFRAC
+      ! If DRYTHERM lower than 0, it was not an input, so it has to be recalculated.   
+      IF (DRYTHERM.LT.0.) THEN
+          DRYTHERM = THERMCONDFUN(1, SOILWP1, 0., POREFRAC1,4.,0.1,3)
+      ENDIF 
+      
       ! Note: sensible heat flux is above the dry layer, latent heat flux below the dry layer.
-      TSOILSURFACE = SOILTK - (QE + QC) *DRYTHICK / (0.8)
+      TSOILSURFACE = SOILTK - (QE + QC) *DRYTHICK / DRYTHERM
 
       ! Sensible heat flux (W m-2) calculated from soil surface above the dry thick layer (Choudhury et al. 1988)
       QH = CPAIR * RHO * GAMSOIL * (TAIRK - TSOILSURFACE)    

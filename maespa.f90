@@ -135,7 +135,7 @@ PROGRAM maespa
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET,DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
                         FRACORGANIC, EXPINF, WSOILMETHOD, USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,ALPHARET,WS,WR,NRET,&
                         DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT,&
-                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB)
+                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM)
     ENDIF
         
     ! Open met data file (must be done after ISTART & IEND read)
@@ -1443,7 +1443,7 @@ PROGRAM maespa
                     VIEWFACTOR = 1.0  ! OBSOLETE...
                     CALL FINDSOILTK(iday, TAIR(IHOUR) + FREEZE, GAMSOIL, PRESS(IHOUR),SOILTK, SOILTEMP(2), VPD(IHOUR)/1000, &
                                     RGLOBUND,THERMCOND(1), LAYTHICK(1),LAYTHICK(2), POREFRAC(1),SOILWP(1),DRYTHICK,TORTPAR,&
-                                    VIEWFACTOR,RHOSOLSPEC,RGLOBUND1,RGLOBUND2,DOWNTHAV)
+                                    VIEWFACTOR,RHOSOLSPEC,RGLOBUND1,RGLOBUND2,DOWNTHAV,DRYTHERM)
                 ELSE
                     SOILTK = TSOIL(IHOUR) + FREEZE
                 ENDIF
@@ -1455,7 +1455,7 @@ PROGRAM maespa
                                     LAYTHICK(1),LAYTHICK(2),POREFRAC(1),SOILWP(1),DRYTHICK,TORTPAR,VIEWFACTOR,          &
                                     QH,QE,QN,QC,ESOIL,TSOILSURFACE,&
                                     RHOSOLSPEC(1,1),RHOSOLSPEC(2,1),RHOSOLSPEC(3,1), &
-                                    RGLOBUND1,RGLOBUND2,DOWNTHAV)
+                                    RGLOBUND1,RGLOBUND2,DOWNTHAV,DRYTHERM)
                 !ENDIF
                 
                 ! Or, do not calculate heat balance. Either if using measured ET for water balance,
