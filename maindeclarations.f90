@@ -335,4 +335,8 @@ MODULE MAINDECLARATIONS
     REAL G02, G02TABLE(maxdate), G02TABLESPEC(maxdate,maxsp)
     REAL G12, G12TABLE(maxdate), G12TABLESPEC(maxdate,maxsp)
     
+    !maximum rooting depth
+    INTEGER RFAGEBEGIN(maxsp),ROOTFRONTLIMIT
+    REAL RFPAR1(maxsp),RFPAR2(maxsp),RFPAR3(maxsp),ROOTFRONT(maxsp)
+    
 END MODULE
