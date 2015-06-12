@@ -155,9 +155,9 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     ! Or if filename is missing:
     INQUIRE (FILE=trim(in_path)//'ustorey.dat', EXIST=EXT)
     IF(.NOT.EXT)THEN
-        CALL SUBERROR('USTOREY.DAT NOT FOUND OR ISIMUS=0. NO UNDERSTOREY SIMULATED.',IWARN,0)
-        IUSTFILE = 0
         ISIMUS = 0
+        IUSTFILE = 0
+        CALL SUBERROR('USTOREY.DAT NOT FOUND OR ISIMUS=0. NO UNDERSTOREY SIMULATED.',IWARN,0)
     ELSE
         IUSTFILE = 1
         IF(ISIMUS.EQ.0)THEN
@@ -1970,9 +1970,51 @@ SUBROUTINE SORTTREESP(X,Y,NOALLTREES,NOTREES,DX,DY,DZ,R1,R2,R3,TRUNK,FLT,DIAMA, 
     RETURN
     
                         
-END SUBROUTINE SORTTREESP
+    END SUBROUTINE SORTTREESP
 
 
+    !**********************************************************************
+SUBROUTINE SORTTREESI(NOALLTREES,NOTREES,NOTARGET,DX,DY,DZ,IT)
+! This routine selects the 'NOTREES' trees closest to the point (x,y,z).
+! Unlike SORTTREES and SORTTREESP, it returns only IT (index of sorted tree numbers).
+!**********************************************************************
+
+    USE maestcom
+    IMPLICIT NONE
+    INTEGER N,NOALLTREES,I,J,ITEMP,NOTREES,MM,IDATE,NOTARGET
+    INTEGER IT(MAXT),MT1,MT2
+    REAL DX(MAXT),DY(MAXT),DZ(MAXT)
+    REAL DNT(MAXT),X,Y,TEMP
+
+    ! Location to sort trees to (location of the current target tree).
+    X = DX(NOTARGET)
+    Y = DY(NOTARGET)
+    
+    ! We select NT trees which are closest to the tree (NOTARGET) we
+    ! are concerned with.
+    DO N = 1,NOALLTREES
+        DNT(N) = SQRT((X-DX(N))**2 + (Y-DY(N))**2)
+        IT(N) = N
+    END DO
+
+    MT1 = NOALLTREES - 1
+    DO 20 I = 1,MT1
+         MT2 = I + 1
+         DO 20 J = MT2,NOALLTREES
+            IF (DNT(I).LE.DNT(J)) GO TO 20
+            TEMP = DNT(I)
+            DNT(I) = DNT(J)
+            DNT(J) = TEMP
+            ITEMP = IT(I)
+            IT(I) = IT(J)
+            IT(J) = ITEMP
+20  CONTINUE
+
+    RETURN
+                            
+END SUBROUTINE SORTTREESI
+
+    
 !**********************************************************************
 SUBROUTINE ANGLE(ELP,NALPHA,FALPHA)
 ! This routine calculates the fraction of leaf area in each leaf

@@ -63,6 +63,9 @@ PROGRAM maespa
     CALL OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE, &
                     KEEPZEN,IPOINTS,ISIMUS,IUSTFILE,in_path,out_path)
    
+    ! Openinputf should take care of this, but glitches?
+    IF(IUSTFILE.EQ.0)ISIMUS = 0
+    
     ! Decide whether to simulate the water balance (MAESPA) or not (MAESTRA)    
     IF(IWATFILE .EQ. 0)THEN
        ISMAESPA = .FALSE.
@@ -185,6 +188,12 @@ PROGRAM maespa
     !                            ZBCTABLEAD(1:MAXDATE,1:MAXT,ITAR),DIAMTABLEAD(1:MAXDATE,1:MAXT,ITAR), & 
     !                            ISPECIESAD(1:MAXT,ITAR),ISPECIESTAD(1:MAXT,ITAR),ITAD(1:MAXT,ITAR))
     !ENDDO
+    
+    DO ITAR = 1,NOTARGETS
+        ITREE = ITARGETS(ITAR)
+        CALL SORTTREESI(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,ITAD(1:MAXT,ITAR))
+    ENDDO
+    
     
     !***********************************************************************!
     !                       Begin daily loop                                !
