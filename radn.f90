@@ -1910,7 +1910,7 @@ END SUBROUTINE EXDIFF
 
       USE maestcom
       IMPLICIT NONE
-      INTEGER NAZ,NZEN,NLAY,KK,I,J,NECHLAY
+      INTEGER NAZ,NZEN,NLAY,KK,I,J,NECHLAY,CALCMAXLAY
       REAL DIFZEN(MAXANG),DEXT(MAXANG)
       REAL RTA(MAXECHLAYER)
       REAL XSLOPE,YSLOPE,TOTLAI,TAUMIN
@@ -1919,24 +1919,22 @@ END SUBROUTINE EXDIFF
       REAL DLAIOLD
 
 ! Initial thickness of canopy layer
-! Norman (1979) says this should be always < 0.5 and preferably closer to 0.1.
-! Here for LAI < 5, we try DLAI = 0.1
-      !DLAI = REAL(IFIX(TOTLAI/5.0)+1)*0.1 !! modification Mathias 12/2012
-      !! DLAI = 0.01 ! G Le Maire
-      !
-      !! For very spare canopies, DLAI could be > TOTLAI
-      !IF(DLAI.GT.(TOTLAI/5.0))THEN
-      !
-      !    DLAI = TOTLAI / NECHLAY
-      !    
-      !ENDIF   
-      
       DLAI = TOTLAI / NECHLAY
       
       ! For high LAI canopies, make sure DLAI does not go too large.
       IF(DLAI.GT.0.1)THEN
           DLAI = 0.1
       ENDIF
+      
+      ! Check that calculated maximum number of layers is not > MAXECHLAY
+      ! This is very rare, unless NECHLAY set to very high value, TOTLAI very high, or MAXECHLAY poorly set.
+      CALCMAXLAY = TOTLAI / DLAI
+      IF(CALCMAXLAY.GT.MAXECHLAYER)THEN
+        CALL SUBERROR('WARNING: ACTUAL NUMBER OF ECH LAYERS > MAXECHLAY. RESET TO MAXECHLAY.',IWARN,0)
+        DLAI = TOTLAI / MAXECHLAYER
+      ENDIF
+      
+      
       
 ! Calculate transmittance through one elementary layer with thickness DLAI
 10    KK = 0            ! Initialise variable used to calculate NLAY
@@ -2508,7 +2506,8 @@ END SUBROUTINE EXDIFF
       REAL DMULT2,SOMULT,BMULT, RADABV,FBEAM,TAIR,TSOIL
       REAL ARHO,ATAU,RHOSOL,ESOIL,COSZEN,EXPDIR
       REAL RLAYER,TLAYER,TEMPS,TLAY2,DOWN,UP,SKYDIF
-      REAL U(3,101),D(3,101),SUP(101),SDN(101),ADUM(101),TBEAM(101)
+      REAL U(3,MAXECHLAYER),D(3,MAXECHLAYER),SUP(MAXECHLAYER)
+      REAL SDN(MAXECHLAYER),ADUM(MAXECHLAYER),TBEAM(MAXECHLAYER)
       REAL TCAN2, TLEAFTABLE(MAXT,MAXP) 
       REAL TLEAFLAYER(MLAYERI),ABSRP
       REAL EMSKY,TOTLAI,FOLLAY(MAXLAY),FOLNTR
