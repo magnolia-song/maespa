@@ -1711,13 +1711,14 @@ END SUBROUTINE INITWATBAL
 
 
 
-    
+!**********************************************************************    
             SUBROUTINE SOIL_CAPILARY(J, POREFRAC, FRACWATER, LAYTHICK,SOILWP, &
                                KSAT, BPAR,WS,WR,NRET,PSIE, ALPHARET, &
                                 RETFUNCTION, IWATTABLAYER, &
                                 WATERGAINCAPIL, WATERGAIN,WATERLOSS)
 
-! Determines capilary rising Christina august 2014
+! Determines capilary rising of soil water table into lowest layer of soil. 
+! Mathias Christina august 2014
 !**********************************************************************
 
         USE maestcom
@@ -1752,7 +1753,7 @@ END SUBROUTINE INITWATBAL
             
             ! We apply the Richards equations at a 1 second time step over the step within MAESPA
             SWCLAY = FRACWATER(J)
-            DO TIME = 1,SPERHR!(60*15)
+            DO TIME = 1, INT(SPERHR)
                 KSOIL = SOILCONDFUN(max(WR(J)+0.005,SWCLAY),KSAT(J),BPAR(J),POREFRAC(J)+0.00001,&
                                 WS(J)+0.00001,WR(J),ALPHARET(J),NRET(J),RETFUNCTION) 
                 SWP1 = SOILWPFUN(SWCLAY,PSIE(J),BPAR(J), &
