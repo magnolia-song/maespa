@@ -171,6 +171,21 @@ PROGRAM maespa
                     SOILDATA,USEMEASSW)
     ENDIF
 
+    ! This should work, provided RXTABLE etc. are assigned in the half-hourly loop when needed 
+    ! (both for diffuse and direct transmittance).
+    ! However it fails now because these arrays are too large (MAXDATE,MAXT,MAXT)
+    !! Sort trees and store in large arrays (suffix AD), used in the half-hourly loop.
+    !DO ITAR = 1,NOTARGETS
+    !    ITREE = ITARGETS(ITAR)
+    !    CALL SORTTREES(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,RXTABLE1,RYTABLE1,RZTABLE1,  &
+    !                            ZBCTABLE1,FOLTABLE1,DIAMTABLE1,  &
+    !                            DXTAD(1:MAXT,ITAR),DYTAD(1:MAXT,ITAR),DZTAD(1:MAXT,ITAR),  & 
+    !                            RXTABLEAD(1:MAXDATE,1:MAXT,ITAR),RYTABLEAD(1:MAXDATE,1:MAXT,ITAR),  &
+    !                            RZTABLEAD(1:MAXDATE,1:MAXT,ITAR), FOLTABLEAD(1:MAXDATE,1:MAXT,ITAR), &
+    !                            ZBCTABLEAD(1:MAXDATE,1:MAXT,ITAR),DIAMTABLEAD(1:MAXDATE,1:MAXT,ITAR), & 
+    !                            ISPECIESAD(1:MAXT,ITAR),ISPECIESTAD(1:MAXT,ITAR),ITAD(1:MAXT,ITAR))
+    !ENDDO
+    
     !***********************************************************************!
     !                       Begin daily loop                                !
     !***********************************************************************!
@@ -199,9 +214,9 @@ PROGRAM maespa
         
         CALL LADCHOOSE(IDAY,ISTART,NSPECIES,NOLADDATES,DATESLAD,BPTTABLESPEC,BPTSPEC)
                     
-!       OUT BPTSPEC - English comments please
+!       Diffuse extinction coefficients.
         DO I=1,NSPECIES
-            CALL EXDIFF(NALPHASPEC(I),ALPHASPEC(1:MAXANG,I),FALPHASPEC(1:MAXANG,I),&       ! M.Christina 02/2012, within the loop
+            CALL EXDIFF(NALPHASPEC(I),ALPHASPEC(1:MAXANG,I),FALPHASPEC(1:MAXANG,I), &
                         NZEN,DIFZEN,RANDOMSPEC(I),DEXTSPEC(I,1:MAXANG))
         END DO
         
@@ -758,7 +773,8 @@ PROGRAM maespa
                 ! Sort the trees every timestep.
                 ! This should be done outside the hourly loop, and stored in an array.
                 CALL SORTTREES(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,RXTABLE1,RYTABLE1,RZTABLE1,ZBCTABLE1,&
-                                FOLTABLE1,DIAMTABLE1,DXT,DYT,DZT,RXTABLE,RYTABLE,RZTABLE,FOLTABLE,ZBCTABLE, &
+                                FOLTABLE1,DIAMTABLE1,  &
+                                DXT,DYT,DZT,RXTABLE,RYTABLE,RZTABLE,FOLTABLE,ZBCTABLE, &
                                 DIAMTABLE,ISPECIES,ISPECIEST,IT)
                 
                 DO I = 1,NOTREES

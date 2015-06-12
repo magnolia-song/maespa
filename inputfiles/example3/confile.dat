@@ -26,8 +26,6 @@ indicate which target tree(s) to use.
 &treescon	
 notrees = 6
 /							
-itargets = 153 224 137 227 185 229 99 120 171						
-itargets = 153 114 191 224 132 137 150 227 102 84 189 190 99 120 171					
 
 
 number of angles and layers to integrate over. 
