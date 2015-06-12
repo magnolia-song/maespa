@@ -1918,22 +1918,22 @@ END SUBROUTINE EXDIFF
       REAL SLOPE
       REAL DLAIOLD
 
+      ! Seems reasonable but causes a runtime bug (debug mode only, hence vague memory issue).
 ! Initial thickness of canopy layer
-      DLAI = TOTLAI / NECHLAY
+      DLAI = TOTLAI / REAL(NECHLAY)
       
       ! For high LAI canopies, make sure DLAI does not go too large.
       IF(DLAI.GT.0.1)THEN
           DLAI = 0.1
       ENDIF
-      
+
       ! Check that calculated maximum number of layers is not > MAXECHLAY
       ! This is very rare, unless NECHLAY set to very high value, TOTLAI very high, or MAXECHLAY poorly set.
-      CALCMAXLAY = TOTLAI / DLAI
+      CALCMAXLAY = CEILING(TOTLAI / DLAI)
       IF(CALCMAXLAY.GT.MAXECHLAYER)THEN
         CALL SUBERROR('WARNING: ACTUAL NUMBER OF ECH LAYERS > MAXECHLAY. RESET TO MAXECHLAY.',IWARN,0)
-        DLAI = TOTLAI / MAXECHLAYER
+        DLAI = TOTLAI / REAL(MAXECHLAYER)
       ENDIF
-      
       
       
 ! Calculate transmittance through one elementary layer with thickness DLAI
