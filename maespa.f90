@@ -108,7 +108,7 @@ PROGRAM maespa
                     GKSPEC,NOGSDATESSPEC,DATESGSSPEC,D0LSPEC,GAMMASPEC,VPDMINSPEC,WLEAFTABLESPEC,&
                     DATESWLEAFSPEC,NOWLEAFDATESSPEC,NSIDESSPEC,           &
                     SFSPEC,PSIVSPEC,VPARASPEC,VPARBSPEC,VPARCSPEC,VFUNSPEC, &
-                    G02TABLE,G12TABLE,NEWTUZET,in_path)
+                    G02TABLESPEC,G12TABLESPEC,NEWTUZET,in_path)
     
     ! Cannot use Tuzet with MAESTRA (because plantk is in watpars.dat!)
     IF(.NOT.ISMAESPA.AND.MODELGS.EQ.6)THEN
@@ -429,6 +429,8 @@ PROGRAM maespa
                 GNIGHT = GNIGHTSPEC(ISPEC)
                 G0TABLE = G0TABLESPEC(1:maxdate,ISPEC)
                 G1TABLE = G1TABLESPEC(1:maxdate,ISPEC)              
+                G02TABLE = G02TABLESPEC(1:maxdate,ISPEC)
+                G12TABLE = G12TABLESPEC(1:maxdate,ISPEC)              
                 DATESGS = DATESGSSPEC(1:maxdate,ISPEC)
                 NOGSDATES = NOGSDATESSPEC(ISPEC)
                 
@@ -462,7 +464,8 @@ PROGRAM maespa
                                     NORDATES,DATESRD,RDTABLE,NOSLADATES,DATESSLA,SLATABLE,NOADATES, &
                                     DATESA,AJQTABLE,NOFQDATES,DATESFQ,Q10FTABLE,NOWQDATES,DATESWQ,  &
                                     Q10WTABLE,NOLAY,NOAGEP,JMAX25,VCMAX25,RD0,SLA,AJQ,Q10F,Q10W,    &
-                                    NOGSDATES,DATESGS,G0TABLE,G1TABLE,G0,G1,NOWLEAFDATES,DATESWLEAF,WLEAFTABLE,WLEAF)
+                                    NOGSDATES,DATESGS,G0TABLE,G1TABLE,G0,G1,NOWLEAFDATES,DATESWLEAF,WLEAFTABLE,WLEAF, &
+                                    G02TABLE, G12TABLE, G02,G12)
          
                 CALL INTERPOLATET(IDAY,ISTART,IHOUR,NOXDATES,DATESX,RXTABLE,NOYDATES,DATESY,RYTABLE,    &
                                     NOZDATES,DATESZ,RZTABLE,NOTDATES,DATEST,ZBCTABLE,NODDATES,DATESD,   &
@@ -721,6 +724,8 @@ PROGRAM maespa
                 SWPEXP = SWPEXPSPEC(ISPEC)       
                 G0TABLE = G0TABLESPEC(1:maxdate,ISPEC)           
                 G1TABLE = G1TABLESPEC(1:maxdate,ISPEC)
+                G02TABLE = G02TABLESPEC(1:maxdate,ISPEC)           
+                G12TABLE = G12TABLESPEC(1:maxdate,ISPEC)
                 WLEAFTABLE = WLEAFTABLESPEC(1:maxdate,ISPEC)
                 GK = GKSPEC(ISPEC)
                 !DATESGS = DATESGSSPEC(1:MASPDATE,ISPEC)
@@ -770,7 +775,7 @@ PROGRAM maespa
                                     DATESRD,RDTABLE,NOSLADATES,DATESSLA,SLATABLE,NOADATES,DATESA,AJQTABLE,  &
                                     NOFQDATES,DATESFQ,Q10FTABLE,NOWQDATES,DATESWQ,Q10WTABLE,NOLAY,NOAGEP,   &
                                     JMAX25,VCMAX25,RD0,SLA,AJQ,Q10F,Q10W,NOGSDATES,DATESGS,G0TABLE,G1TABLE, &
-                                    G0,G1,NOWLEAFDATES,DATESWLEAF,WLEAFTABLE,WLEAF)
+                                    G0,G1,NOWLEAFDATES,DATESWLEAF,WLEAFTABLE,WLEAF,G02TABLE,G12TABLE,G02,G12)
                 
                 CALL INTERPOLATET(IDAY,ISTART,IHOUR,NOXDATES,DATESX,RXTABLE,NOYDATES,DATESY,RYTABLE,NOZDATES,   &
                                     DATESZ,RZTABLE,NOTDATES,DATEST,ZBCTABLE,NODDATES,DATESD,DIAMTABLE,          &
