@@ -5352,7 +5352,7 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
       IMPLICIT NONE
       INTEGER NOPOINTS,INPUTTYPE,IOERROR,NUMTESTPNT,N,I
       
-      CHARACTER*80 CTITLE, TTITLE, PTITLE, STITLE, MTITLE, VTITLE
+      CHARACTER(len=256) ::  CTITLE, TTITLE, PTITLE, STITLE,  VTITLE, MTITLE
       REAL XL(MAXP),YL(MAXP),ZL(MAXP),COORDS(MAXP*3)
       REAL X0,Y0,ANGLE,SPACING,ZHEIGHT,COSANG,SINANG,DIST
       REAL XMAX,YMAX
@@ -5430,7 +5430,7 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
 ! Open output file
       OPEN (UPOINTSO, FILE = 'testflx.dat', STATUS = 'UNKNOWN')
 ! Write headings to output file
-991   FORMAT (A12,A60) ! For writing comments to output files.
+991   FORMAT (A12,A80) ! For writing comments to output files.
 992   FORMAT (1X,3(A3,1X),11(A12,1X))
 993   FORMAT (A60)
 994   FORMAT (A90)
