@@ -972,13 +972,12 @@ SUBROUTINE GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
     
     ! Aerodynamic conductance in the roughness layer
     ! The roughness layer is located between TREEH and a height ZW, according to 
-        GBCANMSROU = WINDSTAR*VONKARMAN * ((ZW - TREEH)/(ZW - ZPD))
+        GBCANMSROU = WINDSTAR*VONKARMAN * ((ZW - TREEH)/(ZW - ZPD2))
         
     ! Total aerodynamic conductance between the canopy ant the atmosphere
         GBCANMS1 = 1/ (1/GBCANMSINI + 1/GBCANMSROU)
-    
         
-    ! 2nd alternative to GBCANMS1
+ ! 2nd alternative to GBCANMS1
  !         ZPD2 = 0.75*TREEH
  !     Z0HT2 = 0.1*TREEH
 

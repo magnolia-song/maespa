@@ -2373,7 +2373,6 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       ! aerodynamic conductance air within canopy - air above canopy from Choudhury 1988
       CALL GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
       GCANOP = GBCANMS1 * CMOLAR
-      
        
       ! calculation of air temperature within the canopy (Note that Qc <0)
       TAIRNEW = TAIRABOVE +  (RNETTOT - ETOT + QC) / (CPAIR * AIRMA * GCANOP)
