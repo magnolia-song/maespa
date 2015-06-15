@@ -784,6 +784,9 @@ PROGRAM maespa
                 
                 ISPECIEST(1:NOTREES) = ISPECIES(ITAD(1:NOTREES, ITAR))
                 
+                ! Index of sorted trees needed by SCALEUP
+                IT(1:NOTREES) = ITAD(1:NOTREES, ITAR)
+                
                 DO I = 1,NOTREES
                     JSHAPET(I) = JSHAPESPEC(ISPECIEST(I))
                     SHAPET(I) = SHAPESPEC(ISPECIEST(I))
@@ -1439,7 +1442,7 @@ PROGRAM maespa
             ! we have to 'unsort' the leaf areas to find all current target tree leaf areas.
             ! This is needed in the SCALEUP routine below.   
 
-
+            ! This can be moved inside SCALEUP
             TARGETFOLS = 0
             DO K=1,NOTARGETS
                 DO I = 1,NOALLTREES
