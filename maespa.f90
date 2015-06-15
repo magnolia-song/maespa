@@ -174,21 +174,6 @@ PROGRAM maespa
                     SOILDATA,USEMEASSW)
     ENDIF
 
-    ! This should work, provided RXTABLE etc. are assigned in the half-hourly loop when needed 
-    ! (both for diffuse and direct transmittance).
-    ! However it fails now because these arrays are too large (MAXDATE,MAXT,MAXT)
-    !! Sort trees and store in large arrays (suffix AD), used in the half-hourly loop.
-    !DO ITAR = 1,NOTARGETS
-    !    ITREE = ITARGETS(ITAR)
-    !    CALL SORTTREES(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,RXTABLE1,RYTABLE1,RZTABLE1,  &
-    !                            ZBCTABLE1,FOLTABLE1,DIAMTABLE1,  &
-    !                            DXTAD(1:MAXT,ITAR),DYTAD(1:MAXT,ITAR),DZTAD(1:MAXT,ITAR),  & 
-    !                            RXTABLEAD(1:MAXDATE,1:MAXT,ITAR),RYTABLEAD(1:MAXDATE,1:MAXT,ITAR),  &
-    !                            RZTABLEAD(1:MAXDATE,1:MAXT,ITAR), FOLTABLEAD(1:MAXDATE,1:MAXT,ITAR), &
-    !                            ZBCTABLEAD(1:MAXDATE,1:MAXT,ITAR),DIAMTABLEAD(1:MAXDATE,1:MAXT,ITAR), & 
-    !                            ISPECIESAD(1:MAXT,ITAR),ISPECIESTAD(1:MAXT,ITAR),ITAD(1:MAXT,ITAR))
-    !ENDDO
-    
     DO ITAR = 1,NOTARGETS
         ITREE = ITARGETS(ITAR)
         CALL SORTTREESI(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,ITAD(1:MAXT,ITAR))
@@ -476,14 +461,19 @@ PROGRAM maespa
                 VFUN  = VFUNSPEC(ISPEC)
 
                 ! Sort the trees every timestep.
-                !! Arrays DXT through IT should be assigned here, sorting to be done
-                !! outside loop, stored in larger array.
-                CALL SORTTREES(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,RXTABLE1,RYTABLE1,RZTABLE1,  &
-                                ZBCTABLE1,FOLTABLE1,DIAMTABLE1,  &
-                                DXT,DYT,DZT,RXTABLE,RYTABLE,RZTABLE, &
-                                FOLTABLE,ZBCTABLE,DIAMTABLE,ISPECIES,ISPECIEST,IT)
+                DXT(1:NOTREES) = DXT1(ITAD(1:NOTREES, ITAR))
+                DYT(1:NOTREES) = DYT1(ITAD(1:NOTREES, ITAR))
+                DZT(1:NOTREES) = DZT1(ITAD(1:NOTREES, ITAR))
                 
+                RXTABLE(1:MAXDATE, 1:NOTREES) = RXTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                RYTABLE(1:MAXDATE, 1:NOTREES) = RYTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                RZTABLE(1:MAXDATE, 1:NOTREES) = RZTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
                 
+                FOLTABLE(1:MAXDATE, 1:NOTREES) = FOLTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                ZBCTABLE(1:MAXDATE, 1:NOTREES) = ZBCTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                DIAMTABLE(1:MAXDATE, 1:NOTREES) = DIAMTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                
+                ISPECIEST(1:NOTREES) = ISPECIES(ITAD(1:NOTREES, ITAR))
                 
                 ! Interpolate to get daily values of parameters
                 ! This we can probably also do outside the hourly loop.
@@ -780,11 +770,19 @@ PROGRAM maespa
                 ROOTLEN = ROOTLENSPEC(1:MAXSOILLAY,ISPEC)
                 
                 ! Sort the trees every timestep.
-                ! This should be done outside the hourly loop, and stored in an array.
-                CALL SORTTREES(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,RXTABLE1,RYTABLE1,RZTABLE1,ZBCTABLE1,&
-                                FOLTABLE1,DIAMTABLE1,  &
-                                DXT,DYT,DZT,RXTABLE,RYTABLE,RZTABLE,FOLTABLE,ZBCTABLE, &
-                                DIAMTABLE,ISPECIES,ISPECIEST,IT)
+                DXT(1:NOTREES) = DXT1(ITAD(1:NOTREES, ITAR))
+                DYT(1:NOTREES) = DYT1(ITAD(1:NOTREES, ITAR))
+                DZT(1:NOTREES) = DZT1(ITAD(1:NOTREES, ITAR))
+                
+                RXTABLE(1:MAXDATE, 1:NOTREES) = RXTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                RYTABLE(1:MAXDATE, 1:NOTREES) = RYTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                RZTABLE(1:MAXDATE, 1:NOTREES) = RZTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                
+                FOLTABLE(1:MAXDATE, 1:NOTREES) = FOLTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                ZBCTABLE(1:MAXDATE, 1:NOTREES) = ZBCTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                DIAMTABLE(1:MAXDATE, 1:NOTREES) = DIAMTABLE1(1:MAXDATE, ITAD(1:NOTREES, ITAR))
+                
+                ISPECIEST(1:NOTREES) = ISPECIES(ITAD(1:NOTREES, ITAR))
                 
                 DO I = 1,NOTREES
                     JSHAPET(I) = JSHAPESPEC(ISPECIEST(I))
