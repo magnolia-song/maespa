@@ -1507,8 +1507,10 @@ SUBROUTINE GETWIND(FOLLAY,FOLNTR,TOTLAI,EXTWIND,WINDLAY)
     END DO
 
     RETURN
-END SUBROUTINE GETWIND
+    END SUBROUTINE GETWIND
 
+    
+!**********************************************************************    
 SUBROUTINE GETWINDNEW(ZL,ZBC,RZ,LGP,NUMPNT,NOTREES,ZHT,WINDLAY)
 
 ! Calculate decrease in wind speed with increasing canopy depth
@@ -1524,37 +1526,35 @@ SUBROUTINE GETWINDNEW(ZL,ZBC,RZ,LGP,NUMPNT,NOTREES,ZHT,WINDLAY)
     
     !Average canopy height
     TREEH = 0.0
-        DO I = 1,notrees 
-            TREEH = TREEH + ZBC(I) + RZ(I)
-        ENDDO
-            TREEH = TREEH / NOTREES
+    DO I = 1,notrees 
+        TREEH = TREEH + ZBC(I) + RZ(I)
+    ENDDO
+        TREEH = TREEH / NOTREES
 
-    !The wind speed at the top of the canopy is calculated assuming a logarithmic decrease of wind
-    !speed above the canopy (see Van de Griend 1989 and GBCANMS subroutine)
-        ZPD2 = 0.75 * TREEH
-        Z0 = 0.1 *  TREEH
+    ! The wind speed at the top of the canopy is calculated assuming a logarithmic decrease of wind
+    ! speed above the canopy (see Van de Griend 1989 and GBCANMS subroutine)
+    ZPD2 = 0.75 * TREEH
+    Z0 = 0.1 *  TREEH
 
-    ! Rekative reference Wind used in the conductance calculation
+    ! Relative reference Wind used in the conductance calculation
     ! Note that the formula differs from the one used in GBCANMS (without wind)
-    ! because this subroutine calcualte a relative wind
-        WINDSTAR = VONKARMAN / log((ZHT-ZPD2)/Z0)
+    ! because this subroutine calculate a relative wind
+    WINDSTAR = VONKARMAN / log((ZHT-ZPD2)/Z0)
     
     ! According to Van de Griend we can assumed that (ZW height of the roughness layer) :
-        ALPHA1 = 1.5
-        ZW = ZPD2 + ALPHA1 * (TREEH-ZPD2)
+    ALPHA1 = 1.5
+    ZW = ZPD2 + ALPHA1 * (TREEH-ZPD2)
     
     ! Wind speed at the top of the canopy according to Van de Griend 1989 (eq 42)
-        WINDTOP = WINDSTAR/VONKARMAN * log((ZW-ZPD2)/Z0) -  &
+    WINDTOP = WINDSTAR/VONKARMAN * log((ZW-ZPD2)/Z0) -  &
                   WINDSTAR/VONKARMAN * (1-((TREEH-ZPD2)/(ZW-ZPD2)))
 
-    ! We assumed a expenential decrease of winf speed with depth in the canopy according to CHoudhury & Monteith 1988   
-        ALPHA2 = 3.0
-        DO IPT = 1,NUMPNT
-            WINDLAY(LGP(IPT)) = WINDTOP * EXP(ALPHA2 * (ZL(IPT)/TREEH -1))
-        ENDDO
-        
-        
-        
+    ! We assumed a expenential decrease of wind speed with depth in the canopy according to Choudhury & Monteith 1988   
+    ALPHA2 = 3.0
+    DO IPT = 1,NUMPNT
+        WINDLAY(LGP(IPT)) = WINDTOP * EXP(ALPHA2 * (ZL(IPT)/TREEH -1))
+    ENDDO
+            
     END SUBROUTINE GETWINDNEW
     
     

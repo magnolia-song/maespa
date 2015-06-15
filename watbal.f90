@@ -144,8 +144,7 @@ END SUBROUTINE INITWATBAL
 
 
 !**********************************************************************
-
-      SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
+SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                             FRACORGANIC,POREFRAC,SOILCOND,THERMCOND, &
                             ROOTMASS,ROOTLEN,LAYTHICK,ICEPROP, &
                             EQUALUPTAKE,RETFUNCTION, &
@@ -162,8 +161,6 @@ END SUBROUTINE INITWATBAL
 ! soil-to-root hydraulic conductance (leaf specific), thermal
 ! conductivity, and fraction water uptake from each soil layer
 ! (that has roots). No uptake takes place yet (see WATBALLAY subroutine).
-
-! RAD, May 2008
 !**********************************************************************
 
       USE maestcom
@@ -244,7 +241,7 @@ END SUBROUTINE INITWATBAL
                                 USEMEASSW, SOILDATA, SOILMOISTURE, &
                                 ROOTLEN,NROOTLAYER,WEIGHTEDSWP, &
                                 FRACUPTAKE,TOTSOILRES,LAYTHICK, &
-                            TOTESTEVAP,ZBC,RZ) ! M. Christina, laythick 12/2012, ZBC,RZ, gravitational potential calculation 
+                                TOTESTEVAP,ZBC,RZ) 
       
 ! Aerodynamic conductance between soil surface and air,
 ! assuming turbulent transfer (so that conductance is the same for
@@ -2374,7 +2371,6 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       CALL GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
       GCANOP = GBCANMS1 * CMOLAR
       
-       
       ! calculation of air temperature within the canopy (Note that Qc <0)
       TAIRNEW = TAIRABOVE +  (RNETTOT - ETOT + QC) / (CPAIR * AIRMA * GCANOP)
 
@@ -2388,14 +2384,15 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       VPAIRCANOP = ETOT / (CPAIR * AIRMA * GCANOP/GAMMA) + VPAIR   
       VPDNEW = SATUR(TAIRNEW) - VPAIRCANOP
 
-    ! limit condition      
-    IF ((TAIRNEW-TAIRABOVE).GT.10)  TAIRNEW = TAIRABOVE + 10
-    IF ((TAIRABOVE-TAIRNEW).GT.10)  TAIRNEW = TAIRABOVE - 10
+      ! limit condition      
+      IF ((TAIRNEW-TAIRABOVE).GT.10)  TAIRNEW = TAIRABOVE + 10
+      IF ((TAIRABOVE-TAIRNEW).GT.10)  TAIRNEW = TAIRABOVE - 10
 
-    !IF ((VPDABOVE.LT.100).AND.(VPDNEW.LT.100)) VPDNEW=VPDABOVE
-    IF (VPDNEW.LT.1) VPDNEW=1
-    IF (VPDNEW.GT.SATUR(TAIRNEW)) VPDNEW=SATUR(TAIRNEW) -1  ! to avoid RHnew = 0.
+      ! Avoid very low VPD or over-saturation.
+      IF (VPDNEW.LT.1) VPDNEW = 1
+      IF (VPDNEW.GT.SATUR(TAIRNEW)) VPDNEW=SATUR(TAIRNEW) -1
       
+      ! Updated relative humidity
       RHNEW = 1.0 - VPDNEW/SATUR(TAIRNEW) 
       
       RETURN

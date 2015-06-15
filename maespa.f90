@@ -816,7 +816,6 @@ PROGRAM maespa
                                 LGP,FOLLAY)          
                 
                 ! Following functions need FOLLAY. 
-!                CALL GETWIND(FOLLAY,FOLT(1),TOTLAI,EXTWIND,WINDLAY)
                 CALL GETWINDNEW(ZL,ZBC,RZ,LGP,PPLAY*NOLAY,NOALLTREES,ZHT,WINDLAY)
                 
                 ! Calculate woody biomass and woody biomass increment

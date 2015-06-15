@@ -780,7 +780,7 @@ REAL FUNCTION ETCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING)
     USE maestcom
     IMPLICIT NONE
     REAL LHV,WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING
-    REAL GB,GSV,RNETM2,SLOPE,GH,GV,TREEH
+    REAL GB,GSV,RNETM2,SLOPE,GH,GV
     REAL, EXTERNAL :: GBCAN
     REAL, EXTERNAL :: HEATEVAP
     REAL, EXTERNAL :: SATUR
@@ -959,52 +959,35 @@ SUBROUTINE GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
 
     ! Aerodynamic conductance between the atmosphere and the canopy
     ! Reference Wind used in the conductance calculation
+    ! (this is ustar, the friction velocity)
     WINDSTAR = WIND * VONKARMAN / log((ZHT-ZPD2)/Z0)
     
     ! We supposed 2 aerodynamic conductances, one in the inertial layer (from ZHT to ZW)
     ! and another one in the roughness layer from ZHT to TREEH
     ! According to Van de Griend 1989, we can assumed that :
-        ALPHA1 = 1.5
-        ZW = ZPD2 + ALPHA1 * (TREEH-ZPD2)
+    ALPHA1 = 1.5
+    ZW = ZPD2 + ALPHA1 * (TREEH-ZPD2)
     
     ! Aerodynamic conductance in the inertial sublayer (Van de Griend 1989)
-        GBCANMSINI = WINDSTAR*VONKARMAN /(LOG((ZHT - ZPD2)/(ZW - ZPD2)))
+    GBCANMSINI = WINDSTAR*VONKARMAN /(LOG((ZHT - ZPD2)/(ZW - ZPD2)))
     
     ! Aerodynamic conductance in the roughness layer
     ! The roughness layer is located between TREEH and a height ZW, according to 
-        GBCANMSROU = WINDSTAR*VONKARMAN * ((ZW - TREEH)/(ZW - ZPD))
+    GBCANMSROU = WINDSTAR*VONKARMAN * ((ZW - TREEH)/(ZW - ZPD))
         
     ! Total aerodynamic conductance between the canopy ant the atmosphere
-        GBCANMS1 = 1/ (1/GBCANMSINI + 1/GBCANMSROU)
+    GBCANMS1 = 1/ (1/GBCANMSINI + 1/GBCANMSROU)
     
-        
-    ! 2nd alternative to GBCANMS1
- !         ZPD2 = 0.75*TREEH
- !     Z0HT2 = 0.1*TREEH
-
-      ! Atenuation coefficient, from Lafleur & Roux 1989
-!      COAT = 2.6 * TOTLAI**0.36
-!        IF (COAT.LT.1) COAT = 1
-!        IF (COAT.GT.3) COAT = 3
-
-      ! Intermediate values
-!        USTAR = WIND * VONKARMAN / log((ZHT-ZPD2)/Z0HT2)
-!        Z0H = Z0*exp(-6.27*VONKARMAN*(WINDSTAR**(1/3)))
-      
-!        GBCNAMS1 = 1/  ( log((ZHT-ZPD2)/Z0)/(WIND*VONKARMAN**2) * (log((ZHT-ZPD2)/(TREEH-ZPD2)) +  &
-!               (TREEH/(COAT*(TREEH-ZPD2)))*   (exp(COAT*(1-(ZPD2+Z0H)/TREEH))- 1)))     
-
-        
     ! Aerodynamic conductance between the soil surface to the the canopy, 2nd conductance term from choudhury et al. 1988   
     ! based on an exponential decrease of wind speed with height
     ALPHA = 2
     Z0HT2 = 0.01
 
-    ! assuming uniforme vegetation, the aerodinamic conductivity at the top of the canopy KH,
+    ! Assuming uniforme vegetation, the aerodinamic conductivity at the top of the canopy KH,
     ! and following Van de Griend 1989
     KH = ALPHA1 * VONKARMAN * WINDSTAR * (TREEH - ZPD2) 
 
-    !Aerodynamic conductance soir-air below canopy according to Chourdhury et al., 1988
+    ! Aerodynamic conductance soir-air below canopy according to Chourdhury et al., 1988
     GBCANMS2 = ALPHA * KH / ( TREEH * exp(ALPHA) * (exp(-ALPHA * Z0HT2/TREEH)  -  exp(-ALPHA * (ZPD2+Z0) / TREEH) ) )
 
 
