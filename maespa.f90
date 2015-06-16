@@ -786,6 +786,9 @@ PROGRAM maespa
                 
                 ISPECIEST(1:NOTREES) = ISPECIES(ITAD(1:NOTREES, ITAR))
                 
+                ! Index of sorted trees needed by SCALEUP
+                IT(1:NOTREES) = ITAD(1:NOTREES, ITAR)
+                
                 DO I = 1,NOTREES
                     JSHAPET(I) = JSHAPESPEC(ISPECIEST(I))
                     SHAPET(I) = SHAPESPEC(ISPECIEST(I))
@@ -1431,32 +1434,11 @@ PROGRAM maespa
 
             ! Do the water balance.
             ! Throughfall, soil evaporation, root water uptake, infiltration of surface water,
-            ! gravitational drainage.
-
-            ! Get the leaf areas of all the target trees this timestep.
-            ! Because Maestra works like this : 
-            ! 1) sort trees around current target tree
-            ! 2) interpolate leaf area if not directly input
-            ! we have to 'unsort' the leaf areas to find all current target tree leaf areas.
-            ! This is needed in the SCALEUP routine below.   
-
-
-            TARGETFOLS = 0
-            DO K=1,NOTARGETS
-                DO I = 1,NOALLTREES
-                    IF(IT(I).EQ.ITARGETS(K)) THEN
-                        TARGETFOLS(K)=FOLT(I)
-                    ENDIF
-                ENDDO
-            ENDDO
-            
-            !
+            ! gravitational drainage.            
             IF(ISMAESPA) THEN
-                                
                 
                 ! Get area-based estimates of radiation interception and transpiration rate.
-                
-                CALL SCALEUP(IHOUR, USESTAND, NOTARGETS, NOALLTREES, TARGETFOLS,ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,  &
+                CALL SCALEUP(IHOUR, USESTAND, NOTARGETS, NOALLTREES, FOLT,IT, ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,  &
                                 SCLOSTTREE,THRAB,RADABV,FH2O,PLOTAREA,  &
                                 DOWNTHTREE,RGLOBABV,RGLOBUND,RADINTERC,FRACAPAR,ISIMUS,FH2OUS(IHOUR),THRABUS(IHOUR),   &
                                 PARUSMEAN(IHOUR),SCLOSTTOT,GSCAN,WINDAH(IHOUR),ZHT,Z0HT,ZPD,PRESS(IHOUR),TAIR(IHOUR),       &
@@ -1875,10 +1857,14 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,   
     IF(PSIL.LT.PSILCANMIN(ITAR,IHOUR))THEN
        PSILCANMIN(ITAR,IHOUR) = PSIL
     ENDIF
-        ! Stom cond in mol tree-1 s-1
-        GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA/FOLT
-        ! Boundary layer conductance to heat
-        GBHCAN(ITAR,IHOUR) = GBHCAN(ITAR,IHOUR) + GBH*AREA/FOLT
+    
+    ! Next two are not divided by FOLT because they are totals, not averages.
+    ! Stom cond in mol tree-1 s-1
+    GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA
+    
+    ! Boundary layer conductance to heat
+    GBHCAN(ITAR,IHOUR) = GBHCAN(ITAR,IHOUR) + GBH*AREA
+        
     ! Average ci.
         CICAN(ITAR,IHOUR) = CICAN(ITAR,IHOUR) + CI*AREA / FOLT
     ENDIF

@@ -2069,7 +2069,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 
 !**********************************************************************
 
-      SUBROUTINE SCALEUP(IHOUR,USESTAND,NOTARGETS,NOALLTREES,FOLT, &
+      SUBROUTINE SCALEUP(IHOUR,USESTAND,NOTARGETS,NOALLTREES,FOLT,IT, &
                          ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,SCLOSTTREE, &
                          THRAB,RADABV,FH2O, &
                          PLOTAREA,DOWNTHTREE, &
@@ -2089,10 +2089,10 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 
     USE maestcom
     IMPLICIT NONE
-    INTEGER NOTARGETS,NOALLTREES,ITAR
+    INTEGER NOTARGETS,NOALLTREES,ITAR,K,IT(MAXT)
     INTEGER ITARGETS(MAXT),I,IHOUR,ISIMUS
     INTEGER USESTAND,ISPECIES(MAXT),NOSPEC,ISPEC
-    REAL FOLT(MAXT),EXPFACTORS(MAXT)
+    REAL FOLT(MAXT),TARGETFOLS(MAXT),EXPFACTORS(MAXT)
     REAL SCLOSTTREE(MAXT,3),GSCAN(MAXT,MAXHRS)
     REAL THRAB(MAXT,MAXHRS,3),RADABV(MAXHRS,3)
     REAL DOWNTHTREE(MAXT)
@@ -2106,16 +2106,38 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
     REAL ETUSMM,FH2OUS,WTOT,TREEH, ETMMSPEC(MAXSP)
     REAL RGLOBUND1,RGLOBUND2,DOWNTHAV
     
+
+! conversion to kg m-2 t-1
+            CONV = SPERHR * 1E-06 * 18 * 1E-03 
+
+! Get the leaf areas of all the target trees this timestep.
+! Because Maestra works like this : 
+! 1) sort trees around current target tree
+! 2) interpolate leaf area if not directly input
+! we have to 'unsort' the leaf areas to find all current target tree leaf areas.
+!!! This does not have to be done each time in scaleup, can move just inside day loop after interpolate?
+    TARGETFOLS = 0
+    DO K=1,NOTARGETS
+        DO I = 1,NOALLTREES
+            IF(IT(I).EQ.ITARGETS(K)) THEN
+                TARGETFOLS(K) = FOLT(I)
+            ENDIF
+        ENDDO
+    ENDDO
+
+!!! This does not have to be done each time in scaleup, can move just inside day loop after interpolate?
 ! Get average leaf area of target trees
       TOTLATAR = 0.0
       DO I = 1,NOTARGETS
-          TOTLATAR = TOTLATAR + FOLT(I)
+          TOTLATAR = TOTLATAR + TARGETFOLS(I)
       ENDDO
       TREELAMEAN = TOTLATAR / REAL(NOTARGETS)
 
+!!! This does not have to be done each time in scaleup, can move just inside day loop after interpolate?
 ! Get average leaf area of all trees in the stand:
       ALLTREELAMEAN = TOTLAI / STOCKING
 
+!!! This does not have to be done each time in scaleup, can move just inside day loop after interpolate?
 ! If USESTAND=1, uses entire stand to determine water balance (not just target trees).
       IF(USESTAND.GT.0)THEN
           IF(TREELAMEAN.GT.0)THEN
@@ -2128,7 +2150,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
       ELSE
           EXPFACTORS(1:NOTARGETS) = 1.0
       ENDIF
-
+      
 ! If multiple species, calculate ET by species. If USESTAND, this is used to divide total recalculated
 ! ET into the species (an approximate method anyway!), if USESTAND=1, it is the final result for ETMMSPEC.
       IF(NOSPEC.GT.1)THEN
@@ -2142,8 +2164,8 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
               ENDIF
               
             ENDDO
-            
-            ETMMSPEC(ISPEC) = WTOT * SPERHR * 1E-06 * 18 * 1E-03 / PLOTAREA
+             
+            ETMMSPEC(ISPEC) = WTOT * CONV / PLOTAREA
         
         ENDDO
       
@@ -2163,7 +2185,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 ! Get average canopy conductance across target trees:
       GSCANAV = 0.
       DO ITAR = 1,NOTARGETS
-          GSCANAV = GSCANAV + FOLT(ITAR) * GSCAN(ITAR,IHOUR)
+          GSCANAV = GSCANAV + TARGETFOLS(ITAR) * GSCAN(ITAR,IHOUR)
       ENDDO
       GSCANAV = GSCANAV / TOTLATAR
       
@@ -2185,7 +2207,6 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         ! Note that this is inconsequential : gets converted back in ETCAN
 
 ! Conversion to kg m-2 t-1.
-        CONV = SPERHR * 1E-06 * 18 * 1E-03
         ETMM = ETCAN(WIND,ZHT,Z0HT,ZPD, &
             PRESS,TAIR, &
             RADINTERCTREE,   &
@@ -2217,7 +2238,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
           ENDDO
         
           ! Simple conversion
-          ETMM = WTOT * SPERHR * 1E-06 * 18 * 1E-03 / PLOTAREA
+          ETMM = WTOT * CONV / PLOTAREA
       
       ENDIF
       
