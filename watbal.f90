@@ -2122,6 +2122,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
     ENDDO
 
 !!! This does not have to be done each time in scaleup, can move just inside day loop after interpolate?
+!!! Note : interpolatet is inside hourly loop (should be moved first before this can be moved)
 ! Get average leaf area of target trees
       TOTLATAR = 0.0
       DO I = 1,NOTARGETS
@@ -2177,67 +2178,89 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                       SCLOSTTOT,FRACAPAR,RADINTERC,  &
                       RGLOBUND1,&
                       RGLOBUND2,DOWNTHAV)
-                           
-! Get average canopy conductance across target trees:
-      GSCANAV = 0.
-      DO ITAR = 1,NOTARGETS
-          GSCANAV = GSCANAV + TARGETFOLS(ITAR) * GSCAN(ITAR,IHOUR)
-      ENDDO
-      GSCANAV = GSCANAV / TOTLATAR
       
-
-! Recalculate canopy water use, if scaling to the entire stand.
-      IF(USESTAND.GT.0)THEN
-
-! Estimate average conductance for all trees, based on
-! leaf area difference:
-        IF(TREELAMEAN.GT.0)THEN
-            GSCANAV = GSCANAV * (ALLTREELAMEAN / TREELAMEAN)
-        ELSE
-            GSCANAV = 0.0
-        ENDIF
-
-! Total radiation interception from GETRGLOB was in W m-2 (soil),
-! convert to per tree (for use in ETCAN):
-        RADINTERCTREE = RADINTERC / STOCKING
-        ! Note that this is inconsequential : gets converted back in ETCAN
-
-! Conversion to kg m-2 t-1.
-        ETMM = ETCAN(WIND,ZHT,Z0HT,ZPD, &
-            PRESS,TAIR, &
-            RADINTERCTREE,   &
-            VPD,GSCANAV,STOCKING) * CONV
-        
-! Recalculate ETMMSPEC to arrive at same total; this is an approximate method to apportion
-! total ET into species components.
-        IF(NOSPEC.GT.1)THEN
-            TOTSPECET = SUM(ETMMSPEC(1:NOSPEC))
-            IF(TOTSPECET.GT.0.0)THEN
-                DO I=1,NOSPEC
-                    ETMMSPEC(I) = ETMMSPEC(I) * ETMM / TOTSPECET
-                ENDDO
-            ENDIF
-        ELSE
-            ETMMSPEC(1) = ETMM
-            
-        ENDIF
-        
-      ENDIF
-    
-! Alternatively, do water balance only based on the target trees (no scaling to stand).
+! Option 1 : do water balance only based on the target trees (no scaling to stand).
       IF(USESTAND.EQ.0) THEN
       
-        ! Total water use, based on FH2O (not recalculated!)
+          ! Total water use, based on FH2O (not recalculated!)
           WTOT = 0.0
-          DO I=1,NOTARGETS
-              WTOT = WTOT + FH2O(I,IHOUR)
+          DO ITAR=1,NOTARGETS
+              WTOT = WTOT + FH2O(ITAR,IHOUR)
           ENDDO
         
           ! Simple conversion
           ETMM = WTOT * CONV / PLOTAREA
       
       ENDIF
+
+! Option 2 : recalculate canopy water use from averaged (corrected) GSCAN
+      IF(USESTAND.EQ.1)THEN
+
+    ! Get average canopy conductance across target trees:
+          GSCANAV = 0.
+          DO ITAR = 1,NOTARGETS
+              GSCANAV = GSCANAV + TARGETFOLS(ITAR) * GSCAN(ITAR,IHOUR)
+          ENDDO
+          GSCANAV = GSCANAV / TOTLATAR
       
+    ! Estimate average conductance for all trees, based on
+    ! leaf area difference:
+          IF(TREELAMEAN.GT.0)THEN
+              GSCANAV = GSCANAV * (ALLTREELAMEAN / TREELAMEAN)
+          ELSE
+              GSCANAV = 0.0
+          ENDIF
+
+    ! Total radiation interception from GETRGLOB was in W m-2 (soil),
+    ! convert to per tree (for use in ETCAN):
+    ! Note that this is inconsequential : gets converted back in ETCAN
+          RADINTERCTREE = RADINTERC / STOCKING
+
+    ! Conversion to kg m-2 t-1.
+          ETMM = ETCAN(WIND,ZHT,Z0HT,ZPD, &
+                PRESS,TAIR, &
+                RADINTERCTREE,   &
+                VPD,GSCANAV,STOCKING) * CONV
+        
+      ENDIF
+
+! Option 3 : calculate stand water use from gridpoint transpiration rates,
+! corrected for target trees (as USESTAND=1, but don't recalculate with Penman-Monteith).
+     IF(USESTAND.EQ.2)THEN
+            
+          ! Average water use per tree, based on FH2O (not recalculated!)
+          WTOT = 0.0
+          DO ITAR=1,NOTARGETS
+              WTOT = WTOT + TARGETFOLS(ITAR) * FH2O(ITAR,IHOUR)
+          ENDDO
+          WTOT = WTOT / TOTLATAR
+          
+          ! Correct for leaf area difference between target trees and all trees in stand
+          IF(TREELAMEAN.GT.0)THEN
+              WTOT = WTOT * (ALLTREELAMEAN / TREELAMEAN)
+          ELSE
+              WTOT = 0.0
+          ENDIF
+        
+          ! Convert from mol tree-1 s-1 to kg m-2 t-1.
+          ETMM = WTOT * CONV * STOCKING
+         
+     ENDIF
+      
+      
+! Recalculate ETMMSPEC to arrive at same total; this is an approximate method to apportion
+! total ET into species components (needed for multiple rooting layers).
+          IF(NOSPEC.GT.1)THEN
+                TOTSPECET = SUM(ETMMSPEC(1:NOSPEC))
+                IF(TOTSPECET.GT.0.0)THEN
+                    DO I=1,NOSPEC
+                        ETMMSPEC(I) = ETMMSPEC(I) * ETMM / TOTSPECET
+                    ENDDO
+                ENDIF
+          ELSE
+                ETMMSPEC(1) = ETMM    
+          ENDIF
+        
       
 ! Add understorey ET to ETMM, if simulated:
       IF(ISIMUS.EQ.1)THEN
