@@ -197,8 +197,7 @@ PROGRAM maespa
         CALL INTERPOLATEDIST(IDAY,ISTART,FRACROOTTABLE,NOROOTDATES,NOROOTSPEC,DATESROOT,FRACROOTSPEC,NROOTLAYER, NALPHASPEC, &
                                 FALPHATABLESPEC,DATESLIA2,NOLIADATES,FALPHASPEC,NSPECIES, &
                                 ISMAESPA,LAYTHICK,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT, ROOTFRONT)
-        
-
+                
         IF(ISMAESPA)THEN
             CALL INTERPOLATEW(IDAY,ISTART,NOSPEC,NOKPDATES,DATESKP,PLANTKTABLE,PLANTK,  &
                               NOROOTDATES,DATESROOT,NOROOTSPEC,ROOTRADTABLE,ROOTSRLTABLE,ROOTMASSTOTTABLE, &
@@ -620,6 +619,9 @@ PROGRAM maespa
                     AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
                     PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,  &
                     PSILCAN,PSILCANMIN,CICAN, ECANMAX, ACANMAX,AREATOT)
+            
+            ! average canopy height for aerodynamic conductance calculation
+            TREEH = (sum(ZBC(1:NOTREES)) + sum(RZ(1:NOTREES))) / NOTREES
             
             ! Run the iteration on air temperature and vapour pressure within the canopy
             CALL ITERTCAN(IHOUR, ITERTAIR, ITERTAIRMAX, NUMPNT, NOTARGETS, &
@@ -1299,11 +1301,10 @@ PROGRAM maespa
                     
                     END DO ! End loop over grid points
                     
-
                     ! Calculate transpiration by applying Penman-Monteith to canopy
                     FH2OCAN(ITAR,IHOUR) = ETCAN(WINDAH(IHOUR),ZHT,Z0HT,ZPD,PRESS(IHOUR),TAIR(IHOUR),    &
                                             THRAB(ITAR,IHOUR,1)+THRAB(ITAR,IHOUR,2)+THRAB(ITAR,IHOUR,3),&
-                                            VPD(IHOUR),GSCAN(ITAR,IHOUR),STOCKING)
+                                            VPD(IHOUR),GSCAN(ITAR,IHOUR),STOCKING,TREEH,TOTLAI)
             
                     
                 ELSE ! Night-time
@@ -1451,14 +1452,7 @@ PROGRAM maespa
             
             !
             IF(ISMAESPA) THEN
-                
-                ! average canopy height calculation
-                TREEH = 0.0
-                DO I = 1,notrees 
-                    TREEH = TREEH + ZBC(I) + RZ(I)
-                ENDDO
-                    TREEH = TREEH / NOTREES
-                
+                                
                 
                 ! Get area-based estimates of radiation interception and transpiration rate.
                 
@@ -1505,7 +1499,7 @@ PROGRAM maespa
                             VPD(IHOUR),THROUGHFALL, &
                             RUTTERB,RUTTERD,MAXSTORAGE, &
                             CANOPY_STORE, SURFACE_WATERMM, &
-                            EVAPSTORE, DRAINSTORE)
+                            EVAPSTORE, DRAINSTORE,TREEH,TOTLAI)
 
                 
                 
@@ -1560,7 +1554,7 @@ PROGRAM maespa
                                 ETMM,ETMMSPEC,NOSPEC,USEMEASET,ETMEAS(IHOUR),FRACUPTAKESPEC,ICEPROP,FRACWATER,DRAINLIMIT,KSAT,BPAR,             &
                                 WSOIL,WSOILROOT,DISCHARGE,DRYTHICKMIN,DRYTHICK,SOILEVAP,OVERFLOW,WATERGAIN,WATERLOSS,       &
                                 PPTGAIN,KEEPWET,EXPINF,WS,WR,PSIE,ALPHARET,NRET,RETFUNCTION,SOILWP,&
-                                IWATTABLAYER,ISIMWATTAB,PLATDRAIN,WATCAPIL)
+                                IWATTABLAYER,ISIMWATTAB,PLATDRAIN,WATCAPIL,TREEH,TOTLAI)
  
                 ! Heat balance: soil T profile (SOILTEMP).
                 IF(USEMEASET.EQ.0.AND.USEMEASSW.EQ.0)THEN

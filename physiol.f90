@@ -772,7 +772,7 @@ END FUNCTION ARRH
 
 
 !**********************************************************************
-REAL FUNCTION ETCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING)
+REAL FUNCTION ETCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING,TREEH,TOTLAI)
 ! Calculate transpiration by applying Penman-Monteith to whole canopy.
 ! Returns umol m-2 s-1.
 !**********************************************************************
@@ -780,15 +780,19 @@ REAL FUNCTION ETCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING)
     USE maestcom
     IMPLICIT NONE
     REAL LHV,WIND,ZHT,Z0HT,ZPD,PRESS,TAIR,RNET,VPD,GSCAN,STOCKING
-    REAL GB,GSV,RNETM2,SLOPE,GH,GV
+    REAL GB,GSV,RNETM2,SLOPE,GH,GV,TREEH, TOTLAI, GBCANMS1,GBCANMS2,CMOLAR
     REAL, EXTERNAL :: GBCAN
     REAL, EXTERNAL :: HEATEVAP
     REAL, EXTERNAL :: SATUR
     REAL, EXTERNAL :: PENMON
+    REAL, EXTERNAL :: TK
 
-    ! Get boundary layer conductance
-    GB = GBCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR)
-    
+    ! Get boundary layer conductance, GBCANMS give conductance in m s-1
+!    GB = GBCAN(WIND,ZHT,Z0HT,ZPD,PRESS,TAIR)
+    CALL GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH,TOTLAI,GBCANMS1,GBCANMS2)
+    CMOLAR = PRESS / (RCONST * TK(TAIR))
+    GB = GBCANMS1*CMOLAR    ! in mol m-2 s-1
+        
     ! Convert mol CO2/tree/s to mol H2O/m2/s
     GSV = GSCAN*GSVGSC*STOCKING
     RNETM2 = RNET*STOCKING
@@ -945,7 +949,7 @@ SUBROUTINE GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
     
     REAL Cd, X, TOTLAI, ZPD2, TREEH, Z0, KH, ALPHA, Z0HT2
     REAL GBCANMS1, GBCANMS2, GBCANMSINI, GBCANMSROU
-    REAL ALPHA1, WINDSTAR, ZW
+    REAL ALPHA1, WINDSTAR, ZW, COAT, GBCANMS3,Z0H
     
     ! In this model, we assumed 2 aerodynamic conductances in series
     ! 1) from the atmosphere to the canopy, based on Van de Griend 1989
@@ -974,34 +978,10 @@ SUBROUTINE GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
     ! Aerodynamic conductance in the roughness layer
     ! The roughness layer is located between TREEH and a height ZW, according to 
     GBCANMSROU = WINDSTAR*VONKARMAN * ((ZW - TREEH)/(ZW - ZPD2))
-        
-    ! Total aerodynamic conductance between the canopy ant the atmosphere
-        GBCANMS1 = 1/ (1/GBCANMSINI + 1/GBCANMSROU)
-        
- ! 2nd alternative to GBCANMS1
- !         ZPD2 = 0.75*TREEH
- !     Z0HT2 = 0.1*TREEH
-
-      ! Atenuation coefficient, from Lafleur & Roux 1989
-!      COAT = 2.6 * TOTLAI**0.36
-!        IF (COAT.LT.1) COAT = 1
-!        IF (COAT.GT.3) COAT = 3
-
-      ! Intermediate values
-!        USTAR = WIND * VONKARMAN / log((ZHT-ZPD2)/Z0HT2)
-!        Z0H = Z0*exp(-6.27*VONKARMAN*(WINDSTAR**(1/3)))
-      
-!        GBCNAMS1 = 1/  ( log((ZHT-ZPD2)/Z0)/(WIND*VONKARMAN**2) * (log((ZHT-ZPD2)/(TREEH-ZPD2)) +  &
-!               (TREEH/(COAT*(TREEH-ZPD2)))*   (exp(COAT*(1-(ZPD2+Z0H)/TREEH))- 1)))     
-
-        
-=======
-    GBCANMSROU = WINDSTAR*VONKARMAN * ((ZW - TREEH)/(ZW - ZPD))
-        
+                        
     ! Total aerodynamic conductance between the canopy ant the atmosphere
     GBCANMS1 = 1/ (1/GBCANMSINI + 1/GBCANMSROU)
-    
->>>>>>> 7b3960565d74f019c2ba836591100a444f86ab62
+            
     ! Aerodynamic conductance between the soil surface to the the canopy, 2nd conductance term from choudhury et al. 1988   
     ! based on an exponential decrease of wind speed with height
     ALPHA = 2
@@ -1014,7 +994,20 @@ SUBROUTINE GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
     ! Aerodynamic conductance soir-air below canopy according to Chourdhury et al., 1988
     GBCANMS2 = ALPHA * KH / ( TREEH * exp(ALPHA) * (exp(-ALPHA * Z0HT2/TREEH)  -  exp(-ALPHA * (ZPD2+Z0) / TREEH) ) )
 
+     ! 2nd alternative to GBCANMS1
+      ! Atenuation coefficient, from Lafleur & Roux 1989
+!      COAT = 2.6 * TOTLAI**0.36
+!        IF (COAT.LT.1) COAT = 1
+!        IF (COAT.GT.3) COAT = 3
 
+      ! Intermediate values
+!        WINDSTAR = WIND * VONKARMAN / log((ZHT-ZPD2)/Z0HT2)
+!        Z0H = Z0*exp(-6.27*VONKARMAN*(WINDSTAR**(1/3)))
+!      
+!        GBCANMS2 = 1/  ( log((ZHT-ZPD2)/Z0)/(WIND*VONKARMAN**2) * (log((ZHT-ZPD2)/(TREEH-ZPD2)) +  &
+!               (TREEH/(COAT*(TREEH-ZPD2)))*   (exp(COAT*(1-(ZPD2+Z0H)/TREEH))- 1)))     
+
+    
     RETURN
 
 END SUBROUTINE GBCANMS
