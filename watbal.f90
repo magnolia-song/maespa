@@ -243,12 +243,10 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                                 FRACUPTAKE,TOTSOILRES,LAYTHICK, &
                                 TOTESTEVAP,ZBC,RZ) 
       
-! Aerodynamic conductance between soil surface and air,
-! assuming turbulent transfer (so that conductance is the same for
-! momentum, heat and mass transfer (Jones 1992)).
-      SOILZPD = 0.0  ! Reference height is the soil surface.
-
-      ! average canopy height calculation
+    ! Aerodynamic conductance between soil surface and air,
+    ! assuming turbulent transfer (so that conductance is the same for
+    ! momentum, heat and mass transfer (Jones 1992)).
+    ! average canopy height calculation
       TREEH = (sum(ZBC(1:NOTREES)) + sum(RZ(1:NOTREES)) ) / NOTREES
 
       CALL GBCANMS(WIND,ZHT,Z0HT,ZPD,TREEH, TOTLAI, GBCANMS1, GAMSOIL)
@@ -273,7 +271,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                               DRYTHICKMIN,DRYTHICK,QEMM,OVERFLOW, &
                               WATERGAIN,WATERLOSS,PPTGAIN,KEEPWET, &
                               EXPINF,WS,WR,PSIE,ALPHARET,NRET,RETFUNCTION,SOILWP,&
-                              IWATTABLAYER,ISIMWATTAB,PLATDRAIN,WATCAPIL)
+                              IWATTABLAYER,ISIMWATTAB,PLATDRAIN,WATCAPIL,TREEH,TOTLAI)
 
 ! Do water balance for layered soil.
 ! Replaces subroutines WATERFLUXES and WATERTHERMAL in SPA
@@ -309,6 +307,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         INTEGER IWATTABLAYER,ISIMWATTAB,K 
         REAL WATERGAINCAPIL(MAXSOILLAY), SOILWP(MAXSOILLAY)
         REAL LDRAIN(MAXSOILLAY),PLATDRAIN, WATCAPIL
+        REAL TREEH, TOTLAI
         
 !       Conversions
         SOILTC = SOILTK - FREEZE
@@ -344,7 +343,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                             VPDPA,THROUGHFALL, &
                             RUTTERB,RUTTERD,MAXSTORAGE, &
                             CANOPY_STORE, SURFACE_WATERMM, &
-                            EVAPSTORE, DRAINSTORE)
+                            EVAPSTORE, DRAINSTORE,TREEH,TOTLAI)
         ENDIF
 
 !       Calculates the thickness of the top dry layer (if any).
@@ -1164,7 +1163,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                                   TAIRC,RNET,VPDPA,THROUGHFALL, &
                                   RUTTERB,RUTTERD,MAXSTORAGE, &
                                   CANOPY_STORE, SURFACE_WATERMM, &
-                                  EVAPSTORE, DRAINSTORE)
+                                  EVAPSTORE, DRAINSTORE,TREEH,TOTLAI)
 
 ! Determines canopy water storage (CANOPY_STORE) and water reaching the
 ! soil surface (SURFACE_WATERMM), by integrating the function CANSTOR.
@@ -1182,7 +1181,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         REAL VPDPA,THROUGHFALL,RUTTERB,RUTTERD
         REAL CANOPY_STORE, SURFACE_WATERMM, EVAPSTORE
         REAL DRAINSTORE,X1,X2,HMIN,H1,EPS,DXSAV
-        REAL CANSTORPREV,DELTASTORE
+        REAL CANSTORPREV,DELTASTORE,TREEH,TOTLAI
         
         EXTERNAL CANSTOR
         REAL, EXTERNAL :: RKQS
@@ -1211,6 +1210,8 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         EXTRAPARS(11) = TAIRC
         EXTRAPARS(12) = RNET
         EXTRAPARS(13) = VPDPA
+        EXTRAPARS(14) = TREEH
+        EXTRAPARS(15) = TOTLAI
 
         ! Empty store if it's tiny.
         IF(CANOPY_STORE.LT.1E-6*MAXSTORAGE)CANOPY_STORE = 0.
@@ -1255,6 +1256,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         REAL VPDPA,THROUGHFALL,RUTTERB,RUTTERD
         REAL NUMMIN,ADDSTORE,ADDGROUND,RUTTERA
         REAL EVAPSTORE,DRAINSTORE
+        REAL TREEH, TOTLAI
         
         THROUGHFALL = EXTRAPARS(1)
         RUTTERB     = EXTRAPARS(2)
@@ -1269,6 +1271,8 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         TAIRC   = EXTRAPARS(11)
         RNET    = EXTRAPARS(12)
         VPDPA   = EXTRAPARS(13)
+        TREEH   = EXTRAPARS(14)
+        TOTLAI   = EXTRAPARS(15)
 
         ! minutes per timestep
         NUMMIN = SPERHR / 60
@@ -1283,7 +1287,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         CALL WETEVAP(WIND,ZHT,Z0HT,ZPD, &
                            PRESSPA,TAIRC,RNET, &
                            VPDPA,Y(1),MAXSTORAGE, &
-                           EVAPSTORE,PPT)
+                           EVAPSTORE,PPT,TREEH,TOTLAI)
 
         ! Drainage from canopy store (Rutter et al. 1975)
         ! RUTTERB is in mm  min-1.
@@ -1312,7 +1316,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         SUBROUTINE WETEVAP(WIND,ZHT,Z0HT,ZPD, &
                            PRESSPA,TAIRC,RNET, &
                            VPDPA,CANSTORE,MAXSTORAGE, &
-                           EVAPSTORE,PPT)
+                           EVAPSTORE,PPT,TREEH,TOTLAI)
 
 ! Penman-monteith equation without stomatal limitation
 ! (= Penman equation) for wet canopies.
@@ -1328,7 +1332,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         REAL WIND,ZHT,Z0HT,ZPD
         REAL PRESSPA,TAIRC,RNET
         REAL VPDPA,CANSTORE,ETCAN
-        REAL POTEVAPMUMOL,POTENTIALEVAP,RATIO
+        REAL POTEVAPMUMOL,POTENTIALEVAP,RATIO,TREEH,TOTLAI
 
         STOCK = 1.   ! Dummy (to avoid unit conversion in ETCAN).
         GCAN = 1E09  ! an arbitrary large number (~Inf).
@@ -1339,7 +1343,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 ! Potential evaporation from a wet canopy in mu mol m-2 s-1.
         POTEVAPMUMOL = ETCAN(WIND,ZHT,Z0HT,ZPD, &
                               PRESSPA,TAIRC,RNET, &
-                              VPDPA,GCAN,STOCK)
+                              VPDPA,GCAN,STOCK,TREEH,TOTLAI)
 
 ! Convert to mm timestep-1.
         POTENTIALEVAP = POTEVAPMUMOL * SPERHR * 18 * 1E-09
@@ -2216,11 +2220,11 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
     ! Note that this is inconsequential : gets converted back in ETCAN
           RADINTERCTREE = RADINTERC / STOCKING
 
-    ! Conversion to kg m-2 t-1.
-          ETMM = ETCAN(WIND,ZHT,Z0HT,ZPD, &
-                PRESS,TAIR, &
-                RADINTERCTREE,   &
-                VPD,GSCANAV,STOCKING) * CONV
+! Conversion to kg m-2 t-1.
+        ETMM = ETCAN(WIND,ZHT,Z0HT,ZPD, &
+            PRESS,TAIR, &
+            RADINTERCTREE,   &
+            VPD,GSCANAV,STOCKING,TREEH,TOTLAI) * CONV
         
       ENDIF
 
@@ -2414,7 +2418,7 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       ! aerodynamic conductance air within canopy - air above canopy from Choudhury 1988
       CALL GBCANMS(WIND,ZHT,Z0HT,ZPD, TREEH, TOTLAI, GBCANMS1, GBCANMS2)
       GCANOP = GBCANMS1 * CMOLAR
-      
+
       ! calculation of air temperature within the canopy (Note that Qc <0)
       TAIRNEW = TAIRABOVE +  (RNETTOT - ETOT + QC) / (CPAIR * AIRMA * GCANOP)
 

@@ -3188,7 +3188,7 @@ SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
     MODELSS = 0     ! sunlit & shade calculations separate
     ITERMAX = 0     ! The leaf temperature is not calculated
     ISIMUS = -1      
-    ITERTAIRMAX = 20 ! Maximum number of iterations for canopy air temperature
+    ITERTAIRMAX = 0 ! Maximum number of iterations for canopy air temperature
     NECHLAY = 15    ! (Max.) Number of layers in ECH (used to calculate DLAI from TOTLAI in CHART)
 
     ! Read file
