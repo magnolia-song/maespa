@@ -1863,10 +1863,14 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,   
     IF(PSIL.LT.PSILCANMIN(ITAR,IHOUR))THEN
        PSILCANMIN(ITAR,IHOUR) = PSIL
     ENDIF
-        ! Stom cond in mol tree-1 s-1
-        GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA/FOLT
-        ! Boundary layer conductance to heat
-        GBHCAN(ITAR,IHOUR) = GBHCAN(ITAR,IHOUR) + GBH*AREA/FOLT
+    
+    ! Next two are not divided by FOLT because they are totals, not averages.
+    ! Stom cond in mol tree-1 s-1
+    GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA
+    
+    ! Boundary layer conductance to heat
+    GBHCAN(ITAR,IHOUR) = GBHCAN(ITAR,IHOUR) + GBH*AREA
+        
     ! Average ci.
         CICAN(ITAR,IHOUR) = CICAN(ITAR,IHOUR) + CI*AREA / FOLT
     ENDIF
