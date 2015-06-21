@@ -1,0 +1,69 @@
+*** 16 trees in square ***
+
+&plot
+xmax = 10     
+ymax = 10
+xslope = 0
+yslope = 0
+bearing = 60
+notrees = 16
+/
+
+&aerodyn
+zpd = 5.4
+z0ht = 0.8
+zht = 14
+/	
+
+&xy
+xycoords = 	
+1 1
+1 3
+1 6
+1 9
+3 1
+3 3
+3 6
+3 9
+6 1
+6 3
+6 6
+6 9
+9 1
+9 3
+9 6
+9 9
+/
+
+
+&allradx
+nodates = 1
+values = 1
+/
+
+&allrady
+nodates = 1
+values = 1
+/
+
+&allhtcrown
+nodates = 1
+values = 5.0 
+/
+
+&alldiam
+nodates = 1
+values = 0.08 
+/
+
+&alllarea
+nodates = 1
+values = 0.0
+/
+
+&allhttrunk
+nodates = 1
+values = 0.5
+/
+
+

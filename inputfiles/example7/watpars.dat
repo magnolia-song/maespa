@@ -1,0 +1,59 @@
+Loamy sand.
+
+&watcontrol
+keepwet = 0
+simtsoil = 1
+reassignrain = 0
+retfunction = 1
+equaluptake = 0
+usemeaset = 0
+usemeassw = 0
+/
+
+&wattfall
+rutterb = 3.7
+rutterd = 0.002
+maxstorage = 0.5
+throughfall = 0.7
+/
+
+&rootpars
+rootrad = 0.0001
+rootsrl = 20
+rootmasstot = 1000
+nrootlayer = 25
+fracroot = 0.072783 0.067486 0.062574 0.161698 0.128899 0.102752 0.08191 0.065295 0.05205 0.041492 0.033076 0.026367 0.021018 0.016755 0.013356 0.010647 0.008487 0.006766 0.005393 0.004299 0.003427 0.002732 0.002178 0.001736 0.001384 
+/
+
+&plantpars
+minleafwp = -3
+plantk = 3.0
+/
+
+&soilret
+bpar = 4.2
+psie = -0.0008
+ksat = 57
+/
+
+&watinfilt
+expinf = 0.25
+/
+
+&laypars
+nlayer = 30
+laythick = 0.1
+porefrac = 0.5
+fracorganic = 0.2
+/
+
+&initpars
+initwater = 0.5
+soiltemp = 20
+/
+
+&soiletpars
+drythickmin = 0.001
+tortpar = 0.66
+/
+
