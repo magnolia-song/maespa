@@ -28,7 +28,7 @@
     INTEGER, PARAMETER :: MAXLAY = 15         ! Maximum no. of layers for radiation
     INTEGER, PARAMETER :: MAXSOILLAY = 51    ! Maximum no. of layers of soil (RAD)
     INTEGER, PARAMETER :: MAXSP = 4         ! Maximum no. of species (RAD).
-    INTEGER, PARAMETER :: MAXP = 5000        ! Maximum no. of gridpoints -- MUST BE EQUAL TO OR LARGER THAN MAXT !!!!
+    INTEGER, PARAMETER :: MAXP = 4000        ! Maximum no. of gridpoints -- MUST BE EQUAL TO OR LARGER THAN MAXT !!!!
     INTEGER, PARAMETER :: MAXC = 3!2            ! Maximum no. of leaf area distributions
     INTEGER, PARAMETER :: MAXANG = 20!11          ! Maximum no. of zenith & leaf angles
     INTEGER, PARAMETER :: MAXD = 13           ! For resp prog
