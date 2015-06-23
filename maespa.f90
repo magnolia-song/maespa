@@ -916,7 +916,7 @@ PROGRAM maespa
                                         YLU(IPTUS),ZLU(IPTUS),RXUS,RYUS,RZUS,DXTUS,DYTUS,DZTUS,XMAX,YMAX,SHADEHT,   &
                                         FOLTUS,ZBCUS,JLEAFTUS,BPTTUS,NOAGECTUS,PROPCTUS,JSHAPETUS,SHAPETUS,NOTREES, &
                                         SUNLA,BEXTUS,BEXTANGTUS,BEXTANGUS)  
-                
+            
                             ! Output transmittances (Note IWAVE=1 only).
                             PAR = RADABV(IHOUR,1)
                
