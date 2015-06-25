@@ -1474,7 +1474,7 @@ PROGRAM maespa
                     QN = 0
                     QC = 0
                 ENDIF
-            
+                            
                 ! Get the evaporation from the wet canopy
                 CALL CANOPY_BALANCE(PPT(IHOUR),WINDAH(IHOUR),ZHT,Z0HT,ZPD, &
                             PRESS(IHOUR),TAIR(IHOUR),RADINTERC, &
@@ -1489,7 +1489,7 @@ PROGRAM maespa
                     
                     ! average canopy temperature
                     TCAN2 = sum(TCAN(1:NOTARGETS, IHOUR)) / NOTARGETS
-                    
+                                        
                     ! Calculation of a new VPD and Tair within the canopy based on the heat balance of Chourdhury et al. 1988
                     CALL TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIR(IHOUR),TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,& 
                                             WINDAH(IHOUR), ZPD, ZHT, Z0HT, DELTA, PRESS(IHOUR),QC,TREEH,TOTLAI,GCANOP, EVAPSTORE)
@@ -1559,8 +1559,8 @@ PROGRAM maespa
                                   TAIRABOVE,QH,QE,QN,QC,RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC, &
                                   ESOIL, TOTLAI, WTITLE,                                          &
                                   RADINTERC1, RADINTERC2, RADINTERC3,SCLOSTTOT,SOILWP,FRACAPAR, &
-                                  RADABV(IHOUR,3),TAIR(IHOUR),TCAN2, VPDABOVE, VPDNEW, & 
-                                  TSOILSURFACE,GCANOP,ITERTAIR) ! TEST MATHIAS
+                                  RADABV(IHOUR,3),TAIR(IHOUR),TCAN, VPDABOVE, VPDNEW, & 
+                                  TSOILSURFACE,GCANOP,ITERTAIR,NOTARGETS) ! TEST MATHIAS
                 
                 CALL SUMDAILYWAT(WSOIL,WSOILROOT,WEIGHTEDSWP,PPT,ETMM,ETMEAS,DISCHARGE, &
                                 SOILEVAP,FSOIL1,SURFACE_WATERMM,QH,QE,QN,QC, &

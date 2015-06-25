@@ -437,6 +437,7 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
         ALEAF = AMIN1(AC,AJ) - RD  ! Solution for Ball-Berry model
         GS = G0 + GSDIVA*ALEAF
         
+        
         ! if new gs model calculate the second possibility with different g0 and g1
         IF (NEWTUZET.EQ.1) THEN
             

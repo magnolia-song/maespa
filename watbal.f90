@@ -1516,11 +1516,12 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         ! Note that in our case, the airspace is equal to the total poro
         ! because we are considering the diffusion in the dry layer only
         ! This correction is close to SPA's TORT=2.5.
-        EFFDIFF = DIFF * TORTPAR * POREFRAC1
+!        EFFDIFF = DIFF * TORTPAR * POREFRAC1
 
         ! Soil conductance to water vapour diffusion, m s-1.
         ! Choudhury and Monteith (1988), Eq. 41b.
-        GWS = EFFDIFF * (POREFRAC1 / DRYTHICK)
+!        GWS = EFFDIFF * (POREFRAC1 / DRYTHICK)
+        GWS = DIFF * POREFRAC1 / (TORTPAR*DRYTHICK)     ! M. Christina septembre 2014
 
         ! Total conductance.
         GWSTOT = 1. / (1./GAMSOIL + 1./GWS)
@@ -1531,7 +1532,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 
         ! Turn off potential dew formation here if QEFLUX is larger than
         ! Problems arise when soil water potential in top layer is very
-        IF(QEFLUX.GT.0.)QEFLUX = 0.
+!        IF(QEFLUX.GT.0.)QEFLUX = 0.
 
         ! No evap if surface is frozen.
         ! RAD: what about evaporation of ice? This may be in the THAWDEP

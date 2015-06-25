@@ -1173,10 +1173,16 @@ SUBROUTINE READSOILEVAPPARS(UFILE, DRYTHICKMINI, TORTPARI,DRYTHERMI)
 
     ! If TORTPAR > 1, it is defined as 'true' tortuosity. The MAESPA default is < 1, which is really the
     ! inverse tortuosity. Note QEFLUX assumes inverse tortuosity. Fix input here if needed.
-    IF(TORTPAR.GT.1.0) THEN
+!    IF(TORTPAR.GT.1.0) THEN
+!        TORTPAR = 1.0 / TORTPAR
+!    ENDIF
+
+    ! If TORTPAR < 1, it is defined as the inverse of tortuosity. The MAESPA default is < 1, which is really the
+    ! inverse tortuosity. Note QEFLUX assumes normal tortuosity from CHoudhury & Monteith 1988. Fix input here if needed.
+    IF(TORTPAR.LT.1.0) THEN
         TORTPAR = 1.0 / TORTPAR
     ENDIF
-    
+
     
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('ERROR READING SOIL EVAPORATION PARAMETERS (SOILETPARS)',IFATAL,IOERROR)
@@ -2351,7 +2357,7 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
                               RADINTERC1,RADINTERC2,RADINTERC3,         &
                               SCLOSTTOT,SOILWP,FRACAPAR,&
                               RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN, &
-                              TSOILSURFACE,GCANOP,ITERTAIR)
+                              TSOILSURFACE,GCANOP,ITERTAIR,NOTARGETS)
 ! Outputs water balance results.
 ! RAD, May 2008
 !**********************************************************************
@@ -2368,11 +2374,11 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
     REAL WSOIL,WSOILROOT,PPT,CANOPY_STORE,EVAPSTORE,DRAINSTORE, RTHERMINC ! TEST MATHIAS
     REAL SURFACE_WATERMM,ETMM,ETMM2,ETMEAS,DISCHARGE
     REAL WEIGHTEDSWP,KTOT,DRYTHICK,SOILEVAP,OVERFLOW
-    REAL SOILMOISTURE,FSOIL1,TOTTMP,TAIRABOVE,TAIRCAN,TCAN
+    REAL SOILMOISTURE,FSOIL1,TOTTMP,TAIRABOVE,TAIRCAN,TCAN(MAXT,MAXHRS)
     REAL QH,QE,QN,QC,RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC,ESOIL,TOTLAI
     REAL RADINTERC1,RADINTERC2,RADINTERC3,SCLOSTTOT
-    REAL RNET,FRACAPAR, VPD, VPDCAN, TSOILSURFACE,GCANOP
-    INTEGER ITERTAIR
+    REAL RNET,FRACAPAR, VPD, VPDCAN, TSOILSURFACE,GCANOP,TCANMEAN
+    INTEGER ITERTAIR,NOTARGETS
 
     CHARACTER*80 WTITLE
     
@@ -2391,6 +2397,9 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
     ENDIF
 
     !WRITE(UWATTEST,*)FSOIL1,FSOIL2
+    
+    !Average TCAN
+    TCANMEAN = sum(TCAN(1:NOTARGETS,IHOUR))/NOTARGETS
 
     ! Output measured ET, if it was input:
     IF(USEMEASET.EQ.1)THEN
@@ -2407,7 +2416,7 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
                            DRYTHICK,SOILEVAP,SOILMOISTURE,          &
                            FSOIL1,QH,QE,QN,QC,                      &
                            RGLOBUND, RGLOBABV, RADINTERC, RNET,     &
-                           TOTLAI,TAIRABOVE, TAIRCAN, TCAN,TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3),    & !SOILTEMP(1) is the soil temperature just below the drythick layer
+                           TOTLAI,TAIRABOVE, TAIRCAN, TCANMEAN,TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3),    & !SOILTEMP(1) is the soil temperature just below the drythick layer
                            FRACWATER(1),FRACWATER(2),FRACAPAR, VPD,VPDCAN,GCANOP,ITERTAIR
 520                        FORMAT (I7,I7,39(F14.4,1X),I7)
                            
