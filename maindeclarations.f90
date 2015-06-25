@@ -1,7 +1,29 @@
+!=======================================================================================
+! Copyright 2015 Remko Duursma, Belinda Medlyn, Mathias Christina, Guerric le Maire
+!---------------------------------------------------------------------------------------
+! this file is part of MAESPA.
+!
+! MAESPA is free software: you can redistribute it and/or modify
+! it under the terms of the gnu general public license as published by
+! the free software foundation, either version 2 of the license, or
+! (at your option) any later version.
+!
+! MAESPA is distributed in the hope that it will be useful,
+! but without any warranty; without even the implied warranty of
+! merchantability or fitness for a particular purpose.  see the
+! gnu general public license for more details.
+!
+! you should have received a copy of the gnu general public license
+! along with MAESPA.  if not, see <http://www.gnu.org/licenses/>.
+!=======================================================================================
+    
 MODULE MAINDECLARATIONS
 ! Array declarations.
     
     USE maestcom
+    
+    ! Functions
+    REAL, EXTERNAL :: AVERAGEVAL,CALCRMW,TK,ETCAN,RESP,GRESP
     
     ! List of trees for which to do calculations
     INTEGER ITARGETS(MAXT)
@@ -42,18 +64,18 @@ MODULE MAINDECLARATIONS
     REAL LGP2(MAXP),FOLLAY2(MAXLAY)
       
     ! Understorey arrays.
-    REAL XLU(MAXP),YLU(MAXP),ZLU(MAXP) ! Understorey points.
-    INTEGER LAYERUS(MAXP),MLAYERUS(MAXP) ! not implemented yet
-    REAL UIBEAM(MAXHRS,MAXP),UIDIFF(MAXHRS,MAXP)
-    REAL PARUS(MAXHRS,MAXP),APARUS(MAXHRS,MAXP)
-    REAL PSUS(MAXHRS,MAXP),ETUS(MAXHRS,MAXP)
-    REAL PARUNDER(MAXHRS,MAXP),USLAITAB(maxdate,MAXT)
-    REAL USLAI(MAXP)!,DIAMUS(maxdate,MAXT)
+    REAL XLU(MAXT),YLU(MAXT),ZLU(MAXT) ! Understorey points.
+    INTEGER LAYERUS(MAXT),MLAYERUS(MAXT) ! not implemented yet
+    REAL UIBEAM(MAXHRS,MAXT),UIDIFF(MAXHRS,MAXT)
+    REAL PARUS(MAXHRS,MAXT),APARUS(MAXHRS,MAXT)
+    REAL PSUS(MAXHRS,MAXT),ETUS(MAXHRS,MAXT)
+    REAL PARUNDER(MAXHRS,MAXT),USLAITAB(maxdate,MAXT)
+    REAL USLAI(MAXT)!,DIAMUS(maxdate,MAXT)
     REAL HTUS(maxdate,MAXT),FOLNUS(maxdate,MAXT)
     INTEGER DATESFU(maxdate)!,DATESDU(maxdate)
     INTEGER DATESHU(maxdate),DATESNU(maxdate)
     REAL JMAXN25,JMAX25M,RESCALE
-    REAL FUS(MAXP),AREAUS(MAXP),FN0US(MAXP)!, DUS(MAXP)
+    REAL FUS(MAXT),AREAUS(MAXT),FN0US(MAXT)!, DUS(MAXP)
     REAL DXTUS(MAXT),DYTUS(MAXT),DZTUS(MAXT)
     REAL RXTABLEUS(maxdate,MAXT),RYTABLEUS(maxdate,MAXT)
     REAL RZTABLEUS(maxdate,MAXT)
@@ -62,7 +84,7 @@ MODULE MAINDECLARATIONS
     REAL RXUS(MAXT),RYUS(MAXT),RZUS(MAXT)
     REAL ZBCUS(MAXT),FOLTUS(MAXT),PARUSMEAN(MAXHRS)
     REAL PARUSSD(MAXHRS),THRABUS(MAXHRS),FCO2US(MAXHRS),FH2OUS(MAXHRS)
-    REAL TUUS(MAXP),TDUS(MAXP),RELDFUS(MAXP)  ! Understorey.
+    REAL TUUS(MAXT),TDUS(MAXT),RELDFUS(MAXT)  ! Understorey.
     REAL VCMAXC4,TVJUPC4,TVJDNC4,CICAC4,C4FRAC
     REAL DELSCC4, EAVCC4, EDVCC4, PSC3, PSC4
     
@@ -285,8 +307,8 @@ MODULE MAINDECLARATIONS
     REAL SHAPETP(MAXT),DEXTTP(MAXT,MAXANG),BPTTP(8,MAXC,MAXT)
     REAL PROPPTP(MAXC,MAXT),PROPCTP(MAXC,MAXT)
     REAL DEXTP(MAXANG),DLAIP,EXPDIFP,SUNLAP,BEXTP,APARSUN,APARSH
-    REAL BEXTANGTP(MAXP,MAXANG),BEXTTP(MAXT),TTOT,TBEAM,APARMEAN
-    REAL BEXTANGP(MAXANG),THDOWNP(MAXP)
+    REAL BEXTANGTP(MAXT,MAXANG),BEXTTP(MAXT),TTOT,TBEAM,APARMEAN
+    REAL BEXTANGP(MAXANG),THDOWNP(MAXT)
     INTEGER IPTEST
       
     ! Outputs for PAR histogram

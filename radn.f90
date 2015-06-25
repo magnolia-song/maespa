@@ -1,5 +1,25 @@
 !**********************************************************************
 ! RADN.FOR
+
+!=======================================================================================
+! Copyright 2015 Remko Duursma, Belinda Medlyn, Mathias Christina, Guerric le Maire
+!---------------------------------------------------------------------------------------
+! this file is part of MAESPA.
+!
+! MAESPA is free software: you can redistribute it and/or modify
+! it under the terms of the gnu general public license as published by
+! the free software foundation, either version 2 of the license, or
+! (at your option) any later version.
+!
+! MAESPA is distributed in the hope that it will be useful,
+! but without any warranty; without even the implied warranty of
+! merchantability or fitness for a particular purpose.  see the
+! gnu general public license for more details.
+!
+! you should have received a copy of the gnu general public license
+! along with MAESPA.  if not, see <http://www.gnu.org/licenses/>.
+!=======================================================================================
+    
 ! This file contains all the canopy structure and radiation interception
 ! routines. The major routines are:
 
@@ -1853,7 +1873,7 @@ END SUBROUTINE EXDIFF
       IMPLICIT NONE
       INTEGER LAYER(MAXP),MLAYER(MAXP),NECHLAY
       INTEGER NUMPNT,NAZ,NZEN,NLAY
-      
+      integer itar
       REAL TU(MAXP),TD(MAXP)
       REAL DIFZEN(MAXANG),DEXT(MAXANG)
       REAL RTA(MAXECHLAYER),TAUMIN,XSLOPE,YSLOPE,TOTLAI,DLAI
@@ -1918,22 +1938,22 @@ END SUBROUTINE EXDIFF
       REAL SLOPE
       REAL DLAIOLD
 
-      ! Seems reasonable but causes a runtime bug (debug mode only, hence vague memory issue).
-! Initial thickness of canopy layer
-      DLAI = TOTLAI / REAL(NECHLAY)
+      ! Initial thickness of canopy layer
+      DLAI = 0.05 !TOTLAI / REAL(NECHLAY)
       
       ! For high LAI canopies, make sure DLAI does not go too large.
-      IF(DLAI.GT.0.1)THEN
-          DLAI = 0.1
-      ENDIF
+      !IF(DLAI.GT.0.1)THEN
+      !    DLAI = 0.1
+      !ENDIF
 
-      ! Check that calculated maximum number of layers is not > MAXECHLAY
-      ! This is very rare, unless NECHLAY set to very high value, TOTLAI very high, or MAXECHLAY poorly set.
-      CALCMAXLAY = CEILING(TOTLAI / DLAI)
-      IF(CALCMAXLAY.GT.MAXECHLAYER)THEN
-        CALL SUBERROR('WARNING: ACTUAL NUMBER OF ECH LAYERS > MAXECHLAY. RESET TO MAXECHLAY.',IWARN,0)
-        DLAI = TOTLAI / REAL(MAXECHLAYER)
-      ENDIF
+      ! Doesn't actually work, because ASSIGN can actually result in more layers than allowed (MLAYER>NLAY), somehow.
+      !! Check that calculated maximum number of layers is not > MAXECHLAY
+      !! This is very rare, unless NECHLAY set to very high value, TOTLAI very high, or MAXECHLAY poorly set.
+      !CALCMAXLAY = CEILING(TOTLAI / DLAI)
+      !IF(CALCMAXLAY.GT.MAXECHLAYER)THEN
+      !  CALL SUBERROR('WARNING: ACTUAL NUMBER OF ECH LAYERS > MAXECHLAY. RESET TO MAXECHLAY.',IWARN,0)
+      !  DLAI = TOTLAI / REAL(MAXECHLAYER)
+      !ENDIF
       
       
 ! Calculate transmittance through one elementary layer with thickness DLAI
@@ -2488,7 +2508,7 @@ END SUBROUTINE EXDIFF
         RADABV,FBEAM,TAIR,TSOIL, &
         ARHO,ATAU,RHOSOL, &
         DIFUP,DIFDN,SCLOST,THDOWN,TCAN2,TLEAFTABLE,&
-        EMSKY,NUMPNT,TOTLAI,FOLLAY,FOLNTR,LGP,ABSRP)
+        EMSKY,NUMPNT,TOTLAI,FOLLAY,FOLNTR,LGP)
 ! This subroutine calculates the scattered radiation using the iterative
 ! method of Norman (1979). Outputs are
 ! DIFUP: the upwards scattered flux below gridpoint IPT
@@ -2509,7 +2529,7 @@ END SUBROUTINE EXDIFF
       REAL U(3,MAXECHLAYER),D(3,MAXECHLAYER),SUP(MAXECHLAYER)
       REAL SDN(MAXECHLAYER),ADUM(MAXECHLAYER),TBEAM(MAXECHLAYER)
       REAL TCAN2, TLEAFTABLE(MAXT,MAXP) 
-      REAL TLEAFLAYER(MLAYERI),ABSRP
+      REAL TLEAFLAYER(MLAYERI)
       REAL EMSKY,TOTLAI,FOLLAY(MAXLAY),FOLNTR
       INTEGER NUMPNT,LGP(MAXP)
 
@@ -2884,7 +2904,11 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     ! the more US points we have, and the more NOTREES, the closer the
     ! First check how far we are off:
     PARUNDEROS = RADABV(IHOUR,1) - RADINTERC1
-    FRACAPAR = RADINTERC1 / RADABV(IHOUR,1)
+    IF(RADABV(IHOUR,1).GT.0.0)THEN
+        FRACAPAR = RADINTERC1 / RADABV(IHOUR,1)
+    ELSE
+        FRACAPAR = 0.0
+    ENDIF
     NIRUNDEROS = RADABV(IHOUR,2) - RADINTERC2
     CHECK = PARUNDEROS - PARUSMEAN
     !WRITE(UWATTEST,*)PARUNDEROS , PARUSMEAN, CHECK

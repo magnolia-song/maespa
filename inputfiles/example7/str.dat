@@ -1,0 +1,31 @@
+*** sample str file ***
+
+&ladd
+jleaf = 0
+noagec = 1
+bpt = 1.72 1.44 0.23 77.83 2.47 2.77 
+random = 1				
+/					
+
+&canopy					
+cshape = 'cone'					
+/					
+
+&lia					
+elp = 1.0					
+nalpha = 5					
+/	 
+
+&aero
+extwind = 0.1
+/				
+
+&allom
+coefft =104
+expont = 1.75
+/
+
+&allomb
+bcoefft =104
+bexpont = 1.75
+/

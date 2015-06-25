@@ -1,0 +1,39 @@
+solar position fixed to first day.
+
+specifying level of output wanted.
+&control
+iohrly=1
+iotutd=9
+ioresp=0
+iowatbal=1
+keepzen=1
+/
+
+specifying which submodels to use. 
+&model
+modelgs = 4
+modelrd = 0
+modeljm = 0
+modelss = 0
+itermax = 50
+itertairmax = 10
+/
+
+which trees to use as target trees. 
+&treescon							
+notrees	= 16	
+itargets = 0
+/							
+
+simulation dates. 
+&dates
+startdate = '15/01/00'
+enddate = '15/02/00'
+/
+
+number of gridpoints and angles to integrate over. 
+&diffang					
+nolay = 6
+nzen = 5					
+naz= 11					
+/

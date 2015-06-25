@@ -1,4 +1,23 @@
-MODULE maestcom
+!=======================================================================================
+! Copyright 2015 Remko Duursma, Belinda Medlyn, Mathias Christina, Guerric le Maire
+!---------------------------------------------------------------------------------------
+! this file is part of MAESPA.
+!
+! MAESPA is free software: you can redistribute it and/or modify
+! it under the terms of the gnu general public license as published by
+! the free software foundation, either version 2 of the license, or
+! (at your option) any later version.
+!
+! MAESPA is distributed in the hope that it will be useful,
+! but without any warranty; without even the implied warranty of
+! merchantability or fitness for a particular purpose.  see the
+! gnu general public license for more details.
+!
+! you should have received a copy of the gnu general public license
+! along with MAESPA.  if not, see <http://www.gnu.org/licenses/>.
+!=======================================================================================
+    
+    MODULE maestcom
     IMPLICIT NONE
     
     CHARACTER(LEN=3), PARAMETER :: format_ascii = 'asc' 
@@ -9,7 +28,7 @@ MODULE maestcom
     INTEGER, PARAMETER :: MAXLAY = 15         ! Maximum no. of layers for radiation
     INTEGER, PARAMETER :: MAXSOILLAY = 51    ! Maximum no. of layers of soil (RAD)
     INTEGER, PARAMETER :: MAXSP = 4         ! Maximum no. of species (RAD).
-    INTEGER, PARAMETER :: MAXP = 5000        ! Maximum no. of gridpoints -- MUST BE EQUAL TO OR LARGER THAN MAXT !!!!
+    INTEGER, PARAMETER :: MAXP = 4000        ! Maximum no. of gridpoints -- MUST BE EQUAL TO OR LARGER THAN MAXT !!!!
     INTEGER, PARAMETER :: MAXC = 3!2            ! Maximum no. of leaf area distributions
     INTEGER, PARAMETER :: MAXANG = 20!11          ! Maximum no. of zenith & leaf angles
     INTEGER, PARAMETER :: MAXD = 13           ! For resp prog

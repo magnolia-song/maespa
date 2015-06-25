@@ -1,5 +1,25 @@
 ﻿!**********************************************************************
 ! INOUT.FOR
+
+!=======================================================================================
+! Copyright 2015 Remko Duursma, Belinda Medlyn, Mathias Christina, Guerric le Maire
+!---------------------------------------------------------------------------------------
+! this file is part of MAESPA.
+!
+! MAESPA is free software: you can redistribute it and/or modify
+! it under the terms of the gnu general public license as published by
+! the free software foundation, either version 2 of the license, or
+! (at your option) any later version.
+!
+! MAESPA is distributed in the hope that it will be useful,
+! but without any warranty; without even the implied warranty of
+! merchantability or fitness for a particular purpose.  see the
+! gnu general public license for more details.
+!
+! you should have received a copy of the gnu general public license
+! along with MAESPA.  if not, see <http://www.gnu.org/licenses/>.
+!=======================================================================================
+    
 ! This file contains all the subroutines for reading and writing to
 ! input and output files.
 ! The main subroutines (called externally) are:
@@ -94,7 +114,7 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
     NAMELIST /CONTROL/ IOHRLY,IOTUTD,IOHIST,IORESP,IOWATBAL,IOFORMAT,ISUNLA,KEEPZEN,IPOINTS,ISIMUS,VERBOSE
     NAMELIST /flocations/ fin_dir, fout_dir   ! MGDK
     
-    990 FORMAT (A80)     ! For reading titles in input files.
+    990 FORMAT (A256)     ! For reading titles in input files.
     
     ! Output file for errors and warnings
     OPEN (UERROR, FILE = 'Maeserr.dat', STATUS = 'UNKNOWN')
@@ -1251,6 +1271,7 @@ SUBROUTINE READLAYPARS(UFILE, NLAYERI, LAYTHICKI, COREWATERI, &
     POREFRAC = -999.9
     DRAINLIMIT = -999.9
     IWATTABLAYER = -999
+    COREWATER = 0.0
     PLATDRAIN = 0
 
     REWIND(UFILE)
@@ -2744,7 +2765,6 @@ SUBROUTINE READAERO(UFILE, EXTWINDI)
     REAL EXTWIND,EXTWINDI
     NAMELIST /AERO/ EXTWIND
    
-    EXTWIND = 1.0
     REWIND (UFILE)
     READ (UFILE,AERO,IOSTAT = IOERROR)
 
@@ -3995,7 +4015,8 @@ SUBROUTINE READRW(UFILE,MODELRW,EFFYRWI,RMWI,RTEMPWI,   &
 
     REWIND (UFILE)
     READ (UFILE,WRESP,IOSTAT = IOERROR)
-    Q10WTABLE(1) = Q10W
+    IF(IOERROR.EQ.0)Q10WTABLE(1) = Q10W
+    
     CALL READARRAY(UFILE,5,NOWQDATES,DATESRWQ,Q10WTABLE)
 
     !      IF (EFFY.EQ.0.0) CALL SUBERROR('WARNING: WOODY GROWTH RESP NOT CALCULATED',IWARN,IOERROR)

@@ -1,40 +1,49 @@
 PROGRAM maespa
-    ! =======================================================
-    !  MAESPA: Version 2013
-    !  For more information see www.bio.mq.edu.au/maespa 
-    ! =======================================================
-
+    !=======================================================================================
+    !  The MAESPA/MAESTRA model.
+    ! 
+    !  For more information see http://maespa.github.io
+    !  The code is maintained at http://www.bitbucket.org/remkoduursma/maespa
+    ! ======================================================================================
+    
+    !=======================================================================================
+    ! Copyright 2015 Remko Duursma, Belinda Medlyn, Mathias Christina, Guerric le Maire
+    !---------------------------------------------------------------------------------------
+    ! this file is part of MAESPA.
+    !
+    ! MAESPA is free software: you can redistribute it and/or modify
+    ! it under the terms of the gnu general public license as published by
+    ! the free software foundation, either version 2 of the license, or
+    ! (at your option) any later version.
+    !
+    ! MAESPA is distributed in the hope that it will be useful,
+    ! but without any warranty; without even the implied warranty of
+    ! merchantability or fitness for a particular purpose.  see the
+    ! gnu general public license for more details.
+    !
+    ! you should have received a copy of the gnu general public license
+    ! along with MAESPA.  if not, see <http://www.gnu.org/licenses/>.
+    !=======================================================================================
+    
     !------------------------------------------------------------------------
-    ! This file contains the main program.
-    ! It also contains subroutines to zero arrays (ZEROHR, ZEROHIST, ZEROD)
+    ! This file (maespa.f90) contains the main program.
+    ! It also contains subroutines to zero arrays (ZEROHR, ZEROHIST, ZEROD, ZEROHRFLUX)
     ! and to sum arrays (SUMHR, SUMDAILY).
-    ! All other code is contained in the additional files: -
-    !   radn.for - calculation of radiation interception
-    !   physiol.for - physiology subroutines
-    !   getmet.for - read in met data
-    !   inout.for - handle input & output data
-    !   utils.for - utility subroutines
-    !   unstor.for - understorey calculations
-    !   watbal.for -  water balance and soil surface energy budget calculations.
+    ! All other code is contained in the additional files: 
+    !   getmet.f90 - read in met data
+    !   inout.f90 - handle input & output data
+    !   physiol.f90 - physiology subroutines
+    !   radn.f90 - calculation of radiation interception
+    !   utils.f90 - utility subroutines
+    !   unstor.f90 - understorey calculations
+    !   watbal.f90 -  water balance and soil surface energy budget calculations.
+    !   maindeclarations.f90 - variable specifications for main
+    !   switches.f90 - definitions of input/output switches
+    !   default_conditions.f90 - a module with common flags
+    !   maestcom.f90 - definitions of common constants and output file flags
+    !   metcom.f90 - definitions of flags used in met files
     !------------------------------------------------------------------------
 
-    !-----------------------------------------------------------------------
-    !     An array model to  predict radiation regime inside a plant
-    !  community. Especially suited to forest stands where crown shape
-    !  is described using a cone or elipsoid.
-    !     This program consists of three main parts, i.e.
-    !  1: radiation in the atmosphere , daylength and the position of
-    !     the sun at different hours of the day;
-    !  2: plant canopy architecture.3-D leaf area distribution and random
-    !     and nonrandom leaf area dispersion inside crown has been incorporated
-    !     into the radiation model with the spherical leaf angular distribution
-    !     assumption;radiation penetration and scattering processes.
-    !     A multi-scattering model proposed by John Norman is used.
-    !  3: both photosynthesis and transpiration are calculated using the
-    !     combined gs-A-E-H model.
-    !  4: Water balance based on SPA routines: root water uptake, soil evaporation,
-    !     drainage, overflow, rainfall interception, soil heat balance (RAD).
-    !------------------------------------------------------------------------
     USE switches
     USE metcom
     USE maestcom
@@ -42,22 +51,17 @@ PROGRAM maespa
     USE maindeclarations
     
     IMPLICIT NONE
-    REAL, EXTERNAL :: AVERAGEVAL,CALCRMW,TK,ETCAN,RESP,GRESP
    
     ! Set program flag
     IPROG = INORMAL
     IPROGUS = ITEST  ! Understorey setting.
-    
-    ! Did MGDK add these? Are they needed?
-    USEMEASSW = 0
-    SOILDATA = 0
     
     ! Temporary stuff ... will go into respiratory T acclimation routines.
     TAIRMEM = -999.99 ! All array elements...
     NTAIRADD = 0
     
     ! Set all the defaults stuff up
-    CALL default_conditions(in_path, out_path)
+    CALL DEFAULT_CONDITIONS(IN_PATH, OUT_PATH)
    
     ! Open input files
     CALL OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE, &
@@ -172,6 +176,9 @@ PROGRAM maespa
                     INITWATER,DRYTHICKMIN,DRYTHICK,CANOPY_STORE,SURFACE_WATERMM,FRACWATER,  &
                     WSOIL,WSOILROOT,NLAYER,NROOTLAYER,ICEPROP,QE,RUNOFF,OUTFLOW,SOILDEPTH,  &
                     SOILDATA,USEMEASSW)
+    ELSE
+        SOILDATA = 0
+        USEMEASSW = 0
     ENDIF
 
     DO ITAR = 1,NOTARGETS
@@ -909,7 +916,7 @@ PROGRAM maespa
                                         YLU(IPTUS),ZLU(IPTUS),RXUS,RYUS,RZUS,DXTUS,DYTUS,DZTUS,XMAX,YMAX,SHADEHT,   &
                                         FOLTUS,ZBCUS,JLEAFTUS,BPTTUS,NOAGECTUS,PROPCTUS,JSHAPETUS,SHAPETUS,NOTREES, &
                                         SUNLA,BEXTUS,BEXTANGTUS,BEXTANGUS)  
-                
+            
                             ! Output transmittances (Note IWAVE=1 only).
                             PAR = RADABV(IHOUR,1)
                
@@ -1033,7 +1040,7 @@ PROGRAM maespa
                                 RHOSOL(IWAVE), &
                                 DIFUP,DIFDN,SCLOST,THDOWNP,  &
                                 TCAN2,TLEAFTABLE, &
-                                EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3))
+                                EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP)
 
                         CALL ABSRAD(ITAR,IPTEST,IWAVE, &
                                 NZEN,DEXT,BEXT,BMULT,RELDFP(IPTEST), &
@@ -1074,7 +1081,7 @@ PROGRAM maespa
                             CALL SCATTER(IPT,ITAR,IWAVE,MLAYER(IPT),LAYER(IPT),DLAI,EXPDIF,ZEN(IHOUR),BEXT,DMULT2,SOMULT,BMULT,&
                                             RADABV(IHOUR,IWAVE),FBEAM(IHOUR,IWAVE),TAIR(IHOUR),PREVTSOIL,ARHO(LGP(IPT),IWAVE),&
                                             ATAU(LGP(IPT),IWAVE),RHOSOL(IWAVE),DIFUP,DIFDN,SCLOST,DOWNTH,TCAN2,TLEAFTABLE,&
-                                            EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3))
+                                            EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP)
 
                             ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
                             SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
@@ -1323,7 +1330,7 @@ PROGRAM maespa
                                         FBEAM(IHOUR,3),TAIR(IHOUR),PREVTSOIL, ARHO(LGP(IPT),3),             &
                                         ATAU(LGP(IPT),3),RHOSOL(3),DIFUP,                                   &
                                         DIFDN,SCLOST,DOWNTH,TCAN2,TLEAFTABLE,&
-                                        EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP,ABSRP(LGP(IPT),3))
+                                        EMSKY(IHOUR),NUMPNT,TOTLAI,FOLLAY,FOLT(1),LGP)
                   
                         ! Lost scattered radiation for each tree (W m-2), averaged over the grid points.
                         SCLOSTTREE(ITAR,1) = SUM(SCLOST(1:NUMPNT,1)) / NUMPNT
