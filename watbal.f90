@@ -1392,6 +1392,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
       REAL LAMBDASOIL,NETC
       REAL SURFACE_WATERMM,SNOW,SOILTK,QE,DRYTHICKMIN
       REAL DRYTHICK,SOILTC,DIFF
+      real olddrythick
       REAL, EXTERNAL :: HEATEVAP
 
       ! latent heat of vapourisation, j kg-1
@@ -1406,7 +1407,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
       ! Used below to determine whether top layer of soil is in a wettin
       NETC = (0.001*QE/LAMBDASOIL*SPERHR)/POREFRAC(1) + &
            (SURFACE_WATERMM*0.001+SNOW)/POREFRAC(1)   !M
-
+     olddrythick = drythick
       IF(NETC.GT.0.)THEN      ! Wetting
               ! Resaturate the layer if top is dry and recharge is great
               IF((NETC.GT.WETTINGTOP(AR1B)) .AND. &
@@ -1472,6 +1473,9 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                 ENDIF
         ENDIF
 
+        write(uwattest,*)olddrythick, netc, drythick
+        
+        
         RETURN
         END
 
