@@ -201,6 +201,15 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     ELSE
         ! Nighttime calculations
         GSC = GNIGHT
+        
+        ! Hydraulic constraints on night-time conductance
+        ETEST = 1000 * (VPD/PATM) * GSC * GSVGSC
+        
+        IF(ETEST.GT.EMAXLEAF)THEN
+            GSV = 1E-03 * EMAXLEAF / (VPD/PATM)
+            GSC = GSV / GSVGSC
+        ENDIF
+        
         PSIL = WEIGHTEDSWP
         CI = CS
         RD = RESP(RD0,RD0ACC,TLEAF,TMOVE,Q10F,K10F,RTEMP,DAYRESP,TBELOW)
@@ -284,11 +293,6 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
         ! Simple transpiration rate assuming perfect coupling (for comparison).
         ETEST = 1E6 * (VPD/PRESS) * GSV
     
-        ! Return re-calculated leaf water potential (using ET without boundary layer conductance).
-        ! We use ETEST otherwise PSIL < PSILMIN quite frequently when soil is dry. This is difficult to interpret,
-        ! especially because PHOTOSYN does not account for boundary layer conductance.    
-        !IF(MODELGS.EQ.6)THEN
-!        PSIL = WEIGHTEDSWP - (ETEST/1000)/KTOT
         PSIL = WEIGHTEDSWP - (ET/1000)/KTOT
     ENDIF
     
@@ -503,14 +507,14 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
         ! Set nearly zero conductance (for numerical reasons).
         IF (GS.LT.GSMIN) GS = GSMIN
 
+        ! Maximum transpiration rate
+        EMAXLEAF = KTOT * (WEIGHTEDSWP - MINLEAFWP)
+
 
         ! If E > Emax, set E to Emax, and corresponding gs and A.
         ! Do not use this routine when the Tuzet model of gs (6) is used.
         IF(ISMAESPA)THEN
             IF(WSOILMETHOD.EQ.1.AND.MODELGS.NE.6)THEN
-
-                ! Maximum transpiration rate
-                EMAXLEAF = KTOT * (WEIGHTEDSWP - MINLEAFWP)
 
                 ! Leaf transpiration in mmol m-2 s-1  -  ignoring boundary layer effects!
                 ETEST = 1000 * (VPD/PATM) * GS * GSVGSC
@@ -531,14 +535,9 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
                     ! Recalculate PSIL
                     PSIL = WEIGHTEDSWP - EMAXLEAF/KTOT
 
-                    ! Matter of choice? What happens when calculated GS < G0? Is G0 a hard minimum or only in well-watered conditions?
-                    !IF(GS.LT.G0.AND.G0.GT.0)THEN
-                    !     GS = G0
-                    !ENDIF
-                
-                    ! A very low minimum; for numerical stability.
-                    IF(GS.LT.1E-09)THEN
-                        GS = 1E-09
+                    ! GS cannot be lower than minimum (cuticular conductance)
+                    IF(GS.LT.GSMIN)THEN
+                        GS = GSMIN
                     ENDIF
 
                     ! Now that GS is known, solve for CI and A as in the Jarvis model.

@@ -1473,8 +1473,6 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                 ENDIF
         ENDIF
 
-        write(uwattest,*)olddrythick, netc, drythick
-        
         
         RETURN
         END

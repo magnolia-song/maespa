@@ -1253,7 +1253,6 @@ END SUBROUTINE EXDIFF
         YTPOS = DYT(M) - YPT
 
         IF ((M.EQ.1).AND.(IPROG.NE.ITEST)) THEN
-          !if(irad.eq.1)write(uwattest,*)m
           CALL DISTIN(IRAD,JSHAPET(M),IFLAG,DZ,DAZ,XPT,YPT,ZPT, &
             RX(M),RY(M),RZ(M),ZBC(M),DXT(M),DYT(M),DZT(M), &
             PATH,X1,Y1,Z1,X2,Y2,Z2)
@@ -1568,13 +1567,9 @@ END SUBROUTINE EXDIFF
                        DXTQ,DYTQ,DZTQ,POL,POM,PON,DELTA,R1,R2)
 
       IF (DELTA.LT.0.0) THEN
-      !  WRITE(UWATTEST,*)IRAD,JSHAPE,XPP,YPP,ZPP
         CALL SUBERROR('ERROR IN DISTIN - ALERT B.MEDLYN',IFATAL,0)
       ENDIF
-      !IF(DELTA.GT.0.0.AND.IRAD.EQ.1)THEN
-       ! WRITE(UWATTEST,*)IRAD,JSHAPE,XPP,YPP,ZPP
-      !ENDIF
-
+      
 ! Swap point1(x1,y1,z1) with point2(x2,y2,z2) if necessary to ensure
 ! that point2 is always above the point1
       IF ((PON*R2).LT.(PON*R1)) THEN
@@ -2911,7 +2906,6 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     ENDIF
     NIRUNDEROS = RADABV(IHOUR,2) - RADINTERC2
     CHECK = PARUNDEROS - PARUSMEAN
-    !WRITE(UWATTEST,*)PARUNDEROS , PARUSMEAN, CHECK
 
     ! Fraction of PAR absorbed by understorey:
     IF(PARUSMEAN .GT.0.0)THEN
