@@ -501,7 +501,6 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
         ENDIF  ! new model gs
 
         ! Set nearly zero conductance (for numerical reasons).
-        GSMIN = 1E-09
         IF (GS.LT.GSMIN) GS = GSMIN
 
 
