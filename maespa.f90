@@ -1156,7 +1156,7 @@ PROGRAM maespa
                                                     JMAX25(LGP(IPT),IAGE),IECO,EAVJ,EDVJ,DELSJ,VCMAX25(LGP(IPT),IAGE),EAVC,     &
                                                     EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),RD0(LGP(IPT),IAGE),Q10F,    &
                                                     K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,        &
-                                                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF, &
+                                                    SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF, &
                                                     NSIDES,VPARA,VPARB,VPARC,VFUN, &
                                                     SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK,TOTSOILRES, &
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
@@ -1206,7 +1206,7 @@ PROGRAM maespa
                                                 TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),RD0(LGP(IPT),IAGE),Q10F,   &
                                                 K10F,RTEMP,DAYRESP,TBELOW,MODELGS,                              &
                                                 WSOILMETHOD,EMAXLEAF,                                           &
-                                                SOILMOISTURE,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,    &
+                                                SOILMOISTURE,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,    &
                                                 GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,VPARA,VPARB,VPARC,VFUN,SF,PSIV,            &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,                              &
                                                 GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,  &
@@ -1277,7 +1277,7 @@ PROGRAM maespa
                                                         EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),           &
                                                         RD0(LGP(IPT),IAGE),Q10F,K10F,RTEMP,DAYRESP,TBELOW,MODELGS,      &
                                                         WSOILMETHOD,EMAXLEAF,SOILMOISTURE,SMD1,SMD2,WC1,WC2,            &
-                                                        SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                                                        SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                                                         VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                         ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                         TOTSOILRES,MINLEAFWP, &
@@ -1379,7 +1379,7 @@ PROGRAM maespa
                                                 EAVC,EDVC,DELSC,TVJUP,TVJDN,THETA,AJQ(LGP(IPT),IAGE),           &
                                                 RD0(LGP(IPT),IAGE),Q10F,K10F,RTEMP,1.0,TBELOW,MODELGS,      &
                                                 WSOILMETHOD,EMAXLEAF,SOILMOISTURE,SMD1,SMD2,WC1,WC2,            &
-                                                SOILDATA,SWPEXP,FSOIL,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
+                                                SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                                                 VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                 TOTSOILRES,MINLEAFWP, &
