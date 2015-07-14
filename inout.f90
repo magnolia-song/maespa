@@ -411,7 +411,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UHRLY,726)
             WRITE (UHRLY,727)
             WRITE (UHRLY, 990) ' '
-            WRITE (UHRLY,725)
+            WRITE (UHRLY,728)
         END IF
     
         ! Comments to respiration output file (if required).    
@@ -786,18 +786,19 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
     715 FORMAT('hrH:   hourly sensible heat flux:  MJ tree-1 s-1')
     716 FORMAT('TCAN: Average foliage temperature (deg C)')
    ! 717 FORMAT('ELMAX: Canopy maximum leaf transpiration rate (mmol m-2 s-1)')
-    718 FORMAT('ALMAX: Canopy maximum leaf photosynthesis rate (umol m-2 s-1)')
-    719 FORMAT('PSIL: Canopy average leaf water potential (MPa)')
-    720 FORMAT('PSILMIN: Canopy minimum leaf water potential (MPa)')
-    721 FORMAT('CI : Canopy average intercellular CO2 conc. (ppm)')
-    722 FORMAT('TAIR: Air temperature (deg C)')
-    723 FORMAT('VPD: vapor pressure deficit (kPa)')
-    724 FORMAT('PAR: Above-canopy incident PAR (umol m-2 s-1)')
-    726 FORMAT('ZEN: Zenithal angle (rad)')                      ! mathias mars 2013
+718 FORMAT('ALMAX: Canopy maximum leaf photosynthesis rate (umol m-2 s-1)')
+719 FORMAT('ETDEFICIT : Transpiration not met by soil supply (mmol tree-1 s-1)')
+    720 FORMAT('PSIL: Canopy average leaf water potential (MPa)')
+    721 FORMAT('PSILMIN: Canopy minimum leaf water potential (MPa)')
+    722 FORMAT('CI : Canopy average intercellular CO2 conc. (ppm)')
+    723 FORMAT('TAIR: Air temperature (deg C)')
+    724 FORMAT('VPD: vapor pressure deficit (kPa)')
+    725 FORMAT('PAR: Above-canopy incident PAR (umol m-2 s-1)')
+    726 FORMAT('ZEN: Zenithal angle (rad)') 
     727 FORMAT('AZ: Asimutal angle (rad)')
-    725 FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIR hrTHM', &
+    728 FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIR hrTHM', &
                ' hrPs hrRf hrRmW hrLE', &
-               ' LECAN Gscan Gbhcan hrH TCAN ALMAX PSIL PSILMIN CI TAIR VPD PAR ZEN AZ')   !10E-3*ECANMAX(ITAR,IHOUR),
+               ' LECAN Gscan Gbhcan hrH TCAN ALMAX ETDEFICIT PSIL PSILMIN CI TAIR VPD PAR ZEN AZ')   
 
     801 FORMAT(' Fluxes for each layer on an hourly basis')
     802 FORMAT(' Rows: absorbed PAR (umol m-2 leaf s-1) ')
@@ -2166,7 +2167,8 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                     TCAN,NOLAY,PPAR,PPS,PTRANSP,FOLLAY,             &
                     THRAB,FCO2,FRESPF,FRESPW,FRESPB,                &
                     FH2OT,GSCAN,GBHCAN,FH2OCAN,FHEAT,VPD,TAIRABOVE,PAR,  &
-                    PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,ZEN,AZ)
+                    PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,ZEN,AZ,  &
+                    ETCANDEFICIT)
 ! Output the hourly totals
 !**********************************************************************
     USE switches
@@ -2186,6 +2188,7 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
     REAL FOLLAY(MAXLAY),TCAN(MAXT,MAXHRS),VPD(MAXHRS)
     REAL TAIRABOVE,PAR(MAXHRS)
     REAL ECANMAX(MAXT,MAXHRS),ACANMAX(MAXT,MAXHRS)
+    REAL ETCANDEFICIT(MAXT,MAXHRS)
     REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
     REAL ZEN(MAXHRS), AZ(MAXHRS)
 
@@ -2201,11 +2204,11 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                                     FH2OT(ITAR,IHOUR)*1E-3,                                     &
                                     FH2OCAN(ITAR,IHOUR)*1E-3,GSCAN(ITAR,IHOUR),GBHCAN(ITAR,IHOUR),  &
                                     FHEAT(ITAR,IHOUR)*1E-3,TCAN(ITAR,IHOUR),                    &
-                                    ACANMAX(ITAR,IHOUR),                    &   
+                                    ACANMAX(ITAR,IHOUR),ETCANDEFICIT(ITAR,IHOUR),               &   
                                     PSILCAN(ITAR,IHOUR),PSILCANMIN(ITAR,IHOUR),CICAN(ITAR,IHOUR),  &
                                     TAIRABOVE,VPD(IHOUR)/1000,PAR(IHOUR), &
-                                    ZEN(IHOUR),AZ(IHOUR)                    !rjout mathias mars 2013
-                500 FORMAT (I7,1X,3(I4,1X),3(F12.5,1X),16(F12.5,1X),2(F12.5,1X))    ! rajout de 2, mathias mars 2013
+                                    ZEN(IHOUR),AZ(IHOUR)                   
+                500 FORMAT (I7,1X,3(I4,1X),23(F12.5,1X))  
             ELSE IF (IOFORMAT .EQ. 1) THEN
                 WRITE (UHRLY) REAL(IDAY),REAL(ITREE),REAL(ISPEC),REAL(IHOUR),               &
                                 THRAB(ITAR,IHOUR,1)*UMOLPERJ,THRAB(ITAR,IHOUR,2),           &

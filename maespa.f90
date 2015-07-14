@@ -180,7 +180,7 @@ PROGRAM maespa
         SOILDATA = 0
         USEMEASSW = 0
     ENDIF
-
+    
     DO ITAR = 1,NOTARGETS
         ITREE = ITARGETS(ITAR)
         CALL SORTTREESI(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,ITAD(1:MAXT,ITAR))
@@ -287,8 +287,8 @@ PROGRAM maespa
         NSUMMEDW = 0
          
         ! Zero hourly fluxes
-        CALL ZEROHR(THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPFR,FRESPCR,FH2O,GSCAN,GBHCAN,FHEAT,PPAR,PPS,&
-                    PTRANSP,TCAN,FSOIL1,PSILCAN,PSILCANMIN,CICAN,NSUMMED,TOTTMP,ECANMAX,ACANMAX)
+        CALL ZEROHR(THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPFR,FRESPCR,FH2O,GSCAN,GBHCAN,FHEAT,PPAR,PPS, &
+                    PTRANSP,TCAN,FSOIL1,PSILCAN,PSILCANMIN,CICAN,NSUMMED,TOTTMP,ECANMAX,ACANMAX,ETCANDEFICIT)
 
         !**********************************************************************
         ! Do understorey calculations
@@ -1160,7 +1160,7 @@ PROGRAM maespa
                                                     NSIDES,VPARA,VPARB,VPARC,VFUN, &
                                                     SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK,TOTSOILRES, &
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
-                                                    HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                    
+                                                    HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                    
                                     
                                     ! Filling voxel table
                                     CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
@@ -1168,11 +1168,12 @@ PROGRAM maespa
                                                  HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
 
                                     ! Sum (or average) outputs for the hour
-                                    CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL,&
+                                    CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL,&
                                                 PSIL,CI,AREA,IHOUR,LGP(IPT),ITAR,&
                                                 NOTARGETS,NUMPNT,NSUMMED,TOTTMP,PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,&
-                                                GSCAN,GBHCAN,FH2O,  &
+                                                GSCAN,GBHCAN,FH2O,ETCANDEFICIT,  &
                                                 FHEAT,TCAN,FSOIL1,PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,FOLT(1))
+                                                                        
                                 END DO
                             END DO ! End loop over sunlit / shaded leaves
                         ELSE IF ((MODELSS.EQ.1).OR.(FBEAM(IHOUR,1).EQ.0.0)) THEN 
@@ -1210,7 +1211,7 @@ PROGRAM maespa
                                                 GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,VPARA,VPARB,VPARC,VFUN,SF,PSIV,            &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,                              &
                                                 GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,  &
-                                                KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                        
+                                                KTOT,HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                        
 
    
                                 ! Filling voxel table
@@ -1219,10 +1220,10 @@ PROGRAM maespa
                                              HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
                                 
                                 ! Sum outputs for the hour
-                                CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL,PSIL,&
+                                CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL,PSIL,&
                                             CI,AREA,IHOUR,LGP(IPT),ITAR,&
                                             NOTARGETS,NUMPNT,NSUMMED,TOTTMP,PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,&
-                                            GSCAN,GBHCAN,FH2O,  &
+                                            GSCAN,GBHCAN,FH2O,ETCANDEFICIT,  &
                                             FHEAT,TCAN,FSOIL1,PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,FOLT(1))
                      
                             END DO ! End loop over age classes
@@ -1281,7 +1282,7 @@ PROGRAM maespa
                                                         VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                         ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                         TOTSOILRES,MINLEAFWP, &
-                                                        WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
+                                                        WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
 
                                        ! Filling voxel table
                                         CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
@@ -1289,10 +1290,10 @@ PROGRAM maespa
                                                      HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
                                     
                                         ! Sum outputs for the hour
-                                        CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,&
+                                        CALL SUMHR(APAR/UMOLPERJ,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,&
                                                     FSOIL,PSIL,CI,AREA,IHOUR,  &
                                                     LGP(IPT),ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP, PPAR,PPS,PTRANSP,    &
-                                                    THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,&
+                                                    THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,ETCANDEFICIT,FHEAT,TCAN,FSOIL1,&
                                                     PSILCAN,PSILCANMIN,CICAN,  &
                                                     ECANMAX,ACANMAX,FOLT(1))
                                 END DO
@@ -1383,7 +1384,7 @@ PROGRAM maespa
                                                 VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
                                                 TOTSOILRES,MINLEAFWP, &
-                                                WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
+                                                WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
                                                                     
                             
                             ! Filling voxel table
@@ -1392,10 +1393,10 @@ PROGRAM maespa
                                          HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
 
                             ! Sum outputs for the hour (Added RAD, Aug. 2008).
-                             CALL SUMHR(0.0,0.0,ATHR,0.0,0.0,G0,GBH,ET,HFX,TLEAF,0.0,0.0,&
+                             CALL SUMHR(0.0,0.0,ATHR,0.0,0.0,G0,GBH,ET,ETDEFICIT,HFX,TLEAF,0.0,0.0,&
                                             0.0,AREA,IHOUR,LGP(IPT),ITAR,&
                                             NOTARGETS,NUMPNT,NSUMMED,TOTTMP,PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,&
-                                            GSCAN,GBHCAN,FH2O,  &
+                                            GSCAN,GBHCAN,FH2O,ETCANDEFICIT,  &
                                             FHEAT,TCAN,FSOIL1,PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,FOLT(1))
 
                         END DO ! End loop over age classes.
@@ -1452,7 +1453,7 @@ PROGRAM maespa
                                 DOWNTHTREE,RGLOBABV,RGLOBUND,RADINTERC,FRACAPAR,ISIMUS,FH2OUS(IHOUR),THRABUS(IHOUR),   &
                                 PARUSMEAN(IHOUR),SCLOSTTOT,GSCAN,WINDAH(IHOUR),ZHT,Z0HT,ZPD,PRESS(IHOUR),TAIR(IHOUR),       &
                                 VPD(IHOUR),ETMM,ETUSMM,ETMMSPEC,TREEH,RGLOBUND1,RGLOBUND2,DOWNTHAV)            
-write(uwattest,*)etmm*1000
+
                 ! Find soil surface temperature, unless this is input data.
                 ! Note this uses DRYTHICK from previous timestep (or initial value in first go).
                 IF(SIMTSOIL.EQ.1) THEN
@@ -1569,7 +1570,7 @@ write(uwattest,*)etmm*1000
                                   ESOIL, TOTLAI, WTITLE,                                          &
                                   RADINTERC1, RADINTERC2, RADINTERC3,SCLOSTTOT,SOILWP,FRACAPAR, &
                                   RADABV(IHOUR,3),TAIR(IHOUR),TCAN2, VPDABOVE, VPDNEW, & 
-                                  TSOILSURFACE,GCANOP,ITERTAIR) ! TEST MATHIAS
+                                  TSOILSURFACE,GCANOP,ITERTAIR) 
                 
                 CALL SUMDAILYWAT(WSOIL,WSOILROOT,WEIGHTEDSWP,PPT,ETMM,ETMEAS,DISCHARGE, &
                                 SOILEVAP,FSOIL1,SURFACE_WATERMM,QH,QE,QN,QC, &
@@ -1582,7 +1583,7 @@ write(uwattest,*)etmm*1000
             CALL OUTPUTHR(IDAY+1,IHOUR,NOTARGETS,ITARGETS,ISPECIES,TCAN,NOLAY,PPAR, &
                                 PPS,PTRANSP,FOLLAY,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FH2O,GSCAN,GBHCAN, &
                                 FH2OCAN,FHEAT,VPD,TAIRABOVE,UMOLPERJ*RADABV(1:KHRS,1),PSILCAN,PSILCANMIN,CICAN,  &
-                                ECANMAX,ACANMAX,ZEN,AZ)             ! rajout ZEN AZ mathias mars 2013
+                                ECANMAX,ACANMAX,ZEN,AZ,ETCANDEFICIT) 
 
 
    
@@ -1709,7 +1710,7 @@ END SUBROUTINE ZEROD
 !**********************************************************************
 SUBROUTINE ZEROHR(THRAB, FCO2, FRESPF, FRESPW, FRESPB, FRESPFR, FRESPCR, &
                     FH2O, GSCAN, GBHCAN, FHEAT, PPAR, PPS, PTRANSP, TCAN, FSOIL1,&
-                    PSILCAN,PSILCANMIN,CICAN,NSUMMED,TOTTMP,ECANMAX,ACANMAX)
+                    PSILCAN,PSILCANMIN,CICAN,NSUMMED,TOTTMP,ECANMAX,ACANMAX, ETCANDEFICIT)
 ! This is subroutine to set the initial values of hourly total variables
 ! to zero.
 ! Note changes to dimensions of arrays (June 2008 RAD).
@@ -1726,6 +1727,7 @@ SUBROUTINE ZEROHR(THRAB, FCO2, FRESPF, FRESPW, FRESPB, FRESPFR, FRESPCR, &
     REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
     REAL GBHCAN(MAXT,MAXHRS)
     REAL ECANMAX(MAXT,MAXHRS),ACANMAX(MAXT,MAXHRS)
+    REAL ETCANDEFICIT(MAXT,MAXHRS)
     INTEGER NSUMMED
 
     ! Note that we can set arrays to zero without a do-loop (RAD June 2008).
@@ -1752,6 +1754,7 @@ SUBROUTINE ZEROHR(THRAB, FCO2, FRESPF, FRESPW, FRESPB, FRESPFR, FRESPCR, &
     ECANMAX = 0.0
     ACANMAX = 0.0
     CICAN = 0.0
+    ETCANDEFICIT = 0.0
 
     RETURN
 END SUBROUTINE ZEROHR
@@ -1803,9 +1806,9 @@ END SUBROUTINE ZEROFSOIL
       
       
 !**********************************************************************
-SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,        &
+SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL, PSIL,CI,        &
                     AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
-                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,  &
+                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,ETCANDEFICIT,FHEAT,TCAN,FSOIL1,  &
                     PSILCAN,PSILCANMIN,CICAN, ECANMAX, ACANMAX,FOLT)
 ! Sum fluxes from each point to give hourly fluxes.
 ! Modified version of SUMHR to account for new looping order (June 2008 RAD).
@@ -1819,12 +1822,12 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,   
     REAL FCO2(MAXT,MAXHRS),FRESPF(MAXT,MAXHRS),TCAN(MAXT,MAXHRS)
     REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
     REAL GSCAN(MAXT,MAXHRS),FH2O(MAXT,MAXHRS),FHEAT(MAXT,MAXHRS)
-    REAL GBHCAN(MAXT,MAXHRS)
+    REAL GBHCAN(MAXT,MAXHRS),ETCANDEFICIT(MAXT,MAXHRS)
     REAL ACANMAX(MAXT,MAXHRS),ECANMAX(MAXT,MAXHRS)
     REAL PPAR(MAXT,MAXLAY,MAXHRS),PPS(MAXT,MAXLAY,MAXHRS)
     REAL PTRANSP(MAXT,MAXLAY,MAXHRS)
     REAL APAR,AREA,ALEAF,ET,ANIR,ATHR,RD,GSC,HFX,TLEAF,FSOIL1,FSOIL,TOTTMP
-    REAL PSIL,CI,GBH
+    REAL PSIL,CI,GBH,ETDEFICIT
     REAL FOLT
     
 
@@ -1844,6 +1847,9 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,   
     ! Transpiration in umol tree-1 s-1
     FH2O(ITAR,IHOUR) = FH2O(ITAR,IHOUR) + ET*AREA
     
+    ! transpiration deficit
+    ETCANDEFICIT(ITAR,IHOUR) = ETCANDEFICIT(ITAR,IHOUR) + ETDEFICIT*AREA
+    
     ! Maximum rates of transpiration and photosynthesis
     IF(ET.GT.ECANMAX(ITAR,IHOUR))THEN
         ECANMAX(ITAR, IHOUR) = ET
@@ -1851,6 +1857,7 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,   
     IF(ALEAF.GT.ACANMAX(ITAR,IHOUR))THEN
         ACANMAX(ITAR, IHOUR) = ALEAF
     ENDIF
+    
     ! Stom cond in mol tree-1 s-1
 !    GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA
     ! Boundary layer conductance to heat
@@ -1858,27 +1865,28 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,   
     ! Heat flux in mol tree-1 s-1
     FHEAT(ITAR,IHOUR) = FHEAT(ITAR,IHOUR) + HFX*AREA
 
-    IF (FOLT.NE.0.0) THEN       
-    ! Average leaf temperature - will be divided by total leaf area later. 
-        TCAN(ITAR,IHOUR) = TCAN(ITAR,IHOUR) + TLEAF*AREA / FOLT
-    ! Average leaf water potential
-        PSILCAN(ITAR,IHOUR) = PSILCAN(ITAR,IHOUR) + PSIL*AREA / FOLT
-    ! Lowest leaf water potential for the target tree.
-    IF(PSIL.LT.PSILCANMIN(ITAR,IHOUR))THEN
-       PSILCANMIN(ITAR,IHOUR) = PSIL
-    ENDIF
+    IF (FOLT.GT.0.0) THEN       
+        ! Average leaf temperature - will be divided by total leaf area later. 
+            TCAN(ITAR,IHOUR) = TCAN(ITAR,IHOUR) + TLEAF*AREA / FOLT
+        ! Average leaf water potential
+            PSILCAN(ITAR,IHOUR) = PSILCAN(ITAR,IHOUR) + PSIL*AREA / FOLT
+        ! Lowest leaf water potential for the target tree.
+        IF(PSIL.LT.PSILCANMIN(ITAR,IHOUR))THEN
+           PSILCANMIN(ITAR,IHOUR) = PSIL
+        ENDIF
     
-    ! Next two are not divided by FOLT because they are totals, not averages.
-    ! Stom cond in mol tree-1 s-1
-    GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA
+        ! Next two are not divided by FOLT because they are totals, not averages.
+        ! Stom cond in mol tree-1 s-1
+        GSCAN(ITAR,IHOUR) = GSCAN(ITAR,IHOUR) + GSC*AREA
     
-    ! Boundary layer conductance to heat
-    GBHCAN(ITAR,IHOUR) = GBHCAN(ITAR,IHOUR) + GBH*AREA
+        ! Boundary layer conductance to heat
+        GBHCAN(ITAR,IHOUR) = GBHCAN(ITAR,IHOUR) + GBH*AREA
         
-    ! Average ci.
+        ! Average ci.
         CICAN(ITAR,IHOUR) = CICAN(ITAR,IHOUR) + CI*AREA / FOLT
-    ENDIF
-    IF (FOLT.EQ.0.0) THEN        ! To avoid bug when tree leaf area is equal to 0
+    
+    ELSE
+    
         TCAN(ITAR,IHOUR) = TLEAF
         PSILCAN(ITAR,IHOUR) = PSIL
         CICAN(ITAR,IHOUR) = CI
