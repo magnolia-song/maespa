@@ -208,6 +208,12 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
         IF(ETEST.GT.EMAXLEAF)THEN
             GSV = 1E-03 * EMAXLEAF / (VPD/PATM)
             GSC = GSV / GSVGSC
+            
+            ! Cuticular conductance
+            IF(GSC.LT.GSMIN)THEN
+                GSC = GSMIN
+                GSV = GSVGSC*GSC 
+            ENDIF
         ENDIF
         
         PSIL = WEIGHTEDSWP

@@ -2431,7 +2431,7 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
                            RGLOBUND, RGLOBABV, RADINTERC, RNET,     &
                            TOTLAI,TAIRABOVE, TAIRCAN, TCAN,TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3),    & !SOILTEMP(1) is the soil temperature just below the drythick layer
                            FRACWATER(1),FRACWATER(2),FRACAPAR, VPD,VPDCAN,GCANOP,ITERTAIR
-520                        FORMAT (I7,I7,39(F14.4,1X),I7)
+520                        FORMAT (I7,I7,39(F14.6,1X),I7)
                            
         ! Write volumetric water content by layer:
         WRITE (UWATLAY, 521) FRACWATER(1:NLAYER)        !60) M. Christina 12/2013
@@ -3452,11 +3452,13 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             G20 = G20 / GSVGSC
             G21 = G21 / GSVGSC
             GNIGHT = GNIGHT / GSVGSC
+            GSMIN = GSMIN / GSVGSC
             CALL SUBERROR('GS PARAMETERS FOR H2O WERE CONVERTED TO CO2.', IWARN,0)
         ELSE
             CALL SUBERROR('GS PARAMETERS ARE ASSUMED TO BE FOR CO2.',IWARN,0)
         ENDIF
 
+        GSMINI = GSMIN
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
@@ -3494,11 +3496,13 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             G20 = G20 / GSVGSC
             G21 = G21 / GSVGSC
             GNIGHT = GNIGHT / GSVGSC
+            GSMINI = GSMIN
             CALL SUBERROR('GS PARAMETERS FOR H2O WERE CONVERTED TO CO2.',IWARN,0)
         ELSE
             CALL SUBERROR('GS PARAMETERS ARE ASSUMED TO BE FOR CO2.', IWARN,0)
         ENDIF
 
+        GSMINI = GSMIN
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
@@ -3535,6 +3539,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         ! g1 MUST be for H2O
         CALL SUBERROR('GS PARAMETERS ARE ASSUMED TO BE FOR H2O.', IWARN,0)
         
+        GSMINI = GSMIN
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
@@ -3571,6 +3576,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         
         ! If conductance pars given for water:
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
+            GSMIN = GSMIN / GSVGSC
             G0 = G0 / GSVGSC
             G1 = G1 / GSVGSC
             G20 = G20 / GSVGSC
@@ -3581,6 +3587,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             CALL SUBERROR('GS PARAMETERS ARE ASSUMED TO BE FOR CO2.', IWARN,0)
         ENDIF
 
+        GSMINI = GSMIN
         GNIGHTI = GNIGHT
         G0TABLEI = G0
         G1TABLEI = G1
