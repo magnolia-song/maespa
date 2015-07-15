@@ -142,7 +142,7 @@ PROGRAM maespa
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET, KEEPDRY, DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
                         FRACORGANIC, EXPINF, WSOILMETHOD, USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,ALPHARET,WS,WR,NRET,&
                         DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT,&
-                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM,SIMSTORE,STORECOEF,STOREEXP)
+                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM,SIMSTORE,STORECOEF,STOREEXP,STOPSIMONEMPTY)
     ENDIF
         
     
@@ -188,6 +188,8 @@ PROGRAM maespa
         CALL SORTTREESI(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,ITAD(1:MAXT,ITAR))
     ENDDO
     
+    ! Flag to abort simulation if some condition is met.
+    ABORTSIMULATION = .FALSE.
     
     !***********************************************************************!
     !                       Begin daily loop                                !
@@ -197,7 +199,7 @@ PROGRAM maespa
     CALL RESTARTMETF(ISTART,MSTART,MFLAG)
     
     IDAY = 0
-    DO WHILE (ISTART + IDAY <= IEND)
+    DO WHILE (ISTART + IDAY <= IEND .AND. .NOT. ABORTSIMULATION)
         IF(VERBOSE.GE.1)WRITE(*,105) IDAY
         105 FORMAT('  DAY:',I5)
        
@@ -1456,6 +1458,10 @@ PROGRAM maespa
                 
                     PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
                 
+                    IF(STOPSIMONEMPTY.EQ.1)THEN
+                        IF(PLANTWATER(IDAY+1,ITAR).LE.0.0) ABORTSIMULATION=.TRUE.
+                    ENDIF
+                    
                 ENDIF
                 
 
@@ -1619,6 +1625,8 @@ PROGRAM maespa
         TOTRESPFG = GRESP(FBINC,EFFYRF)
 
        
+        WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1)
+        
         ! Output daily totals
         CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT, &
                       TDYAB,TOTCO2,TOTRESPF,TOTRESPWM,TOTRESPB,TOTRESPCR,   &
