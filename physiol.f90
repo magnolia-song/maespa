@@ -204,6 +204,7 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
         
         ! Maximum transpiration rate
         EMAXLEAF = KTOT * (WEIGHTEDSWP - MINLEAFWP)
+        IF(EMAXLEAF.LT.0.0)EMAXLEAF = 0.0
         
         ! Hydraulic constraints on night-time conductance
         ETEST = 1000 * (VPD/PATM) * GSC * GSVGSC
@@ -219,7 +220,6 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
             ENDIF
         ENDIF
         
-        PSIL = WEIGHTEDSWP
         CI = CS
         RD = RESP(RD0,RD0ACC,TLEAF,TMOVE,Q10F,K10F,RTEMP,DAYRESP,TBELOW)
         ALEAF = -RD
@@ -296,17 +296,20 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
 200 FHEAT = RNET - LHV*ET
     
     ! Transpiration minus supply by soil/plant (EMAX) must be drawn from plant reserve
-    ETDEFICIT = ET*1E-03 - EMAXLEAF
+    ETDEFICIT = (VPD/PATM) * GSV *1E03 - EMAXLEAF
     IF(ETDEFICIT.LT.0.0)ETDEFICIT = 0.0
     
     ! Return ET,EI in umol m-2 s-1
     ET = ET*1E6  
 
-    IF(ISMAESPA.AND.(.NOT.ISNIGHT))THEN
-        ! Simple transpiration rate assuming perfect coupling (for comparison).
-        ETEST = 1E6 * (VPD/PRESS) * GSV
-    
-        PSIL = WEIGHTEDSWP - (ET/1000)/KTOT
+    ! Calculate leaf water potential
+    IF(ISMAESPA)THEN
+        ! Used to use ET without boundary layer; not sure why.
+        ETEST = 1E06 * (VPD/PATM) * GSV
+        
+        PSIL = WEIGHTEDSWP - (ETEST/1000)/KTOT
+    ELSE
+        PSIL = 0.0
     ENDIF
     
     RETURN
@@ -522,7 +525,7 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
 
         ! Maximum transpiration rate
         EMAXLEAF = KTOT * (WEIGHTEDSWP - MINLEAFWP)
-
+        IF(EMAXLEAF.LT.0.0)EMAXLEAF = 0.0
 
         ! If E > Emax, set E to Emax, and corresponding gs and A.
         ! Do not use this routine when the Tuzet model of gs (6) is used.
@@ -543,10 +546,6 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
                     ! Gs in mol m-2 s-1
                     GSV = 1E-03 * EMAXLEAF / (VPD/PATM)
                     GS = GSV / GSVGSC
-
-                    ! Minimum leaf water potential reached
-                    ! Recalculate PSIL
-                    PSIL = WEIGHTEDSWP - EMAXLEAF/KTOT
 
                     ! GS cannot be lower than minimum (cuticular conductance)
                     IF(GS.LT.GSMIN)THEN

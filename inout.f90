@@ -454,7 +454,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (URESPHR,307)
           END IF
     
-        ! Write comments to layer output file (if required)
+        ! Write comments to layer output file.
         IF (IOHRLY.GT.1) THEN
             WRITE (ULAY, 991) 'Program:    ', VTITLE
             WRITE (ULAY, 801)
@@ -464,7 +464,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (ULAY, *)
         END IF
         
-        ! Write comments to water balance output file (if required). (RAD).
+        ! Write comments to water balance output file.
         IF (ISMAESPA) THEN
             WRITE (UWATBAL, 991) 'Program:                  ', VTITLE
             WRITE (UWATBAL, 992) 'Water balance parameters: ', WTITLE
@@ -745,163 +745,162 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
         END IF
     END IF
     
-    461   format('DOY   Hour    Tree    IPT    SUNLA   AREA    BEXT    FBEAM   ZEN  ABSRPPAR  ',&  
+461     FORMAT('DOY   Hour    Tree    IPT    SUNLA   AREA    BEXT    FBEAM   ZEN  ABSRPPAR  ',&  
                  'ABSRPNIR ABSRPTH BFPAR DFPAR BFNIR DFNIR DFTHR  ',& 
-                 'SCLOSTPAR SCLOSTNIR SCLOSTTH DOWNTH PARABV NIRABV THRABV')   ! Modification Mathias 27/11/12
-
-    990 FORMAT (A80)
-    991 FORMAT (A12,A80) ! For writing comments to output files.
-    992 FORMAT (A25, A55)
+                 'SCLOSTPAR SCLOSTNIR SCLOSTTH DOWNTH PARABV NIRABV THRABV')
     
-    501 FORMAT('DOY: simulation date')
-    502 FORMAT('Tree: tree number')
-    503 FORMAT('Spec: tree species number')
-    504 FORMAT('absPAR:   absorbed PAR              MJ tree-1 d-1')
-    505 FORMAT('absNIR:   absorbed NIR              MJ  tree-1 d-1')
-    506 FORMAT('absTherm: absorbed thermal          MJ tree-1 d-1')
-    507 FORMAT('totPs: gross photosynthesis         mol tree-1 d-1')
-    508 FORMAT('totRf: daily foliar respiration     mol tree-1 d-1')
-    509 FORMAT('netPs: photosyn. net of foliar resp   mol tree-1 d-1')
-    510 FORMAT('totLE1: daily transpiration         mol H2O tree-1 d-1')
-    511 FORMAT('totLE2: daily transpirn (CANOPY calc) mol H2O m-2 d-1')
-    512 FORMAT('totH:  daily sensible heat flux     MJ tree-1 d-1')
-    513 FORMAT('Columns: DOY Tree Spec absPAR absNIR absTherm', &
+990     FORMAT (A80)
+991     FORMAT (A12,A80) ! For writing comments to output files.
+992     FORMAT (A25, A55)
+        
+501     FORMAT('DOY: simulation date')
+502     FORMAT('Tree: tree number')
+503     FORMAT('Spec: tree species number')
+504     FORMAT('absPAR:   absorbed PAR              MJ tree-1 d-1')
+505     FORMAT('absNIR:   absorbed NIR              MJ  tree-1 d-1')
+506     FORMAT('absTherm: absorbed thermal          MJ tree-1 d-1')
+507     FORMAT('totPs: gross photosynthesis         mol tree-1 d-1')
+508     FORMAT('totRf: daily foliar respiration     mol tree-1 d-1')
+509     FORMAT('netPs: photosyn. net of foliar resp   mol tree-1 d-1')
+510     FORMAT('totLE1: daily transpiration         mol H2O tree-1 d-1')
+511     FORMAT('totLE2: daily transpirn (CANOPY calc) mol H2O m-2 d-1')
+512     FORMAT('totH:  daily sensible heat flux     MJ tree-1 d-1')
+513     FORMAT('Columns: DOY Tree Spec absPAR absNIR absTherm', &
                 &' totPs totRf netPs', &
                 &' totLE1 totLE2 totH')
 
-    701 FORMAT('DOY: simulation date')
-    702 FORMAT('Tree: tree number')
-    703 FORMAT('Spec: tree species number')
-    704 FORMAT('Hour:  hour of the day')
-    705 FORMAT('hrPAR: absorbed PAR              umol tree-1 s-1')
-    706 FORMAT('hrNIR: absorbed NIR              W tree-1')
-    707 FORMAT('hrTHM: absorbed thermal          W tree-1')
-    708 FORMAT('hrPS: photosynthesis (net of leaf resp) umol tree-1 s-1')
-    709 FORMAT('hrRf:  hourly leaf respiration   umol tree-1 s-1')
-    710 FORMAT('hrRmW: hourly stem + branch Rm   umol tree-1 s-1')
-    711 FORMAT('hrLE:  hourly transpiration      mmol tree-1 s-1')
-    712 FORMAT('LECAN: hourly transpirn: CANOPY calc : mmol H2O m-2 s-1')
-    713 FORMAT('Gscan: canopy stomatal conductance : mol CO2 tree-1 s-1')
-    714 FORMAT('Gbhcan: canopy boundary layer conductance to heat : mol tree-1 s-1')
-    715 FORMAT('hrH:   hourly sensible heat flux:  MJ tree-1 s-1')
-    716 FORMAT('TCAN: Average foliage temperature (deg C)')
-   ! 717 FORMAT('ELMAX: Canopy maximum leaf transpiration rate (mmol m-2 s-1)')
-718 FORMAT('ALMAX: Canopy maximum leaf photosynthesis rate (umol m-2 s-1)')
-719 FORMAT('ETDEFICIT : Transpiration not met by soil supply (mmol tree-1 s-1)')
-    720 FORMAT('PSIL: Canopy average leaf water potential (MPa)')
-    721 FORMAT('PSILMIN: Canopy minimum leaf water potential (MPa)')
-    722 FORMAT('CI : Canopy average intercellular CO2 conc. (ppm)')
-    723 FORMAT('TAIR: Air temperature (deg C)')
-    724 FORMAT('VPD: vapor pressure deficit (kPa)')
-    725 FORMAT('PAR: Above-canopy incident PAR (umol m-2 s-1)')
-    726 FORMAT('ZEN: Zenithal angle (rad)') 
-    727 FORMAT('AZ: Asimutal angle (rad)')
-    728 FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIR hrTHM', &
+701     FORMAT('DOY: simulation date')
+702     FORMAT('Tree: tree number')
+703     FORMAT('Spec: tree species number')
+704     FORMAT('Hour:  hour of the day')
+705     FORMAT('hrPAR: absorbed PAR              umol tree-1 s-1')
+706     FORMAT('hrNIR: absorbed NIR              W tree-1')
+707     FORMAT('hrTHM: absorbed thermal          W tree-1')
+708     FORMAT('hrPS: photosynthesis (net of leaf resp) umol tree-1 s-1')
+709     FORMAT('hrRf:  hourly leaf respiration   umol tree-1 s-1')
+710     FORMAT('hrRmW: hourly stem + branch Rm   umol tree-1 s-1')
+711     FORMAT('hrLE:  hourly transpiration      mmol tree-1 s-1')
+712     FORMAT('LECAN: hourly transpirn: CANOPY calc : mmol H2O m-2 s-1')
+713     FORMAT('Gscan: canopy stomatal conductance : mol CO2 tree-1 s-1')
+714     FORMAT('Gbhcan: canopy boundary layer conductance to heat : mol tree-1 s-1')
+715     FORMAT('hrH:   hourly sensible heat flux:  MJ tree-1 s-1')
+716     FORMAT('TCAN: Average foliage temperature (deg C)')
+718     FORMAT('ALMAX: Canopy maximum leaf photosynthesis rate (umol m-2 s-1)')
+719     FORMAT('ETDEFICIT : Transpiration not met by soil supply (mmol tree-1 s-1)')
+720     FORMAT('PSIL: Canopy average leaf water potential (MPa)')
+721     FORMAT('PSILMIN: Canopy minimum leaf water potential (MPa)')
+722     FORMAT('CI : Canopy average intercellular CO2 conc. (ppm)')
+723     FORMAT('TAIR: Air temperature (deg C)')
+724     FORMAT('VPD: vapor pressure deficit (kPa)')
+725     FORMAT('PAR: Above-canopy incident PAR (umol m-2 s-1)')
+726     FORMAT('ZEN: Zenithal angle (rad)') 
+727     FORMAT('AZ: Asimutal angle (rad)')
+728     FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIR hrTHM', &
                ' hrPs hrRf hrRmW hrLE', &
                ' LECAN Gscan Gbhcan hrH TCAN ALMAX ETDEFICIT PSIL PSILMIN CI TAIR VPD PAR ZEN AZ')   
 
-    801 FORMAT(' Fluxes for each layer on an hourly basis')
-    802 FORMAT(' Rows: absorbed PAR (umol m-2 leaf s-1) ')
-    803 FORMAT('       photosynthesis net of Rleaf (umol m-2 leaf s-1) ')
-    804 FORMAT('       transpiration (umol m-2 leaf s-1) ')
+801     FORMAT(' Fluxes for each layer on an hourly basis')
+802     FORMAT(' Rows: absorbed PAR (umol m-2 leaf s-1) ')
+803     FORMAT('       photosynthesis net of Rleaf (umol m-2 leaf s-1) ')
+804     FORMAT('       transpiration (umol m-2 leaf s-1) ')
 
-    601 FORMAT('Daily maintenance and growth respiration components')
-    602 FORMAT('Rmf: Foliage maintenance resp.    mol m-2 d-1')
-    603 FORMAT('Rmw: Stem maintenance resp.       mol m-2 d-1')
-    604 FORMAT('RmB: Branch maintenance resp.     mol m-2 d-1')
-    605 FORMAT('Rmcr: Coarse root maintenance resp. mol m-2 d-1')
-    606 FORMAT('Rmfr: Fine root maintenance resp. mol m-2 d-1')
-    607 FORMAT('Rgf: Foliage growth resp.         mol m-2 d-1')
-    608 FORMAT('Rgw: Stem growth resp.            mol m-2 d-1')
-    609 FORMAT('Rgb: Branch growth resp.          mol m-2 d-1')
-    610 FORMAT('Rgcr: Coarse root growth resp.    mol m-2 d-1')
-    611 FORMAT('Rgfr: Fine root growth resp.      mol m-2 d-1')
-    612 FORMAT('Columns: DOY Tree Species Rmf Rmw Rmb Rmcr Rmfr Rgf Rgw Rgb Rgcr Rgfr')
+601     FORMAT('Daily maintenance and growth respiration components')
+602     FORMAT('Rmf: Foliage maintenance resp.    mol m-2 d-1')
+603     FORMAT('Rmw: Stem maintenance resp.       mol m-2 d-1')
+604     FORMAT('RmB: Branch maintenance resp.     mol m-2 d-1')
+605     FORMAT('Rmcr: Coarse root maintenance resp. mol m-2 d-1')
+606     FORMAT('Rmfr: Fine root maintenance resp. mol m-2 d-1')
+607     FORMAT('Rgf: Foliage growth resp.         mol m-2 d-1')
+608     FORMAT('Rgw: Stem growth resp.            mol m-2 d-1')
+609     FORMAT('Rgb: Branch growth resp.          mol m-2 d-1')
+610     FORMAT('Rgcr: Coarse root growth resp.    mol m-2 d-1')
+611     FORMAT('Rgfr: Fine root growth resp.      mol m-2 d-1')
+612     FORMAT('Columns: DOY Tree Species Rmf Rmw Rmb Rmcr Rmfr Rgf Rgw Rgb Rgcr Rgfr')
 
-    301 FORMAT('Hourly maintenance respiration components')
-    302 FORMAT('Rmf: Foliage maintenance resp.    umol m-2 s-1')
-    303 FORMAT('Rmw: Stem maintenance resp.       umol m-2 s-1')
-    304 FORMAT('RmB: Branch maintenance resp.     umol m-2 s-1')
-    305 FORMAT('Rmcr: Coarse root maintenance resp. umol m-2 s-1')
-    306 FORMAT('Rmfr: Fine root maintenance resp. umol m-2 s-1')
-    307 FORMAT('Columns: DOY, Hr, Rmf, Rmw, Rmb, Rmcr, Rmfr')
+301     FORMAT('Hourly maintenance respiration components')
+302     FORMAT('Rmf: Foliage maintenance resp.    umol m-2 s-1')
+303     FORMAT('Rmw: Stem maintenance resp.       umol m-2 s-1')
+304     FORMAT('RmB: Branch maintenance resp.     umol m-2 s-1')
+305     FORMAT('Rmcr: Coarse root maintenance resp. umol m-2 s-1')
+306     FORMAT('Rmfr: Fine root maintenance resp. umol m-2 s-1')
+307     FORMAT('Columns: DOY, Hr, Rmf, Rmw, Rmb, Rmcr, Rmfr')
 
-    401 FORMAT('Half-hourly water and heat balance components.')
-    402 FORMAT('wsoil: total soil water storage                       mm')
-    403 FORMAT('wsoilroot: soil water storage in rooted zone          mm')
-    404 FORMAT('ppt : precipitation                                   mm')
-    405 FORMAT('canopystore : storage of intercepted rain             mm')
-    406 FORMAT('evapstore : evaporation of wet canopy                 mm')
-    407 FORMAT('drainstore : drainage of wet canopy                   mm')
-    408 FORMAT('tfall : throughfall of rain                           mm')
-    409 FORMAT('et : modelled canopy transpiration                    mm')
-    410 FORMAT('etmeas: measured ET, if provided in input             mm')
-    411 FORMAT('discharge: drainage at bottom of profile              mm')
-    412 FORMAT('overflow: over-land flow                              mm')
-    413 FORMAT('weightedswp: soil water potential weighted by roots  MPa')
-    414 FORMAT('ktot: soil to leaf hydr. cond.        mmol m-2 s-1 MPa-1')
-    415 FORMAT('drythick: thickness of dry surface layer              mm')
-    416 FORMAT('soilevap: soil evaporation                            mm')
-    417 FORMAT('soilmoist: measured soil water content      (units vary)')
-    418 FORMAT('fsoil: soil water modifier function                (0-1)')
-    419 FORMAT('qh: soil sensible heat flux                        W m-2')
-    420 FORMAT('qe: soil latent heat flux                          W m-2')
-    421 FORMAT('qn: soil radiation                                 W m-2')
-    422 FORMAT('qc: soil heat transport                            W m-2')
-    423 FORMAT('rglobund: net radiation underneath canopy          W m-2')
-    424 FORMAT('rglobabv: net radiation above canopy               W m-2')
-    425 FORMAT('radinterc: total radiation intercepted by canopy   W m-2')
-    426 FORMAT('rnet: net radiation above the canopy               W m-2')
-    427 FORMAT('totlai: leaf area index                           m2 m-2')
-    428 FORMAT('tair: air temperature                              deg C')
-    4281 FORMAT('taircan: air temperature within the canopy        deg C')
-    4282 FORMAT('tcan: canopy temperature                          deg C')
-    4283 FORMAT('Tsoilsurf: Soil surface temperature               deg C')
-    4284 FORMAT('TSoilDry: Soil temperature below the drythick layer  deg C')
-    429 FORMAT('soilt1, soilt2: soil T in 1st and 2nd layer        deg C')
+401     FORMAT('Half-hourly water and heat balance components.')
+402     FORMAT('wsoil: total soil water storage                       mm')
+403     FORMAT('wsoilroot: soil water storage in rooted zone          mm')
+404     FORMAT('ppt : precipitation                                   mm')
+405     FORMAT('canopystore : storage of intercepted rain             mm')
+406     FORMAT('evapstore : evaporation of wet canopy                 mm')
+407     FORMAT('drainstore : drainage of wet canopy                   mm')
+408     FORMAT('tfall : throughfall of rain                           mm')
+409     FORMAT('et : modelled canopy transpiration                    mm')
+410     FORMAT('etmeas: measured ET, if provided in input             mm')
+411     FORMAT('discharge: drainage at bottom of profile              mm')
+412     FORMAT('overflow: over-land flow                              mm')
+413     FORMAT('weightedswp: soil water potential weighted by roots  MPa')
+414     FORMAT('ktot: soil to leaf hydr. cond.        mmol m-2 s-1 MPa-1')
+415     FORMAT('drythick: thickness of dry surface layer              mm')
+416     FORMAT('soilevap: soil evaporation                            mm')
+417     FORMAT('soilmoist: measured soil water content      (units vary)')
+418     FORMAT('fsoil: soil water modifier function                (0-1)')
+419     FORMAT('qh: soil sensible heat flux                        W m-2')
+420     FORMAT('qe: soil latent heat flux                          W m-2')
+421     FORMAT('qn: soil radiation                                 W m-2')
+422     FORMAT('qc: soil heat transport                            W m-2')
+423     FORMAT('rglobund: net radiation underneath canopy          W m-2')
+424     FORMAT('rglobabv: net radiation above canopy               W m-2')
+425     FORMAT('radinterc: total radiation intercepted by canopy   W m-2')
+426     FORMAT('rnet: net radiation above the canopy               W m-2')
+427     FORMAT('totlai: leaf area index                           m2 m-2')
+428     FORMAT('tair: air temperature                              deg C')
+4281    FORMAT('taircan: air temperature within the canopy        deg C')
+4282    FORMAT('tcan: canopy temperature                          deg C')
+4283    FORMAT('Tsoilsurf: Soil surface temperature               deg C')
+4284    FORMAT('TSoilDry: Soil temperature below the drythick layer  deg C')
+429     FORMAT('soilt1, soilt2: soil T in 1st and 2nd layer        deg C')
 430     FORMAT('fracw1,fracw2: water content 1st and 2nd layer    m3 m-3')
 4301    FORMAT('VPDair,VPDaircan: air above and within the canopy VPD  ')
 4302    FORMAT('Gcan: air-canopy conductance mol m-2 s-1  ')
 4303    FORMAT('Itertair : number of iterations for taircan estimation')        
         
-    431 FORMAT('Columns: day hour wsoil wsoilroot ppt canopystore '         &
+431     FORMAT('Columns: day hour wsoil wsoilroot ppt canopystore '         &
                 'evapstore drainstore tfall et etmeas discharge overflow ' &
                 'weightedswp ktot drythick soilevap '                 &
                 'soilmoist fsoil qh qe qn qc rglobund '                     &
                 'rglobabv radinterc rnet totlai tair taircan tcan tsoilsurf tsoildry soilt1 soilt2 '        &
                 'fracw1 fracw2 fracaPAR VPDair VPDaircan GCAN itertair')
-    432 FORMAT('FracaPAR: fraction of absorbed PAR')   
-                
-    441 FORMAT('Daily water and heat balance components.')
-    442 FORMAT('wsoil: total soil water storage                       mm')
-    443 FORMAT('wsoilroot: soil water storage in rooted zone          mm')
-    444 FORMAT('swp: weighted soil water potential                   MPa')
-    445 FORMAT('ppt : precipitation                                   mm')
-    446 FORMAT('tfall : throughfall of rain                           mm')
-    447 FORMAT('et : modelled canopy transpiration                    mm')
-    448 FORMAT('etmeas: measured ET, if provided in input             mm')
-    449 FORMAT('discharge: drainage at bottom of profile              mm')
-    450 FORMAT('soilevap: soil evaporation                            mm')
-    451 FORMAT('fsoil: soil water modifier function                (0-1)')
-    452 FORMAT('qh: sensible heat flux                      MJ m-2 day-1')
-    453 FORMAT('qe: latent heat flux                        MJ m-2 day-1')
-    454 FORMAT('qn: net radiation                           MJ m-2 day-1')
-    455 FORMAT('qc: soil heat transport                     MJ m-2 day-1')
-    456 FORMAT('radinterc: total radiation intercepted      MJ m-2 day-1')
+432     FORMAT('FracaPAR: fraction of absorbed PAR')   
+                    
+441     FORMAT('Daily water and heat balance components.')
+442     FORMAT('wsoil: total soil water storage                       mm')
+443     FORMAT('wsoilroot: soil water storage in rooted zone          mm')
+444     FORMAT('swp: weighted soil water potential                   MPa')
+445     FORMAT('ppt : precipitation                                   mm')
+446     FORMAT('tfall : throughfall of rain                           mm')
+447     FORMAT('et : modelled canopy transpiration                    mm')
+448     FORMAT('etmeas: measured ET, if provided in input             mm')
+449     FORMAT('discharge: drainage at bottom of profile              mm')
+450     FORMAT('soilevap: soil evaporation                            mm')
+451     FORMAT('fsoil: soil water modifier function                (0-1)')
+452     FORMAT('qh: sensible heat flux                      MJ m-2 day-1')
+453     FORMAT('qe: latent heat flux                        MJ m-2 day-1')
+454     FORMAT('qn: net radiation                           MJ m-2 day-1')
+455     FORMAT('qc: soil heat transport                     MJ m-2 day-1')
+456     FORMAT('radinterc: total radiation intercepted      MJ m-2 day-1')
 
 457     FORMAT('Columns: day wsoil wsoilroot swp ppt &
               &tfall et etmeas discharge soilevap &
               &fsoil qh qe qn qc radinterc')
         
-201           FORMAT('Understorey simulation results by timestep and point')
-202           FORMAT('Columns: day hour point X Y Z PARbeam PARdiffuse PARtotal APAR hrPSus hrETus')
-203           FORMAT('day : day of simulation (1,2,etc.)')
-204           FORMAT('hour: timestep (1,2,etc.)')
-205           FORMAT('X,Y,Z: spatial coordinates of understorey test point (m)')
-206           FORMAT('PARbeam, PARdiffuse, PARtot : PAR reaching the top of the understorey, in direct, diffuse or total (mu mol m-2 s-1)')
-207           FORMAT('APAR : absorbed PAR by the understorey (mu mol m-2 s-1) ')
-208           FORMAT('hrPSus : photosynthesis for the understorey point (mu mol m-2 s-1)')            
-209           FORMAT('hrETus : transpiration for the understorey point (If zero it is not calculated) (mmol m-2 s-1)')
+201     FORMAT('Understorey simulation results by timestep and point')
+202     FORMAT('Columns: day hour point X Y Z PARbeam PARdiffuse PARtotal APAR hrPSus hrETus')
+203     FORMAT('day : day of simulation (1,2,etc.)')
+204     FORMAT('hour: timestep (1,2,etc.)')
+205     FORMAT('X,Y,Z: spatial coordinates of understorey test point (m)')
+206     FORMAT('PARbeam, PARdiffuse, PARtot : PAR reaching the top of the understorey, in direct, diffuse or total (mu mol m-2 s-1)')
+207     FORMAT('APAR : absorbed PAR by the understorey (mu mol m-2 s-1) ')
+208     FORMAT('hrPSus : photosynthesis for the understorey point (mu mol m-2 s-1)')            
+209     FORMAT('hrETus : transpiration for the understorey point (If zero it is not calculated) (mmol m-2 s-1)')
 
     
 END SUBROUTINE WRITE_HEADER_INFORMATION
@@ -1037,7 +1036,8 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
                         USEMEASSW,SIMSOILEVAP,USESTAND,ALPHARET,WS,WR,  &
                         NRET,DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,&
                         RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT, &
-                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM)
+                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM, &
+                        SIMSTORE,STORECOEF,STOREEXP)
 ! Read in water balance parameters
 !**********************************************************************
 
@@ -1047,21 +1047,21 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
     INTEGER NLAYER,NROOTLAYER,REASSIGNRAIN, SIMTSOIL, EQUALUPTAKE
     INTEGER WSOILMETHOD,FRACROOTLEN,LASTENTRY,RETFUNCTION
     INTEGER USEMEASET,USEMEASSW,KEEPWET,KEEPDRY,I,SIMSOILEVAP
-    INTEGER USESTAND,NOSPEC
-    INTEGER NOKPDATES, DATESKP(maxdate), DATESROOT(maxdate), NOROOTDATES, NOROOTSPEC
-    REAL MINLEAFWP(MAXSP),MINROOTWP
-    REAL FRACROOTTABLE(MAXSOILLAY,maxdate,MAXSP),LAYTHICK(MAXSOILLAY)
+    INTEGER USESTAND,NOSPEC,SIMSTORE
+    INTEGER NOKPDATES, DATESKP(MAXDATE), DATESROOT(MAXDATE), NOROOTDATES, NOROOTSPEC
+    REAL MINLEAFWP(MAXSP),MINROOTWP, STORECOEF,STOREEXP
+    REAL FRACROOTTABLE(MAXSOILLAY,MAXDATE,MAXSP),LAYTHICK(MAXSOILLAY)
     REAL INITWATER(MAXSOILLAY),POREFRAC(MAXSOILLAY)
     REAL BPAR(MAXSOILLAY), PSIE(MAXSOILLAY), KSAT(MAXSOILLAY)
     REAL SOILTEMP(MAXSOILLAY),DRAINLIMIT(MAXSOILLAY)
     REAL FRACORGANIC(MAXSOILLAY),FRACSUM
-    REAL ROOTRESIST,ROOTRADTABLE(maxdate),ROOTSRLTABLE(maxdate),ROOTMASSTOTTABLE(maxdate)
+    REAL ROOTRESIST,ROOTRADTABLE(MAXDATE),ROOTSRLTABLE(MAXDATE),ROOTMASSTOTTABLE(MAXDATE)
     REAL MAXSTORAGE,COREWATER,EXPINF,DRYTHICKMIN,RUTTERB,RUTTERD
-    REAL THROUGHFALL,ROOTRESFRAC,PLANTKTABLE(maxdate),TORTPAR,ROOTXSECAREA
+    REAL THROUGHFALL,ROOTRESFRAC,PLANTKTABLE(MAXDATE),TORTPAR,ROOTXSECAREA
     REAL KSCALING,ROOTBETA
     REAL ALPHARET(MAXSOILLAY),WS(MAXSOILLAY),WR(MAXSOILLAY),NRET(MAXSOILLAY),PLATDRAIN
-    REAL RFPAR1(maxsp),RFPAR2(maxsp),RFPAR3(maxsp), DRYTHERM
-    INTEGER ROOTFRONTLIMIT,RFAGEBEGIN(maxsp),IWATTABLAYER,ISIMWATTAB
+    REAL RFPAR1(MAXSP),RFPAR2(MAXSP),RFPAR3(MAXP), DRYTHERM
+    INTEGER ROOTFRONTLIMIT,RFAGEBEGIN(MAXSP),IWATTABLAYER,ISIMWATTAB
     
     LOGICAL ANYFIX
 
@@ -1080,15 +1080,15 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
     ROOTRESIST = 0.0
     KSCALING = 0.0
     ROOTBETA = 0.0
-    ALPHARET =0.0
-    WS=0.0
-    WR=0.0
-    NRET=0.0
-    PLATDRAIN=0.0    
+    ALPHARET = 0.0
+    WS = 0.0
+    WR = 0.0
+    NRET = 0.0
+    PLATDRAIN = 0.0    
     
     ! Read all namelists in the "watpars.dat" file.
     CALL READWATCONTROL(UWATPARS,KEEPWET,KEEPDRY,SIMTSOIL,REASSIGNRAIN,WSOILMETHOD,RETFUNCTION,EQUALUPTAKE, &
-                        USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND)
+                        USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,SIMSTORE)
     
     CALL READWATTFALL(UWATPARS, RUTTERB,RUTTERD,MAXSTORAGE,THROUGHFALL)
 
@@ -1115,6 +1115,12 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
     
     CALL READSOILEVAPPARS (UWATPARS, DRYTHICKMIN, TORTPAR,DRYTHERM)
 
+    IF(SIMSTORE.EQ.1)THEN
+        CALL READPLANTSTORE(UWATPARS, STORECOEF, STOREEXP)
+    ELSE
+        STORECOEF = 0.0
+        STOREEXP = 0.0
+    ENDIF
 
     ! Some arrays can be given a few values, rest is filled with last entered value:
 !    CALL FILLWITHLAST(FRACROOT, MAXSOILLAY, NROOTLAYER, -900.0)
@@ -1329,7 +1335,8 @@ SUBROUTINE READSOILRET(UFILE, BPAR, PSIE, KSAT,ALPHA,WS,WR,N)
 
     
     RETURN
-END SUBROUTINE READSOILRET
+    END SUBROUTINE READSOILRET
+    
 !**********************************************************************
 SUBROUTINE READPLANTPARS(UFILE,MINROOTWPI,MINLEAFWPI,PLANTKTABLEI,KSCALINGI,DATESKPI,NOKPDATES)
 !**********************************************************************
@@ -1339,9 +1346,9 @@ SUBROUTINE READPLANTPARS(UFILE,MINROOTWPI,MINLEAFWPI,PLANTKTABLEI,KSCALINGI,DATE
     INTEGER UFILE,IOERROR
     INTEGER IDATE
     INTEGER, EXTERNAL :: IDATE50
-    CHARACTER*10 DATESKP(maxdate)
-    INTEGER NODATESKP,DATESKPI(maxdate),NOKPDATES
-    REAL MINROOTWP,PLANTK(maxdate),MINROOTWPI,PLANTKTABLEI(maxdate)
+    CHARACTER*10 DATESKP(MAXDATE)
+    INTEGER NODATESKP,DATESKPI(MAXDATE),NOKPDATES
+    REAL MINROOTWP,PLANTK(MAXDATE),MINROOTWPI,PLANTKTABLEI(MAXDATE)
     REAL MINLEAFWP(MAXSP),MINLEAFWPI(MAXSP)
     REAL KSCALINGI,KSCALING
     NAMELIST /PLANTPARS/  DATESKP,NODATESKP, MINROOTWP,MINLEAFWP,PLANTK,KSCALING
@@ -1528,6 +1535,29 @@ SUBROUTINE ASSIGNFRACROOT(ROOTBETA,FRACROOT,NROOTLAYER,LAYTHICK)
 END SUBROUTINE ASSIGNFRACROOT
 
 
+!**********************************************************************
+SUBROUTINE READPLANTSTORE(UFILE, STORECOEFI, STOREEXPI)
+!**********************************************************************
+
+    USE maestcom
+    IMPLICIT NONE
+    INTEGER UFILE,IOERROR
+    REAL STORECOEF, STOREEXP, STORECOEFI, STOREEXPI
+    NAMELIST /PLANTSTORAGE/  STORECOEF, STOREEXP
+    
+    REWIND(UFILE)
+    READ (UFILE, PLANTSTORAGE, IOSTAT = IOERROR)
+
+    IF (IOERROR.NE.0) THEN
+        CALL SUBERROR('ERROR READING PLANT STORAGE PARAMETERS',IFATAL,IOERROR)
+    END IF
+
+    STORECOEFI = STORECOEF
+    STOREEXPI = STOREEXP
+
+    RETURN
+END SUBROUTINE READPLANTSTORE
+
 
 
 
@@ -1588,7 +1618,8 @@ END SUBROUTINE READWATTFALL
 !**********************************************************************
 SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
                           WSOILMETHODI,RETFUNCTIONI,EQUALUPTAKEI, &
-                          USEMEASETI,USEMEASSWI,SIMSOILEVAPI,USESTANDI)
+                          USEMEASETI,USEMEASSWI,SIMSOILEVAPI,USESTANDI,  &
+                          SIMSTOREI)
 !**********************************************************************
     USE maestcom
     IMPLICIT NONE
@@ -1600,10 +1631,11 @@ SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
     INTEGER SIMSOILEVAP,SIMSOILEVAPI
     INTEGER KEEPDRY,KEEPDRYI
     INTEGER USESTAND,USESTANDI
+    INTEGER SIMSTORE, SIMSTOREI
     
     NAMELIST /WATCONTROL/ KEEPWET,KEEPDRY,SIMTSOIL,REASSIGNRAIN,WSOILMETHOD, &
                           RETFUNCTION,EQUALUPTAKE,USEMEASET,USEMEASSW, &
-                          SIMSOILEVAP,USESTAND
+                          SIMSOILEVAP,USESTAND,SIMSTORE
     
     WSOILMETHOD = 1 ! Emax approach
     USEMEASET = 0   ! Don't use measured ET for water balance calc.
@@ -1611,8 +1643,9 @@ SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
     SIMSOILEVAP = 1 ! Do simulate soil evaporation.
     EQUALUPTAKE = 0 ! Do not set debugging option.
     USESTAND = 1    ! Do use information on non-target trees to scale up to the stand.
-    KEEPWET = 0
-    KEEPDRY = 0
+    KEEPWET = 0     ! Do not set soil water to saturation.
+    KEEPDRY = 0     ! Do not set precipitation to zero.
+    SIMSTORE = 0    ! Do not simulate (or use) plant water storage.
  
     REWIND(UFILE)
     READ (UWATPARS, WATCONTROL, IOSTAT = IOERROR)
@@ -1632,6 +1665,7 @@ SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
     USEMEASSWI=USEMEASSW
     SIMSOILEVAPI=SIMSOILEVAP
     USESTANDI=USESTAND
+    SIMSTOREI=SIMSTORE
     
     RETURN
 END SUBROUTINE READWATCONTROL

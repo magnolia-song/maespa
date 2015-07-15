@@ -142,15 +142,16 @@ PROGRAM maespa
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET, KEEPDRY, DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
                         FRACORGANIC, EXPINF, WSOILMETHOD, USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,ALPHARET,WS,WR,NRET,&
                         DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT,&
-                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM)
+                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM,SIMSTORE,STORECOEF,STOREEXP)
     ENDIF
         
+    
     ! Open met data file (must be done after ISTART & IEND read)
     CALL OPENMETF(ISTART,IEND,CAK,PRESSK,SWMIN,SWMAX,USEMEASET,DIFSKY,ALAT,TTIMD,DELTAT,&
                     MFLAG,METCOLS,NOMETCOLS,MTITLE,MSTART,in_path)
     
     ! Open output files
-    CALL open_output_files(ISIMUS,CTITLE,TTITLE,PTITLE,STITLE,MTITLE,VTITLE,WTITLE,NSPECIES,SPECIESNAMES,out_path,ISMAESPA)
+    CALL OPEN_OUTPUT_FILES(ISIMUS,CTITLE,TTITLE,PTITLE,STITLE,MTITLE,VTITLE,WTITLE,NSPECIES,SPECIESNAMES,out_path,ISMAESPA)
     
     
     IF(ISIMUS.EQ.1)THEN
@@ -181,6 +182,7 @@ PROGRAM maespa
         USEMEASSW = 0
     ENDIF
     
+    ! Sort trees
     DO ITAR = 1,NOTARGETS
         ITREE = ITARGETS(ITAR)
         CALL SORTTREESI(NOALLTREES,NOTREES,ITREE,DXT1,DYT1,DZT1,ITAD(1:MAXT,ITAR))
@@ -340,8 +342,10 @@ PROGRAM maespa
         ! Loop through all trees, calculate diffuse transmittances.
         ! Once every IOTUTD days:    
         IF((MOD(IDAY,IOTUTD).EQ.0).OR.IDAY.EQ.0)THEN
+            
             DO ITAR = 1,NOTARGETS
                 ITREE = ITARGETS(ITAR)
+                
                 ISPEC = ISPECIES(ITREE)
                 
                 JLEAF = JLEAFSPEC(ISPEC)
@@ -623,14 +627,14 @@ PROGRAM maespa
 
 1111        CONTINUE
 
-            ! set to 0 for all target tree output at a given IHOUR (same as SUMHR)
-            CALL ZEROHRFLUX(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,        &
+            ! set to 0 for all target tree output at a given IHOUR (same as ZEROHR)
+            CALL ZEROHRFLUX(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL, PSIL,CI,        &
                     AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
-                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,  &
+                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,ETCANDEFICIT,FHEAT,TCAN,FSOIL1,  &
                     PSILCAN,PSILCANMIN,CICAN, ECANMAX, ACANMAX,AREATOT)
-            
+                        
             ! average canopy height for aerodynamic conductance calculation
-            TREEH = (sum(ZBC(1:NOTREES)) + sum(RZ(1:NOTREES))) / NOTREES
+            TREEH = (SUM(ZBC(1:NOTREES)) + SUM(RZ(1:NOTREES))) / NOTREES
             
             ! Run the iteration on air temperature and vapour pressure within the canopy
             CALL ITERTCAN(IHOUR, ITERTAIR, ITERTAIRMAX, NUMPNT, NOTARGETS, &
@@ -768,6 +772,26 @@ PROGRAM maespa
                 PSIV = PSIVSPEC(ISPEC)   
                 NSIDES = NSIDESSPEC(ISPEC)
     
+                
+                ! If first timestep (but not first day of simulation), reset plant water store to yesterday's value
+                ! Need to be just after zerohrflux, because of canopy air T iteration
+                ! Note IDAY =0,1,..., but array index=1,2,...
+                IF(SIMSTORE.EQ.1.AND.IHOUR.EQ.1)THEN
+            
+                    ! All days
+                    IF(IDAY.NE.0)THEN
+                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY, ITAR)
+                    
+                    ! First day of simulation (calculate from input parameters)
+                    ELSE   
+                        !   Plantwater/leafarea = storecoef * leafarea ** storeexp
+                        !   Plantwater  (liters) = storecoef * leafarea ** (storeexp + 1)
+                        PLANTWATER(1,ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** (STOREEXP + 1)
+                        
+                    ENDIF
+                
+                ENDIF
+                                
                 ! Assign water balance and hydraulics.
                 MINLEAFWP = MINLEAFWPSPEC(ISPEC)
                 ! If multiple species but only one root distribution.
@@ -1162,6 +1186,7 @@ PROGRAM maespa
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
                                                     HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                    
                                     
+                                                                      
                                     ! Filling voxel table
                                     CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
                                                  TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, ETTABLE, &
@@ -1365,11 +1390,6 @@ PROGRAM maespa
                             AREA = DLI(IAGE,IPT) * VL(IPT) ! m2
                             APAR = 0.0
                             
-                        
-                            !CALL PSTRANSPNIGHT(iday,ihour,RELDF(IPT),TU(IPT),TD(IPT),RNET,WINDAH(IHOUR)*WINDLAY(LGP(IPT)),&
-                            !                TAIR(IHOUR),TMOVE,CA(IHOUR),RH(IHOUR),VPD(IHOUR),VMFD(IHOUR),PRESS(IHOUR),&
-                            !                IECO,G0,WLEAF,ITERMAX,GSC,ET,HFX,TLEAF,GBH,ISMAESPA)
-
                             ! Night-time call to PSTRANSP (most parameters not used but passed for consistency).
                             ! Note : DAYRESP set to 1.0.
                             CALL PSTRANSPIF(IDAY,IHOUR,RELDF(IPT),TU(IPT),TD(IPT),RNET, &
@@ -1392,28 +1412,21 @@ PROGRAM maespa
                                          TLEAFTABLE, APARTABLE, ANIRTABLE, ATHRTABLE, ETTABLE, &
                                          HTABLE, GSCTABLE, PSILTABLE, AREA, AREATOT,ITAR,IPT,TAIR(IHOUR))
 
-                            ! Sum outputs for the hour (Added RAD, Aug. 2008).
-                             CALL SUMHR(0.0,0.0,ATHR,0.0,0.0,G0,GBH,ET,ETDEFICIT,HFX,TLEAF,0.0,0.0,&
+                            ! Sum outputs for the hour.
+                             CALL SUMHR(0.0,0.0,ATHR,0.0,0.0,G0,GBH,ET,ETDEFICIT,HFX,TLEAF,0.0,PSIL,&
                                             0.0,AREA,IHOUR,LGP(IPT),ITAR,&
                                             NOTARGETS,NUMPNT,NSUMMED,TOTTMP,PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,&
                                             GSCAN,GBHCAN,FH2O,ETCANDEFICIT,  &
                                             FHEAT,TCAN,FSOIL1,PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,FOLT(1))
 
                         END DO ! End loop over age classes.
-                           
-                    ! Leaf water potential same as soil water potential
-                    PSILCAN(ITAR,IHOUR) = WEIGHTEDSWP
-                    PSILCANMIN(ITAR,IHOUR) = WEIGHTEDSWP
+                    
                     ! And ci the same as ca
                     CICAN(ITAR,IHOUR) = CA(IHOUR)
 
                     END DO ! Loop over gridpoints (nighttime).
                     
-
-                    ! Normalise to get average foliage temperature
-!                        TCAN(ITAR,IHOUR) = TCAN(ITAR,IHOUR)/FOLT(1)
-
-                                               
+                    
                     ! Calculate night-time foliage respiration
                     DO IPT = 1,NUMPNT
                         DO IAGE = 1,NOAGEP
@@ -1425,19 +1438,26 @@ PROGRAM maespa
                     END DO
                     
                 END IF ! If day or night
-                    
                
                 ! No good (does not run for Tumbarumba, and has not been updated since looping order change).
                 ! Calculate non-foliage maintenance respiration (in umol tree-1 s-1)
-                        FRESPW(ITAR,IHOUR) = RESP(RMW,RMW,TAIR(IHOUR),TAIR(IHOUR), &
-                                             Q10W,0.0,RTEMPW,1.0,TBELOW) * WBIOM
-                        FRESPB(ITAR,IHOUR) = RESP(RMB,RMB,TAIR(IHOUR),TAIR(IHOUR), &
-                                             Q10B,0.0,RTEMPB,1.0,TBELOW) * BBIOM
-                        FRESPFR(ITAR,IHOUR) = RESP(RMFR,RMFR,TSOIL(IHOUR),TAIR(IHOUR), &
-                                              Q10R,0.0,RTEMPR,1.0,TBELOW) * RBIOM * FRFRAC
-                        FRESPCR(ITAR,IHOUR) = RESP(RMCR,RMCR,TSOIL(IHOUR),TAIR(IHOUR), &
-                                              Q10R,0.0,RTEMPR,1.0,TBELOW) * RBIOM * (1. - FRFRAC)
+                FRESPW(ITAR,IHOUR) = RESP(RMW,RMW,TAIR(IHOUR),TAIR(IHOUR), &
+                                        Q10W,0.0,RTEMPW,1.0,TBELOW) * WBIOM
+                FRESPB(ITAR,IHOUR) = RESP(RMB,RMB,TAIR(IHOUR),TAIR(IHOUR), &
+                                        Q10B,0.0,RTEMPB,1.0,TBELOW) * BBIOM
+                FRESPFR(ITAR,IHOUR) = RESP(RMFR,RMFR,TSOIL(IHOUR),TAIR(IHOUR), &
+                                        Q10R,0.0,RTEMPR,1.0,TBELOW) * RBIOM * FRFRAC
+                FRESPCR(ITAR,IHOUR) = RESP(RMCR,RMCR,TSOIL(IHOUR),TAIR(IHOUR), &
+                                        Q10R,0.0,RTEMPR,1.0,TBELOW) * RBIOM * (1. - FRFRAC)
 
+                
+                ! Update plant water store
+                IF(SIMSTORE.EQ.1)THEN
+                
+                    PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
+                
+                ENDIF
+                
 
             END DO ! End loop over trees
             
@@ -1584,10 +1604,10 @@ PROGRAM maespa
                                 PPS,PTRANSP,FOLLAY,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FH2O,GSCAN,GBHCAN, &
                                 FH2OCAN,FHEAT,VPD,TAIRABOVE,UMOLPERJ*RADABV(1:KHRS,1),PSILCAN,PSILCANMIN,CICAN,  &
                                 ECANMAX,ACANMAX,ZEN,AZ,ETCANDEFICIT) 
-
-
-   
-       
+            
+            
+            
+            
         !**********************************************************************
         END DO ! End hourly loop
 
@@ -1598,16 +1618,17 @@ PROGRAM maespa
         TOTRESPCRG = GRESP(RBINC*(1.-FRFRAC),EFFYRW)
         TOTRESPFG = GRESP(FBINC,EFFYRF)
 
-        ! Output daily totals
        
-        CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT,TDYAB,TOTCO2,TOTRESPF,&
-                        TOTRESPWM,TOTRESPB,TOTRESPCR,TOTRESPFR,TOTH2O,TOTH2OCAN,TOTHFX)
+        ! Output daily totals
+        CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT, &
+                      TDYAB,TOTCO2,TOTRESPF,TOTRESPWM,TOTRESPB,TOTRESPCR,   &
+                      TOTRESPFR,TOTH2O,TOTH2OCAN,TOTHFX)
         
         
         CALL OUTPUTDY(IDAY+1,NOTARGETS,ITARGETS,ISPECIES,TDYAB,TOTCO2,TOTRESPF,TOTRESPWM,&
                                 TOTRESPWG,TOTH2O,TOTH2OCAN,TOTHFX,TOTRESPCR,TOTRESPFR,TOTRESPFRG,&
                                 TOTRESPCRG,TOTRESPFG,TOTRESPB,TOTRESPBG)
-        
+                
         IF(ISMAESPA)THEN
             CALL OUTPUTDYWAT(IDAY+1,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,PPTTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,&
                                 SOILEVAPTOT,FSOILMEAN,TFALLTOT,QHTOT,QETOT,QNTOT,QCTOT,RADINTERCTOT)
@@ -1624,11 +1645,14 @@ PROGRAM maespa
         END IF
         
     END DO ! End daily loop
-    !**********************************************************************
 
-    IF (IOHIST.EQ.1) CALL OUTPUTHIST(UHIST,HISTO,BINSIZE,NOTARGETS)
     
-    !**********************************************************************
+
+!**********************************************************************
+
+IF (IOHIST.EQ.1) CALL OUTPUTHIST(UHIST,HISTO,BINSIZE,NOTARGETS)
+    
+!**********************************************************************
     ! Write diffuse transmittances to file
     REWIND (UTUTD)
     WRITE (UTUTD,1313) (IPT,TU(IPT),TD(IPT),RELDF(IPT),IPT=1,NUMPNT)

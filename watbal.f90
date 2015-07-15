@@ -2397,14 +2397,18 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
       RADINTERCTOT = RADINTERCTOT + CONVERT*RADINTERC
 
       RETURN
-      END
+    END
 
+    
+!**********************************************************************
 
 SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, TAIRNEW, VPDNEW,RHNEW,&
                          WIND, ZPD, ZHT, Z0HT, DELTA, PRESS, QC,TREEH,TOTLAI, GCANOP,EVAPSTORE)
 
 ! calculation of air temperature and VPD within the canopy,
 ! applied as Tair et VPDair after
+!**********************************************************************
+
 
       USE maestcom
       IMPLICIT NONE
@@ -2467,13 +2471,16 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
       
     END 
 
-    SUBROUTINE  ZEROHRFLUX(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,HFX,TLEAF,FSOIL, PSIL,CI,        &
+    
+!**********************************************************************
+    SUBROUTINE  ZEROHRFLUX(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL, PSIL,CI,        &
                     AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
-                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,FHEAT,TCAN,FSOIL1,  &
+                    PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,ETCANDEFICIT,FHEAT,TCAN,FSOIL1,  &
                     PSILCAN,PSILCANMIN,CICAN, ECANMAX, ACANMAX,AREATOT)
 
     ! set to 0 the value of Hrflux
-    
+!**********************************************************************
+
     USE maestcom
     IMPLICIT NONE
     INTEGER ITAR,ILAY,IHOUR,NOTARGETS,NUMPNT,NSUMMED
@@ -2483,6 +2490,7 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
     REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
     REAL GSCAN(MAXT,MAXHRS),FH2O(MAXT,MAXHRS),FHEAT(MAXT,MAXHRS)
     REAL GBHCAN(MAXT,MAXHRS)
+    REAL ETDEFICIT, ETCANDEFICIT(MAXT,MAXHRS)
     REAL ACANMAX(MAXT,MAXHRS),ECANMAX(MAXT,MAXHRS)
     REAL PPAR(MAXT,MAXLAY,MAXHRS),PPS(MAXT,MAXLAY,MAXHRS)
     REAL PTRANSP(MAXT,MAXLAY,MAXHRS)
@@ -2493,43 +2501,29 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
     
     DO ITAR = 1,MAXT
         DO ILAY= 1,MAXLAY
-    ! Zero PAR, photosynthesis, & transpiration by layer
-    PPAR(ITAR,ILAY,IHOUR) = 0.
-    PPS(ITAR,ILAY,IHOUR) = 0.
-    PTRANSP(ITAR,ILAY,IHOUR) = 0.
+            ! Zero PAR, photosynthesis, & transpiration by layer
+            PPAR(ITAR,ILAY,IHOUR) = 0.
+            PPS(ITAR,ILAY,IHOUR) = 0.
+            PTRANSP(ITAR,ILAY,IHOUR) = 0.
         END DO
     END DO
     
     DO ITAR= 1,MAXT
-    ! Sum all fluxes for the hour
-    THRAB(ITAR,IHOUR,1) = 0.
-    THRAB(ITAR,IHOUR,2) = 0.
-    THRAB(ITAR,IHOUR,3) = 0.
-    FCO2(ITAR,IHOUR) = 0.
-    
-    ! Foliage respiration in umol tree-1 s-1
-    FRESPF(ITAR,IHOUR) = 0.
-    ! Transpiration in umol tree-1 s-1
-    FH2O(ITAR,IHOUR) = 0.
-    ! Maximum rates of transpiration and photosynthesis
-    
-    ! Stom cond in mol tree-1 s-1
-    GSCAN(ITAR,IHOUR) = 0.
-    ! Boundary layer conductance to heat
-    GBHCAN(ITAR,IHOUR) = 0.
-    ! Heat flux in mol tree-1 s-1
-    FHEAT(ITAR,IHOUR) = 0.
-    ! Average leaf temperature - will be divided by total leaf area later. 
-    TCAN(ITAR,IHOUR) = 0.
-    ! Average leaf water potential
-    PSILCAN(ITAR,IHOUR) = 0.
-    ! Lowest leaf water potential for the target tree.
-    
-    ! Average ci.
-    CICAN(ITAR,IHOUR) = 0.
+        THRAB(ITAR,IHOUR,1) = 0.
+        THRAB(ITAR,IHOUR,2) = 0.
+        THRAB(ITAR,IHOUR,3) = 0.
+        FCO2(ITAR,IHOUR) = 0.
+        FRESPF(ITAR,IHOUR) = 0.
+        FH2O(ITAR,IHOUR) = 0.
+        GSCAN(ITAR,IHOUR) = 0.
+        GBHCAN(ITAR,IHOUR) = 0.
+        FHEAT(ITAR,IHOUR) = 0.
+        TCAN(ITAR,IHOUR) = 0.
+        PSILCAN(ITAR,IHOUR) = 0.
+        CICAN(ITAR,IHOUR) = 0.
+        ETCANDEFICIT(ITAR,IHOUR) = 0.
     END DO
     
-    ! Average FSOIL across all target trees and grid points.
     FSOIL1 = 0.
     TOTTMP = 0.
     NSUMMED = 0
