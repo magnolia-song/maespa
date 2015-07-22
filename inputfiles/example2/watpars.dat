@@ -1,6 +1,7 @@
 Example water balance parameters.
 
 &watcontrol
+usestand = 2
 keepwet = 0
 simtsoil = 1
 simsoilevap = 1

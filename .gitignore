@@ -5,3 +5,13 @@
 .Rproj
 .html
 *.RProj
+Debug/
+.vs/
+*.sln
+*.u2d
+*.vfproj
+*.user
+Release/
+compiled/
+debugfolder/
+x64/
