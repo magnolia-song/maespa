@@ -5061,7 +5061,6 @@ SUBROUTINE INTERPOLATEW(IDAY,ISTART,NOSPEC,NOKPDATES,DATESKP,PLANTKTABLE,PLANTK,
         END DO
     END DO
 
-
     ! Get total root resistance from fraction resistance in roots (ROOTRESFRAC)
     ! and total plant conductance (which includes root conductance).
     ROOTRESIST = ROOTRESFRAC * (1./PLANTK)

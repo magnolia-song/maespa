@@ -1171,7 +1171,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 
         ! Use Taylor-Keppler root water uptake distribution.
         ! Comment this line to use the SPA option ('Option 1' above).
-        FRACUPTAKE = FRACUPTAKE2
+!        FRACUPTAKE = FRACUPTAKE2
 
         RETURN
         END
