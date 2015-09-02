@@ -1025,7 +1025,11 @@ PROGRAM maespa
                                 PSUS(IHOUR,IPTUS) = C4FRAC*PSC4 + (1.0 - C4FRAC)*PSC3 - RD0US
                                 
                                 ! Transpiration
-                                ETUS(IHOUR,IPTUS) = C4FRAC*ETC4 + (1.0 - C4FRAC)*PSC3
+                                ETUS(IHOUR,IPTUS) = C4FRAC*ETC4 + (1.0 - C4FRAC)*ETC3
+                                IF(ETUS(IHOUR,IPTUS) .LT. 0)THEN
+                                    CALL SUBERROR('UNDERSTOREY ET LESS THAN ZERO - LIKELY INPUT PROBLEMS',IWARN,-1)
+                                ENDIF
+                                
                                 
                                 ! Bewdy outputs in mu mol, convert to W m-2
                                 APARUS(IHOUR,IPTUS) = APARUS(IHOUR,IPTUS) / UMOLPERJ
