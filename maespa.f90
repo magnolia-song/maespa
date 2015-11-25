@@ -779,11 +779,9 @@ PROGRAM maespa
                 NSIDES = NSIDESSPEC(ISPEC)
     
                 ! Assign plant hydraulic conductance from PLC curve and previous-timestep water potential
-                !RELK = RELKWEIBULL(PREVPSILCAN(ITAR),P50,PLCSHAPE)
-                !PLANTKACT = RELK * PLANTK
-                !WRITE(UWATTEST,*)IHOUR,PLANTkACT,PREVPSILCAN(ITAR)
-                !
-            
+                RELK = RELKWEIBULL(PREVPSILCAN(ITAR),P50,PLCSHAPE)
+                PLANTKACT = RELK * PLANTK
+                
                 ! If first timestep (but not first day of simulation), reset plant water store to yesterday's value
                 ! Need to be just after zerohrflux, because of canopy air T iteration
                 ! Note IDAY =0,1,..., but array index=1,2,...
