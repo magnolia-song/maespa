@@ -2474,6 +2474,25 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
 
     
 !**********************************************************************
+! This function gives the relative conductivity, given xylem water potential (P),
+! the P50, and the shape parameter (SX)
+REAL FUNCTION RELKWEIBULL(P,P50,SX)
+
+  IMPLICIT NONE
+  REAL P,P50,SX,V,PA,P50A,X
+
+  ! Xylem pressure as positive value
+  PA = -P
+  P50A = -P50
+
+  ! Parameterized as in Ogle et al. 2009.
+  V = -50*LOG(0.5)
+  RELKWEIBULL = 0.5**((PA/P50A)**((P50A*SX)/V))
+  
+END FUNCTION RELKWEIBULL
+    
+    
+!**********************************************************************
     SUBROUTINE  ZEROHRFLUX(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL, PSIL,CI,        &
                     AREA,IHOUR,ILAY,ITAR,NOTARGETS,NUMPNT,NSUMMED,TOTTMP,&
                     PPAR,PPS,PTRANSP,THRAB,FCO2,FRESPF,GSCAN,GBHCAN,FH2O,ETCANDEFICIT,FHEAT,TCAN,FSOIL1,  &

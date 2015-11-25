@@ -308,7 +308,15 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
         ETEST = 1E06 * (VPD/PATM) * GSV
         
 !        PSIL = WEIGHTEDSWP - (ETEST/1000)/KTOT
-        PSIL = WEIGHTEDSWP - (ET/1000)/KTOT
+        IF(KTOT.GT.0.0)THEN
+            PSIL = WEIGHTEDSWP - (ET/1000)/KTOT
+        ELSE
+            PSIL = WEIGHTEDSWP
+        ENDIF
+        
+        ! MIN val
+        IF(PSIL.LT.-20.0)PSIL = -20.0
+        
     ELSE
         PSIL = 0.0
     ENDIF
@@ -538,7 +546,14 @@ SUBROUTINE PHOTOSYN(PAR,TLEAF,TMOVE,CS,RH,VPD,VMFD, &
                 ETEST = 1000 * (VPD/PATM) * GS * GSVGSC
 
                 ! Leaf water potential
-                PSIL = WEIGHTEDSWP - ETEST/KTOT
+                IF(KTOT.GT.0.0)THEN
+                    PSIL = WEIGHTEDSWP - ETEST/KTOT
+                ELSE
+                    PSIL = WEIGHTEDSWP
+                ENDIF
+                
+                ! Set lower limit to PSIL
+                IF(PSIL.LT.-20.0)PSIL = -20.0
     
                 IF(ETEST > EMAXLEAF)THEN
 

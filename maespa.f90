@@ -137,12 +137,16 @@ PROGRAM maespa
     ! Get input from the water balance file
     IF(ISMAESPA)THEN        
         CALL INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC, ROOTRADTABLE, ROOTSRLTABLE,ROOTMASSTOTTABLE,              &
-                        MINROOTWP,MINLEAFWPSPEC,PLANTKTABLE,KSCALING,THROUGHFALL,REASSIGNRAIN,RUTTERB,RUTTERD, MAXSTORAGE, &
+                        MINROOTWP,MINLEAFWPSPEC,PLANTKTABLE,KSCALING,P50,PLCSHAPE,  &
+                        THROUGHFALL,REASSIGNRAIN,RUTTERB,RUTTERD, MAXSTORAGE, &
                         DRAINLIMIT,ROOTXSECAREA,EQUALUPTAKE,NLAYER, NROOTLAYER, LAYTHICK, INITWATER,    & 
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET, KEEPDRY, DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
                         FRACORGANIC, EXPINF, WSOILMETHOD, USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,ALPHARET,WS,WR,NRET,&
                         DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT,&
                         IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM,SIMSTORE,STORECOEF,STOREEXP,STOPSIMONEMPTY)
+        
+        ! Initialize previous timestep canopy-average leaf water potential
+        PREVPSILCAN = 0.0
     ENDIF
     
     ! Open met data file (must be done after ISTART & IEND read)
@@ -213,6 +217,7 @@ PROGRAM maespa
                               NOROOTDATES,DATESROOT,NOROOTSPEC,ROOTRADTABLE,ROOTSRLTABLE,ROOTMASSTOTTABLE, &
                               FRACROOTSPEC,LAYTHICK,ROOTRESFRAC,ROOTXSECAREA, ROOTLENSPEC, ROOTRESIST, ROOTMASSSPEC,  &
                               NROOTLAYER,ROOTRAD)    
+
         ENDIF
         
         CALL LADCHOOSE(IDAY,ISTART,NSPECIES,NOLADDATES,DATESLAD,BPTTABLESPEC,BPTSPEC)
@@ -773,7 +778,12 @@ PROGRAM maespa
                 PSIV = PSIVSPEC(ISPEC)   
                 NSIDES = NSIDESSPEC(ISPEC)
     
-                
+                ! Assign plant hydraulic conductance from PLC curve and previous-timestep water potential
+                !RELK = RELKWEIBULL(PREVPSILCAN(ITAR),P50,PLCSHAPE)
+                !PLANTKACT = RELK * PLANTK
+                !WRITE(UWATTEST,*)IHOUR,PLANTkACT,PREVPSILCAN(ITAR)
+                !
+            
                 ! If first timestep (but not first day of simulation), reset plant water store to yesterday's value
                 ! Need to be just after zerohrflux, because of canopy air T iteration
                 ! Note IDAY =0,1,..., but array index=1,2,...
@@ -1189,10 +1199,10 @@ PROGRAM maespa
                                                     K10F,RTEMP,DAYRESP,TBELOW,MODELGS,WSOILMETHOD,EMAXLEAF,SOILMOISTURE,        &
                                                     SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF, &
                                                     NSIDES,VPARA,VPARB,VPARC,VFUN, &
-                                                    SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK,TOTSOILRES, &
+                                                    SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTKACT,TOTSOILRES, &
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
                                                     HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                    
-                                    
+                                    WRITE(UWATTEST,*)PSIL,WEIGHTEDSWP,KTOT,PLANTKACT
                                                                       
                                     ! Filling voxel table
                                     CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
@@ -1242,7 +1252,7 @@ PROGRAM maespa
                                                 SOILMOISTURE,SMD1,SMD2,WC1,WC2,SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,    &
                                                 GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,VPARA,VPARB,VPARC,VFUN,SF,PSIV,            &
                                                 ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,                              &
-                                                GBH,PLANTK,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,  &
+                                                GBH,PLANTKACT,TOTSOILRES,MINLEAFWP,WEIGHTEDSWP,  &
                                                 KTOT,HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                        
 
    
@@ -1312,7 +1322,7 @@ PROGRAM maespa
                                                         WSOILMETHOD,EMAXLEAF,SOILMOISTURE,SMD1,SMD2,WC1,WC2,            &
                                                         SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                                                         VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
-                                                        ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
+                                                        ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTKACT, &
                                                         TOTSOILRES,MINLEAFWP, &
                                                         WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
 
@@ -1409,7 +1419,7 @@ PROGRAM maespa
                                                 WSOILMETHOD,EMAXLEAF,SOILMOISTURE,SMD1,SMD2,WC1,WC2,            &
                                                 SOILDATA,SWPEXP,FSOIL,GSMIN,GNIGHT,G0,D0L,GAMMA,VPDMIN,G1,GK,WLEAF,NSIDES,   &
                                                 VPARA,VPARB,VPARC,VFUN,SF,PSIV,     &
-                                                ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTK, &
+                                                ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTKACT, &
                                                 TOTSOILRES,MINLEAFWP, &
                                                 WEIGHTEDSWP,KTOT,HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)
                                                                     
@@ -1616,7 +1626,8 @@ PROGRAM maespa
                                 FH2OCAN,FHEAT,VPD,TAIRABOVE,UMOLPERJ*RADABV(1:KHRS,1),PSILCAN,PSILCANMIN,CICAN,  &
                                 ECANMAX,ACANMAX,ZEN,AZ,ETCANDEFICIT) 
             
-            
+            ! Save canopy-average leaf water potential for use in next time step
+            PREVPSILCAN = PSILCAN(1:MAXT,IHOUR)
             
             
         !**********************************************************************
@@ -1630,7 +1641,7 @@ PROGRAM maespa
         TOTRESPFG = GRESP(FBINC,EFFYRF)
 
        
-        WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1)
+        !WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1)
         
         ! Output daily totals
         CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT, &
