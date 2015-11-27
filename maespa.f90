@@ -143,7 +143,7 @@ PROGRAM maespa
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET, KEEPDRY, DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
                         FRACORGANIC, EXPINF, WSOILMETHOD, USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,ALPHARET,WS,WR,NRET,&
                         DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT,&
-                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM,SIMSTORE,STORECOEF,STOREEXP,STOPSIMONEMPTY)
+                        IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM,SIMSTORE,STORECOEF,STOREEXP,CAPAC,STOPSIMONEMPTY)
         
         ! Initialize previous timestep canopy-average leaf water potential
         PREVPSILCAN = 0.0
@@ -796,7 +796,8 @@ PROGRAM maespa
                         !   Plantwater/leafarea = storecoef * leafarea ** storeexp
                         !   Plantwater  (liters) = storecoef * leafarea ** (storeexp + 1)
                         PLANTWATER(1,ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** (STOREEXP + 1)
-                        
+                        PLANTWATER0(1,ITAR) = PLANTWATER(1,ITAR)  !  To calculate RWC, keep track of initial water content.
+                        XYLEMPSI(1,ITAR) = 0.0  ! Xylem water potential.
                     ENDIF
                 
                 ENDIF
@@ -1200,7 +1201,7 @@ PROGRAM maespa
                                                     SF,PSIV,ITERMAX,GSC,ALEAF,RD,ET,HFX,TLEAF,GBH,PLANTKACT,TOTSOILRES, &
                                                     MINLEAFWP,WEIGHTEDSWP,KTOT,     &
                                                     HMSHAPE,PSIL,ETEST,ETDEFICIT,CI,ISMAESPA,ISNIGHT,G02,G12,NEWTUZET)                                    
-                                    WRITE(UWATTEST,*)PSIL,WEIGHTEDSWP,KTOT,PLANTKACT
+                                  !  WRITE(UWATTEST,*)PSIL,WEIGHTEDSWP,KTOT,PLANTKACT
                                                                       
                                     ! Filling voxel table
                                     CALL SUMIPT (TLEAF,APAR,ANIR,ATHR,ET,HFX,GSC,PSIL, &
@@ -1470,9 +1471,13 @@ PROGRAM maespa
                 IF(SIMSTORE.EQ.1)THEN
                 
                     PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
-                
+                    
+                    !   Xylem water potential from stem relative water content and capacitance
+                    XYLEMPSI(IDAY+1,ITAR) = - (1- (PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR))) / CAPAC 
+                    
                     IF(STOPSIMONEMPTY.EQ.1)THEN
-                        IF(PLANTWATER(IDAY+1,ITAR).LE.0.0) ABORTSIMULATION=.TRUE.
+                        !IF(PLANTWATER(IDAY+1,ITAR).LE.0.0) ABORTSIMULATION=.TRUE.
+                        IF(XYLEMPSI(IDAY+1,ITAR) .LT. P50) ABORTSIMULATION = .TRUE.
                     ENDIF
                     
                 ENDIF
@@ -1639,7 +1644,7 @@ PROGRAM maespa
         TOTRESPFG = GRESP(FBINC,EFFYRF)
 
        
-        !WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1)
+        WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),XYLEMPSI(IDAY+1,1),P50
         
         ! Output daily totals
         CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT, &
