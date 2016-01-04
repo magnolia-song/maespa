@@ -137,7 +137,7 @@ PROGRAM maespa
     ! Get input from the water balance file
     IF(ISMAESPA)THEN        
         CALL INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC, ROOTRADTABLE, ROOTSRLTABLE,ROOTMASSTOTTABLE,              &
-                        MINROOTWP,MINLEAFWPSPEC,PLANTKTABLE,KSCALING,P50,PLCSHAPE,  &
+                        MINROOTWP,MINLEAFWPSPEC,PLANTKTABLE,KSCALING,P50,PLCSHAPE,PLCDEAD,  &
                         THROUGHFALL,REASSIGNRAIN,RUTTERB,RUTTERD, MAXSTORAGE, &
                         DRAINLIMIT,ROOTXSECAREA,EQUALUPTAKE,NLAYER, NROOTLAYER, LAYTHICK, INITWATER,    & 
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET, KEEPDRY, DRYTHICKMIN,TORTPAR, SIMTSOIL,RETFUNCTION,&
@@ -1476,8 +1476,11 @@ PROGRAM maespa
                     XYLEMPSI(IDAY+1,ITAR) = - (1- (PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR))) / CAPAC 
                     
                     IF(STOPSIMONEMPTY.EQ.1)THEN
-                        !IF(PLANTWATER(IDAY+1,ITAR).LE.0.0) ABORTSIMULATION=.TRUE.
-                        IF(XYLEMPSI(IDAY+1,ITAR) .LT. P50) ABORTSIMULATION = .TRUE.
+                        
+                        ! Stem relative conductivity
+                        STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                        IF(STEMRELK.LT.(1-PLCDEAD)) ABORTSIMULATION = .TRUE.
+                        
                     ENDIF
                     
                 ENDIF
