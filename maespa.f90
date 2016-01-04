@@ -176,10 +176,10 @@ PROGRAM maespa
       
     ! Initialize various variables related to water balance calculations.
     IF(ISMAESPA)THEN
-    CALL INITWATBAL(LAYTHICK,WETTINGBOT,WETTINGTOP,POREFRAC,WATERGAIN,WATERLOSS,PPTGAIN,    &
-                    INITWATER,DRYTHICKMIN,DRYTHICK,CANOPY_STORE,SURFACE_WATERMM,FRACWATER,  &
-                    WSOIL,WSOILROOT,NLAYER,NROOTLAYER,ICEPROP,QE,RUNOFF,OUTFLOW,SOILDEPTH,  &
-                    SOILDATA,USEMEASSW)
+        CALL INITWATBAL(LAYTHICK,WETTINGBOT,WETTINGTOP,POREFRAC,WATERGAIN,WATERLOSS,PPTGAIN,    &
+                        INITWATER,DRYTHICKMIN,DRYTHICK,CANOPY_STORE,SURFACE_WATERMM,FRACWATER,  &
+                        WSOIL,WSOILROOT,NLAYER,NROOTLAYER,ICEPROP,QE,RUNOFF,OUTFLOW,SOILDEPTH,  &
+                        SOILDATA,USEMEASSW)
     ELSE
         SOILDATA = 0
         USEMEASSW = 0
@@ -193,6 +193,9 @@ PROGRAM maespa
     
     ! Flag to abort simulation if some condition is met.
     ABORTSIMULATION = .FALSE.
+    
+    ! Array of alive/dead indicator
+    DEADALIVE = 1
     
     !***********************************************************************!
     !                       Begin daily loop                                !
@@ -307,6 +310,7 @@ PROGRAM maespa
                 AX = AVERAGEVAL(XLU,NOUSPOINTS)
                 AY = AVERAGEVAL(YLU,NOUSPOINTS)
                 
+
                 ! Sort overstorey dimensions, save in separate arrays.
                 ! Can move this out of loop, only needs to be done once.
                 CALL SORTTREESP(AX,AY,NOALLTREES,NOTREES,DXT1,DYT1,DZT1,RXTABLE1,RYTABLE1,RZTABLE1,     &
@@ -1474,14 +1478,14 @@ PROGRAM maespa
                     
                     !   Xylem water potential from stem relative water content and capacitance
                     XYLEMPSI(IDAY+1,ITAR) = - (1- (PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR))) / CAPAC 
-                    
-                    IF(STOPSIMONEMPTY.EQ.1)THEN
-                        
-                        ! Stem relative conductivity
-                        STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
-                        IF(STEMRELK.LT.(1-PLCDEAD)) ABORTSIMULATION = .TRUE.
-                        
+
+                    ! Stem relative conductivity
+                    STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                    IF(STEMRELK.LT.(1-PLCDEAD))THEN
+                        DEADALIVE(IDAY+1,ITAR) = 0
+                        IF(STOPSIMONEMPTY.EQ.1)ABORTSIMULATION = .TRUE.
                     ENDIF
+                    
                     
                 ENDIF
                 
