@@ -1637,7 +1637,7 @@ PROGRAM maespa
             CALL OUTPUTHR(IDAY+1,IHOUR,NOTARGETS,ITARGETS,ISPECIES,TCAN,NOLAY,PPAR, &
                                 PPS,PTRANSP,FOLLAY,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FH2O,GSCAN,GBHCAN, &
                                 FH2OCAN,FHEAT,VPD,TAIRABOVE,UMOLPERJ*RADABV(1:KHRS,1),PSILCAN,PSILCANMIN,CICAN,  &
-                                ECANMAX,ACANMAX,ZEN,AZ,ETCANDEFICIT) 
+                                ECANMAX,ACANMAX,ZEN,AZ,ETCANDEFICIT,PLANTWATER) 
             
             ! Save canopy-average leaf water potential for use in next time step
             PREVPSILCAN = PSILCAN(1:MAXT,IHOUR)

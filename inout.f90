@@ -403,6 +403,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 !            WRITE (UHRLY,717)
             WRITE (UHRLY,718)
             WRITE (UHRLY,719)
+            WRITE (UHRLY,7191)
             WRITE (UHRLY,720)
             WRITE (UHRLY,721)
             WRITE (UHRLY,722)
@@ -789,6 +790,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 716     FORMAT('TCAN: Average foliage temperature (deg C)')
 718     FORMAT('ALMAX: Canopy maximum leaf photosynthesis rate (umol m-2 s-1)')
 719     FORMAT('ETDEFICIT : Transpiration not met by soil supply (mmol tree-1 s-1)')
+7191    FORMAT('PLANTWATER : Plant water storage term (if simulated) (kg tree-1)')
 720     FORMAT('PSIL: Canopy average leaf water potential (MPa)')
 721     FORMAT('PSILMIN: Canopy minimum leaf water potential (MPa)')
 722     FORMAT('CI : Canopy average intercellular CO2 conc. (ppm)')
@@ -799,7 +801,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 727     FORMAT('AZ: Asimutal angle (rad)')
 728     FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIR hrTHM', &
                ' hrPs hrRf hrRmW hrLE', &
-               ' LECAN Gscan Gbhcan hrH TCAN ALMAX ETDEFICIT PSIL PSILMIN CI TAIR VPD PAR ZEN AZ')   
+               ' LECAN Gscan Gbhcan hrH TCAN ALMAX ETDEFICIT PLANTWATER PSIL PSILMIN CI TAIR VPD PAR ZEN AZ')   
 
 801     FORMAT(' Fluxes for each layer on an hourly basis')
 802     FORMAT(' Rows: absorbed PAR (umol m-2 leaf s-1) ')
@@ -2225,7 +2227,7 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                     THRAB,FCO2,FRESPF,FRESPW,FRESPB,                &
                     FH2OT,GSCAN,GBHCAN,FH2OCAN,FHEAT,VPD,TAIRABOVE,PAR,  &
                     PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,ZEN,AZ,  &
-                    ETCANDEFICIT)
+                    ETCANDEFICIT,PLANTWATER)
 ! Output the hourly totals
 !**********************************************************************
     USE switches
@@ -2245,7 +2247,7 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
     REAL FOLLAY(MAXLAY),TCAN(MAXT,MAXHRS),VPD(MAXHRS)
     REAL TAIRABOVE,PAR(MAXHRS)
     REAL ECANMAX(MAXT,MAXHRS),ACANMAX(MAXT,MAXHRS)
-    REAL ETCANDEFICIT(MAXT,MAXHRS)
+    REAL ETCANDEFICIT(MAXT,MAXHRS),PLANTWATER(MAXDATE, MAXT)
     REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
     REAL ZEN(MAXHRS), AZ(MAXHRS)
 
@@ -2261,7 +2263,7 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                                     FH2OT(ITAR,IHOUR)*1E-3,                                     &
                                     FH2OCAN(ITAR,IHOUR)*1E-3,GSCAN(ITAR,IHOUR),GBHCAN(ITAR,IHOUR),  &
                                     FHEAT(ITAR,IHOUR)*1E-3,TCAN(ITAR,IHOUR),                    &
-                                    ACANMAX(ITAR,IHOUR),ETCANDEFICIT(ITAR,IHOUR),               &   
+                                    ACANMAX(ITAR,IHOUR),ETCANDEFICIT(ITAR,IHOUR),PLANTWATER(IDAY,ITAR),           &   
                                     PSILCAN(ITAR,IHOUR),PSILCANMIN(ITAR,IHOUR),CICAN(ITAR,IHOUR),  &
                                     TAIRABOVE,VPD(IHOUR)/1000,PAR(IHOUR), &
                                     ZEN(IHOUR),AZ(IHOUR)                   
