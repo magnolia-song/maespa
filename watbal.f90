@@ -145,7 +145,7 @@ SUBROUTINE INITWATBAL(LAYTHICK,WETTINGBOT,WETTINGTOP, &
                         ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR, &
                         ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR, &
                         ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR, &
-                        ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR
+                        ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR
         
     ELSE IF (IOFORMAT .EQ. 0) THEN
         WRITE (UWATBAL,520)IZEROVAR,IZEROVAR,WSOIL,ZEROVAR,ZEROVAR, &
@@ -154,7 +154,7 @@ SUBROUTINE INITWATBAL(LAYTHICK,WETTINGBOT,WETTINGTOP, &
                         ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR, &
                         ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR, &
                         ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR, &
-                        ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR
+                        ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR,ZEROVAR
             520   FORMAT (I7,I7,51(F14.4,1X))
     END IF            
     RETURN
@@ -282,7 +282,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
                               POREFRAC,WETTINGBOT,WETTINGTOP,NLAYER, &
                               NROOTLAYER,LAYTHICK,SOILTK,QE, &
                               TAIRK,VPDPA,WIND, &
-                              ZHT,Z0HT,ZPD,PRESS,ETMM,ETMMSPEC,NOSPEC, &
+                              ZHT,Z0HT,ZPD,PRESS,ETMM,ETMMSPEC,ETMMNONSOIL,NOSPEC, &
                               USEMEASET,ETMEAS,FRACUPTAKESPEC, &
                               ICEPROP,FRACWATER,DRAINLIMIT, &
                               KSAT,BPAR,WSOIL,WSOILROOT,DISCHARGE, &
@@ -317,7 +317,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         REAL PPT,EVAPSTORE,DRAINSTORE,WSOILROOT,TOTESTEVAPMM
         REAL SOILTC,TAIRC,WSOIL,SNOW,QE,THROUGHFALL,WIND,ZHT,Z0HT
         REAL ZPD,PRESS,RADINTERC,RUTTERB,RUTTERD,CANOPY_STORE,DRYTHICKMIN
-        REAL DRYTHICK,ETLOSS,ETMEAS,ETMM,DISCHARGE,EXPINF,OVERFLOW
+        REAL DRYTHICK,ETLOSS,ETMEAS,ETMM,ETMMNONSOIL,DISCHARGE,EXPINF,OVERFLOW
         REAL WATERCONTENT,ICECONTENT
         REAL, EXTERNAL :: HEATEVAP
         REAL WS(MAXSOILLAY),WR(MAXSOILLAY),NRET(MAXSOILLAY)
@@ -400,8 +400,9 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
         
             DO ISPEC=1,NOSPEC
                 
-                !       Water loss from each rooted layer (i.e. *root water uptake)
-                ETLOSS = ETMMSPEC(ISPEC) / 1000
+                ! Water loss from each rooted layer (i.e. *root water uptake)
+                ! First term is water loss from plant.
+                ETLOSS = (1 - ETMMNONSOIL/ETMM) * ETMMSPEC(ISPEC) / 1000
                 FRACUPTAKE(1:MAXSOILLAY) = FRACUPTAKESPEC(1:MAXSOILLAY, ISPEC)
 
                 DO I=1,NROOTLAYER
@@ -411,10 +412,10 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
             ENDDO
         ENDIF
 
-        check1 = sum(fracuptake(1:nrootlayer))
-        check2 = etmm/1000 + qem
-        check3 = sum(etmmspec(1:nospec))/1000 + qem
-        check4 = sum(waterloss(1:nrootlayer))
+        !check1 = sum(fracuptake(1:nrootlayer))
+        !check2 = etmm/1000 + qem
+        !check3 = sum(etmmspec(1:nospec))/1000 + qem
+        !check4 = sum(waterloss(1:nrootlayer))
         
   
 !       Calculate capilary rising to each layer
@@ -2092,13 +2093,13 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 
       SUBROUTINE SCALEUP(IHOUR,USESTAND,NOTARGETS,NOALLTREES,FOLT,IT, &
                          ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,SCLOSTTREE, &
-                         THRAB,RADABV,FH2O, &
+                         THRAB,RADABV,FH2O,ETCANDEFICIT, &
                          PLOTAREA,DOWNTHTREE, &
                          RGLOBABV,RGLOBUND,RADINTERC, &
                          FRACAPAR, &
                          ISIMUS,FH2OUS,THRABUS,PARUSMEAN, &
                          SCLOSTTOT,GSCAN,WIND,ZHT,Z0HT,ZPD, &
-                         PRESS,TAIR,VPD,ETMM,ETUSMM,ETMMSPEC,TREEH, &
+                         PRESS,TAIR,VPD,ETMM,ETUSMM,ETMMSPEC,ETMMNONSOIL,TREEH, &
                          RGLOBUND1,&
                          RGLOBUND2,DOWNTHAV)
                       
@@ -2116,7 +2117,7 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
     REAL FOLT(MAXT),TARGETFOLS(MAXT),EXPFACTORS(MAXT)
     REAL SCLOSTTREE(MAXT,3),GSCAN(MAXT,MAXHRS)
     REAL THRAB(MAXT,MAXHRS,3),RADABV(MAXHRS,3)
-    REAL DOWNTHTREE(MAXT)
+    REAL DOWNTHTREE(MAXT),ETCANDEFICIT(MAXT,MAXHRS)
     REAL FH2O(MAXT,MAXHRS),PLOTAREA,TOTSPECET
     REAL TOTLATAR,TREELAMEAN,ALLTREELAMEAN,TOTLAI
     REAL STOCKING,THRABUS,PARUSMEAN
@@ -2125,12 +2126,23 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
     REAL FRACAPAR,GSCANAV,RADINTERCTREE,CONV
     REAL ETMM,  WIND, ZHT,Z0HT,ZPD,PRESS,TAIR,VPD,ETCAN
     REAL ETUSMM,FH2OUS,WTOT,TREEH, ETMMSPEC(MAXSP)
-    REAL RGLOBUND1,RGLOBUND2,DOWNTHAV
+    REAL RGLOBUND1,RGLOBUND2,DOWNTHAV,ETMMNONSOIL,WETDEFRATIO
+    REAL ETDEFRATIO(MAXT)
     
 
-! conversion to kg m-2 t-1
-            CONV = SPERHR * 1E-06 * 18 * 1E-03 
+! conversion to kg m-2 t-1 (from mu mol m-2 s-1)
+    CONV = SPERHR * 1E-06 * 18 * 1E-03 
 
+! Find ratio of ET deficit to total ET (fraction water transpired that will not be drawn from the soil).
+    DO I=1,NOTARGETS
+        ! Should not be necessary, but avoids numerical drift.
+        IF(ETCANDEFICIT(I,IHOUR).GT.0.0)THEN
+            ETDEFRATIO(I) = 1E03 * ETCANDEFICIT(I,IHOUR) / FH2O(I,IHOUR)
+        ELSE
+            ETDEFRATIO(I) = 0.0
+        ENDIF
+    ENDDO
+    
 ! Get the leaf areas of all the target trees this timestep.
 ! Because Maestra works like this : 
 ! 1) sort trees around current target tree
@@ -2209,8 +2221,8 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
       
           ! Total water use, based on FH2O (not recalculated!)
           WTOT = 0.0
-          DO ITAR=1,NOTARGETS
-              WTOT = WTOT + FH2O(ITAR,IHOUR)
+          DO I = 1,NOTARGETS
+              WTOT = WTOT + FH2O(I,IHOUR)
           ENDDO
         
           ! Simple conversion
@@ -2223,8 +2235,8 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
 
     ! Get average canopy conductance across target trees:
           GSCANAV = 0.
-          DO ITAR = 1,NOTARGETS
-              GSCANAV = GSCANAV + TARGETFOLS(ITAR) * GSCAN(ITAR,IHOUR)
+          DO I = 1,NOTARGETS
+              GSCANAV = GSCANAV + TARGETFOLS(I) * GSCAN(I,IHOUR)
           ENDDO
           GSCANAV = GSCANAV / TOTLATAR
       
@@ -2255,8 +2267,8 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
             
           ! Average water use per tree, based on FH2O (not recalculated!)
           WTOT = 0.0
-          DO ITAR=1,NOTARGETS
-              WTOT = WTOT + TARGETFOLS(ITAR) * FH2O(ITAR,IHOUR)
+          DO I = 1,NOTARGETS
+              WTOT = WTOT + TARGETFOLS(I) * FH2O(I,IHOUR)
           ENDDO
           WTOT = WTOT / TOTLATAR
           
@@ -2292,7 +2304,19 @@ SUBROUTINE CALCSOILPARS(NLAYER,NROOTLAYER,ISPEC,SOILWP,FRACWATER, &
           ETUSMM = FH2OUS * SPERHR * 18 * 1E-06
           ETMM = ETMM + ETUSMM
       ENDIF
+ 
+! Approximate method to decide how much water comes out of soil (if ETCANDEFICIT > 0).
+! This should really be improved, but is only used for mortality simulations (when typically one target tree, one species)
+      
+      ! Weighted ETDEFRATIO
+      WETDEFRATIO = 0.0
+      DO I = 1,NOTARGETS
+             WETDEFRATIO = WETDEFRATIO + TARGETFOLS(I) * ETDEFRATIO(I)
+      ENDDO
+      WETDEFRATIO = WETDEFRATIO / TOTLATAR
     
+      ETMMNONSOIL = ETMM * WETDEFRATIO
+      
       RETURN
       END
 

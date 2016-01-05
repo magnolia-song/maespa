@@ -479,6 +479,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBAL, 408)
             WRITE (UWATBAL, 409)
             WRITE (UWATBAL, 410)
+            WRITE (UWATBAL, 4191)
             WRITE (UWATBAL, 411)
             WRITE (UWATBAL, 412)
             WRITE (UWATBAL, 413)
@@ -697,6 +698,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBALHDR, 408)
             WRITE (UWATBALHDR, 409)
             WRITE (UWATBALHDR, 410)
+            WRITE (UWATBALHDR, 4191)
             WRITE (UWATBALHDR, 411)
             WRITE (UWATBALHDR, 412)
             WRITE (UWATBALHDR, 413)
@@ -835,6 +837,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 408     FORMAT('tfall : throughfall of rain                           mm')
 409     FORMAT('et : modelled canopy transpiration                    mm')
 410     FORMAT('etmeas: measured ET, if provided in input             mm')
+4191    FORMAT('etplant : ET drawn from plant storage (included in et) mm')        
 411     FORMAT('discharge: drainage at bottom of profile              mm')
 412     FORMAT('overflow: over-land flow                              mm')
 413     FORMAT('weightedswp: soil water potential weighted by roots  MPa')
@@ -864,7 +867,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 4303    FORMAT('Itertair : number of iterations for taircan estimation')        
         
 431     FORMAT('Columns: day hour wsoil wsoilroot ppt canopystore '         &
-                'evapstore drainstore tfall et etmeas discharge overflow ' &
+                'evapstore drainstore tfall et etmeas etplant discharge overflow ' &
                 'weightedswp ktot drythick soilevap '                 &
                 'soilmoist fsoil qh qe qn qc rglobund '                     &
                 'rglobabv radinterc rnet totlai tair taircan tcan tsoilsurf tsoildry soilt1 soilt2 '        &
@@ -2401,15 +2404,15 @@ SUBROUTINE OUTPUTDYWAT(IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,                 &
     REAL SWPMEAN
     
     IF (IOFORMAT .EQ. 0) THEN
-        WRITE(UWATDAY, 523)IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,             &
+        WRITE(UWATDAY, 523)IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,            &
                            PPTTOT,TFALLTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,  &
                            SOILEVAPTOT,FSOILMEAN,QHTOT,                     &
                            QETOT,QNTOT,QCTOT,RADINTERCTOT
         523 FORMAT(I7,15(F12.4))
     ELSE IF (IOFORMAT .EQ. 1) THEN
         WRITE(UWATDAY) REAL(IDAY),WSOILMEAN,WSOILROOTMEAN,SWPMEAN,        &
-                       PPTTOT,TFALLTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,  &
-                       SOILEVAPTOT,FSOILMEAN,QHTOT,                     &
+                       PPTTOT,TFALLTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,    &
+                       SOILEVAPTOT,FSOILMEAN,QHTOT,                       &
                        QETOT,QNTOT,QCTOT,RADINTERCTOT    
     END IF
     RETURN
@@ -2417,21 +2420,21 @@ END SUBROUTINE OUTPUTDYWAT
 
 
 !**********************************************************************
-SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
+SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,                   &
                               WSOIL,WSOILROOT,PPT,CANOPY_STORE,         &
                               EVAPSTORE,DRAINSTORE,                     &
-                              SURFACE_WATERMM,ETMM,ETMM2,               &
+                              SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,   &
                               USEMEASET,ETMEAS,DISCHARGE,               &
-                              FRACWATER,WEIGHTEDSWP,KTOT,       &
+                              FRACWATER,WEIGHTEDSWP,KTOT,               &
                               DRYTHICK,SOILEVAP,OVERFLOW,THERMCOND,     &
                               FRACUPTAKE,SOILMOISTURE,FSOIL1,NSUMMED,   &
-                              TOTTMP,SOILTEMP,TAIRABOVE,                     &
+                              TOTTMP,SOILTEMP,TAIRABOVE,                &
                               QH,QE,QN,QC,                              &
                               RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC,   &
                               ESOIL,TOTLAI, WTITLE,                     &
                               RADINTERC1,RADINTERC2,RADINTERC3,         &
-                              SCLOSTTOT,SOILWP,FRACAPAR,&
-                              RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN, &
+                              SCLOSTTOT,SOILWP,FRACAPAR,                &
+                              RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN,        &
                               TSOILSURFACE,GCANOP,ITERTAIR,NOTARGETS)
 ! Outputs water balance results.
 ! RAD, May 2008
@@ -2442,16 +2445,15 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
     INTEGER IDAY,IHOUR,NROOTLAYER,NLAYER
     INTEGER NSUMMED,USEMEASET,IHOWMANY
     REAL FRACWATER(MAXSOILLAY),FRACUPTAKE(MAXSOILLAY)
-    REAL SOILTEMP(MAXSOILLAY), SOILWP(MAXSOILLAY) ! modificatin mathias décembre 2012
-    !REAL, INTENT(IN) :: THERMCOND(MAXSOILLAY)
+    REAL SOILTEMP(MAXSOILLAY), SOILWP(MAXSOILLAY)
     REAL THERMCOND(MAXSOILLAY)
     
-    REAL WSOIL,WSOILROOT,PPT,CANOPY_STORE,EVAPSTORE,DRAINSTORE, RTHERMINC ! TEST MATHIAS
+    REAL WSOIL,WSOILROOT,PPT,CANOPY_STORE,EVAPSTORE,DRAINSTORE, RTHERMINC
     REAL SURFACE_WATERMM,ETMM,ETMM2,ETMEAS,DISCHARGE
     REAL WEIGHTEDSWP,KTOT,DRYTHICK,SOILEVAP,OVERFLOW
     REAL SOILMOISTURE,FSOIL1,TOTTMP,TAIRABOVE,TAIRCAN,TCAN(MAXT,MAXHRS)
     REAL QH,QE,QN,QC,RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC,ESOIL,TOTLAI
-    REAL RADINTERC1,RADINTERC2,RADINTERC3,SCLOSTTOT
+    REAL RADINTERC1,RADINTERC2,RADINTERC3,SCLOSTTOT,ETMMNONSOIL
     REAL RNET,FRACAPAR, VPD, VPDCAN, TSOILSURFACE,GCANOP,TCANMEAN
     INTEGER ITERTAIR,NOTARGETS
 
@@ -2484,54 +2486,56 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
     IF (IOWATBAL .EQ. 1 .AND. IOFORMAT .EQ. 0) THEN
         WRITE (UWATBAL,520) IDAY+1,IHOUR,WSOIL,WSOILROOT,PPT,       &
                            CANOPY_STORE,EVAPSTORE,DRAINSTORE,       &
-                           SURFACE_WATERMM,ETMM,ETMM2,DISCHARGE,    &
+                           SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,DISCHARGE,    &
                            OVERFLOW*1000,WEIGHTEDSWP,KTOT,          &
                            DRYTHICK,SOILEVAP,SOILMOISTURE,          &
                            FSOIL1,QH,QE,QN,QC,                      &
                            RGLOBUND, RGLOBABV, RADINTERC, RNET,     &
-                           TOTLAI,TAIRABOVE, TAIRCAN, TCANMEAN,TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3),    & !SOILTEMP(1) is the soil temperature just below the drythick layer
+                           TOTLAI,TAIRABOVE, TAIRCAN, TCANMEAN,     &
+                           TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3), &
                            FRACWATER(1),FRACWATER(2),FRACAPAR, VPD,VPDCAN,GCANOP,ITERTAIR
-520                        FORMAT (I7,I7,39(F14.6,1X),I7)
+520                        FORMAT (I7,I7,40(F14.6,1X),I7)
                            
         ! Write volumetric water content by layer:
-        WRITE (UWATLAY, 521) FRACWATER(1:NLAYER)        !60) M. Christina 12/2013
+        WRITE (UWATLAY, 521) FRACWATER(1:NLAYER)
 
         ! write swp by layer
-        WRITE (USWPLAY, 521) SOILWP(1:NLAYER)       !60) M. Christina 12/2013
+        WRITE (USWPLAY, 521) SOILWP(1:NLAYER)
 
         ! Write soil temperature by layer:
-        WRITE (USOILT, 522) SOILTEMP(2:NLAYER+1)          !20) M. Christina 12/2013 ! first layer = T jsute below the drythick layer M. CHristina
+        WRITE (USOILT, 522) SOILTEMP(2:NLAYER+1)
 
-        ! Write fractional water uptake by layer (but no more than 40 laye
+        ! Write fractional water uptake by layer (but no more than 40 layers)
         IHOWMANY = MIN(40, NROOTLAYER)
         WRITE(UWATUPT,998)FRACUPTAKE(1:IHOWMANY)
 
-        998   FORMAT (60(F7.4,1X))  ! 60 au lieyu de 40
-!        520   FORMAT (I7,I7,54(F14.4,1X))
-        521   FORMAT (60(F10.4,1X)) !60 au liey de 15
+        998   FORMAT (60(F7.4,1X))
+        521   FORMAT (60(F10.4,1X))
         522   FORMAT (25(F10.2,1X))
     ELSE IF (IOWATBAL .EQ. 1 .AND. IOFORMAT .EQ. 1) THEN
-        WRITE (UWATBAL) REAL(IDAY+1),REAL(IHOUR),WSOIL,WSOILROOT,PPT,       &
-                           CANOPY_STORE,EVAPSTORE,DRAINSTORE,               &
-                           SURFACE_WATERMM,ETMM,ETMM2,DISCHARGE,            &
-                           OVERFLOW*1000,WEIGHTEDSWP,KTOT,          &
-                           DRYTHICK,SOILEVAP,SOILMOISTURE,                  &
-                           FSOIL1,QH,QE,QN,QC,                              &
-                           RGLOBUND, RGLOBABV, RADINTERC, RNET,             &
-                           TOTLAI,TAIRABOVE,TAIRCAN,TCAN, SOILTEMP(1),SOILTEMP(2),            &
+        WRITE (UWATBAL) REAL(IDAY+1),REAL(IHOUR),WSOIL,WSOILROOT,PPT,         &
+                           CANOPY_STORE,EVAPSTORE,DRAINSTORE,                 &
+                           SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,DISCHARGE,  &
+                           OVERFLOW*1000,WEIGHTEDSWP,KTOT,                    &
+                           DRYTHICK,SOILEVAP,SOILMOISTURE,                    &
+                           FSOIL1,QH,QE,QN,QC,                                &
+                           RGLOBUND, RGLOBABV, RADINTERC, RNET,               &
+                           TOTLAI,TAIRABOVE,TAIRCAN,TCAN, SOILTEMP(1),SOILTEMP(2),   &
                            FRACWATER(1),FRACWATER(2)
+        
         ! Write volumetric water content by layer:
-        WRITE (UWATLAY) FRACWATER(1:NLAYER)     !25) M. Christina 11/2013
+        WRITE (UWATLAY) FRACWATER(1:NLAYER)
 
         ! write swp by layer
-        WRITE (USWPLAY) SOILWP(1:NLAYER)     !25) M. Christina 11/2013
+        WRITE (USWPLAY) SOILWP(1:NLAYER)
 
         ! Write soil temperature by layer:
-        WRITE (USOILT) SOILTEMP(1:NLAYER)     !20) M. Christina 11/2013
+        WRITE (USOILT) SOILTEMP(1:NLAYER)
 
-        ! Write fractional water uptake by layer (but no more than 40 laye
+        ! Write fractional water uptake by layer
         IHOWMANY = MIN(40, NROOTLAYER)
         WRITE(UWATUPT)FRACUPTAKE(1:IHOWMANY)
+        
     END IF
     
     RETURN

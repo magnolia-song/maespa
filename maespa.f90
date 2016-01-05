@@ -1474,15 +1474,18 @@ PROGRAM maespa
                 ! Update plant water store
                 IF(SIMSTORE.EQ.1)THEN
                 
+                    ! Plant water storage decreases when ET > soil water uptake (kg tree-1).
                     PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
                     
-                    !   Xylem water potential from stem relative water content and capacitance
+                    ! Xylem water potential from stem relative water content and capacitance (MPa)
                     XYLEMPSI(IDAY+1,ITAR) = - (1- (PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR))) / CAPAC 
 
-                    ! Stem relative conductivity
+                    ! Stem relative conductivity (0-1)
                     STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                    
+                    ! If more than PLCDEAD loss in conductivity, plant is dead.
                     IF(STEMRELK.LT.(1-PLCDEAD))THEN
-                        DEADALIVE(IDAY+1,ITAR) = 0
+                        DEADALIVE((IDAY+1):MAXDATE,ITAR) = 0
                         IF(STOPSIMONEMPTY.EQ.1)ABORTSIMULATION = .TRUE.
                     ENDIF
                     
@@ -1500,10 +1503,10 @@ PROGRAM maespa
                 
                 ! Get area-based estimates of radiation interception and transpiration rate.
                 CALL SCALEUP(IHOUR, USESTAND, NOTARGETS, NOALLTREES, FOLT,IT, ITARGETS,ISPECIES,NOSPEC,TOTLAI,STOCKING,  &
-                                SCLOSTTREE,THRAB,RADABV,FH2O,PLOTAREA,  &
+                                SCLOSTTREE,THRAB,RADABV,FH2O,ETCANDEFICIT,PLOTAREA,  &
                                 DOWNTHTREE,RGLOBABV,RGLOBUND,RADINTERC,FRACAPAR,ISIMUS,FH2OUS(IHOUR),THRABUS(IHOUR),   &
                                 PARUSMEAN(IHOUR),SCLOSTTOT,GSCAN,WINDAH(IHOUR),ZHT,Z0HT,ZPD,PRESS(IHOUR),TAIR(IHOUR),       &
-                                VPD(IHOUR),ETMM,ETUSMM,ETMMSPEC,TREEH,RGLOBUND1,RGLOBUND2,DOWNTHAV)            
+                                VPD(IHOUR),ETMM,ETUSMM,ETMMSPEC,ETMMNONSOIL,TREEH,RGLOBUND1,RGLOBUND2,DOWNTHAV)            
 
                 ! Find soil surface temperature, unless this is input data.
                 ! Note this uses DRYTHICK from previous timestep (or initial value in first go).
@@ -1594,7 +1597,7 @@ PROGRAM maespa
                 CALL WATBALLAY(IDAY,IHOUR,PPT(IHOUR),RUTTERB,RUTTERD,MAXSTORAGE,THROUGHFALL,RADINTERC,CANOPY_STORE,         &
                                 EVAPSTORE, DRAINSTORE,SURFACE_WATERMM,POREFRAC,WETTINGBOT,WETTINGTOP,NLAYER,NROOTLAYER,     &
                                 LAYTHICK,SOILTK,QE,TAIR(IHOUR) + FREEZE,VPD(IHOUR),WINDAH(IHOUR),ZHT,Z0HT,ZPD,PRESS(IHOUR), &
-                                ETMM,ETMMSPEC,NOSPEC,USEMEASET,ETMEAS(IHOUR),FRACUPTAKESPEC,ICEPROP,FRACWATER,DRAINLIMIT,KSAT,BPAR,             &
+                                ETMM,ETMMSPEC,ETMMNONSOIL,NOSPEC,USEMEASET,ETMEAS(IHOUR),FRACUPTAKESPEC,ICEPROP,FRACWATER,DRAINLIMIT,KSAT,BPAR,             &
                                 WSOIL,WSOILROOT,DISCHARGE,DRYTHICKMIN,DRYTHICK,SOILEVAP,OVERFLOW,WATERGAIN,WATERLOSS,       &
                                 PPTGAIN,KEEPWET,EXPINF,WS,WR,PSIE,ALPHARET,NRET,RETFUNCTION,SOILWP,&
                                 IWATTABLAYER,ISIMWATTAB,PLATDRAIN,WATCAPIL,TREEH,TOTLAI)
@@ -1613,20 +1616,20 @@ PROGRAM maespa
                 CALL OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,WSOIL,                             &
                                   WSOILROOT,PPT(IHOUR),                                           &
                                   CANOPY_STORE,EVAPSTORE,DRAINSTORE,                              &
-                                  SURFACE_WATERMM,ETMM,ETMM2,USEMEASET,ETMEAS(IHOUR),DISCHARGE,   &
-                                  FRACWATER,WEIGHTEDSWP,KTOT,                                     &
+                                  SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,USEMEASET,               &
+                                  ETMEAS(IHOUR),DISCHARGE,FRACWATER,WEIGHTEDSWP,KTOT,             &
                                   DRYTHICK,SOILEVAP,OVERFLOW,THERMCOND,FRACUPTAKE,SOILMOISTURE,   &
                                   FSOIL1,NSUMMED,TOTTMP,SOILTEMP-FREEZE,                          &
-                                  TAIRABOVE,QH,QE,QN,QC,RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC, &
+                                  TAIRABOVE,QH,QE,QN,QC,RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC,   &
                                   ESOIL, TOTLAI, WTITLE,                                          &
-                                  RADINTERC1, RADINTERC2, RADINTERC3,SCLOSTTOT,SOILWP,FRACAPAR, &
-                                  RADABV(IHOUR,3),TAIR(IHOUR),TCAN, VPDABOVE, VPDNEW, & 
+                                  RADINTERC1, RADINTERC2, RADINTERC3,SCLOSTTOT,SOILWP,FRACAPAR,   &
+                                  RADABV(IHOUR,3),TAIR(IHOUR),TCAN, VPDABOVE, VPDNEW,             & 
                                   TSOILSURFACE,GCANOP,ITERTAIR,NOTARGETS) 
                 
-                CALL SUMDAILYWAT(WSOIL,WSOILROOT,WEIGHTEDSWP,PPT,ETMM,ETMEAS,DISCHARGE, &
-                                SOILEVAP,FSOIL1,SURFACE_WATERMM,QH,QE,QN,QC, &
-                                RADINTERC,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,PPTTOT,ETMMTOT, &
-                                ETMEASTOT,DISCHARGETOT,SOILEVAPTOT,&
+                CALL SUMDAILYWAT(WSOIL,WSOILROOT,WEIGHTEDSWP,PPT,ETMM,ETMEAS,DISCHARGE,    &
+                                SOILEVAP,FSOIL1,SURFACE_WATERMM,QH,QE,QN,QC,               &
+                                RADINTERC,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,PPTTOT,ETMMTOT,  &
+                                ETMEASTOT,DISCHARGETOT,SOILEVAPTOT,                        &
                                 FSOILMEAN,TFALLTOT,QHTOT,QETOT,QNTOT,QCTOT,RADINTERCTOT)
             ENDIF
 
@@ -1905,7 +1908,7 @@ SUBROUTINE SUMHR(APAR,ANIR,ATHR,ALEAF,RD,GSC,GBH,ET,ETDEFICIT,HFX,TLEAF,FSOIL, P
     ! Transpiration in umol tree-1 s-1
     FH2O(ITAR,IHOUR) = FH2O(ITAR,IHOUR) + ET*AREA
     
-    ! transpiration deficit
+    ! transpiration deficit (mmol tree-1 s-1)
     ETCANDEFICIT(ITAR,IHOUR) = ETCANDEFICIT(ITAR,IHOUR) + ETDEFICIT*AREA
     
     ! Maximum rates of transpiration and photosynthesis

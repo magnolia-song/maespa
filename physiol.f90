@@ -202,11 +202,11 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
         ! Nighttime calculations
         GSC = GNIGHT
         
-        ! Maximum transpiration rate
+        ! Maximum transpiration rate (mmol m-2 s-1)
         EMAXLEAF = KTOT * (WEIGHTEDSWP - MINLEAFWP)
         IF(EMAXLEAF.LT.0.0)EMAXLEAF = 0.0
         
-        ! Hydraulic constraints on night-time conductance
+        ! Hydraulic constraints on night-time conductance (mmol m-2 s-1)
         ETEST = 1000 * (VPD/PATM) * GSC * GSVGSC
         
         IF(ETEST.GT.EMAXLEAF)THEN
@@ -270,7 +270,7 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
     GSV = GSVGSC*GSC
     GV = (GBV*GSV)/(GBV+GSV)
 
-    !  Call Penman-Monteith equation
+    !  Call Penman-Monteith equation (mol m-2 s-1)
     ET = PENMON(PRESS,SLOPE,LHV,RNET,VPD,GH,GV)
 
     DLEAF = ET * PRESS / GV
@@ -296,6 +296,7 @@ SUBROUTINE PSTRANSP(iday,ihour,RDFIPT,TUIPT,TDIPT,RNET,WIND,PAR,TAIR,TMOVE,CA,RH
 200 FHEAT = RNET - LHV*ET
     
     ! Transpiration minus supply by soil/plant (EMAX) must be drawn from plant reserve
+    ! (mmol m-2 s-1)
     ETDEFICIT = (VPD/PATM) * GSV *1E03 - EMAXLEAF
     IF(ETDEFICIT.LT.0.0)ETDEFICIT = 0.0
     
