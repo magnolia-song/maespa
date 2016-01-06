@@ -1127,7 +1127,7 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
         STORECOEF = 0.0
         STOREEXP = 0.0
         STOPSIMONEMPTY = 0
-        CAPAC = 0.5
+        CAPAC = 0.08
     ENDIF
 
     ! Some arrays can be given a few values, rest is filled with last entered value:
