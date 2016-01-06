@@ -1477,6 +1477,14 @@ PROGRAM maespa
                     ! Plant water storage decreases when ET > soil water uptake (kg tree-1).
                     PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
                     
+                    ! If there is no deficit, assume that current transpiration rate will refill the storage term.
+                    ! In theory we should reduce the transpiration rate (since water won't be transpired, but used for refilling).
+                    ! But since this is only for mortality - not for proper storage simulation - it should be OK.
+                    IF(ETCANDEFICIT(ITAR,IHOUR).LT.1E-09)THEN
+                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) + FH2O(ITAR,IHOUR)*SPERHR*1E-09*18
+                        IF(PLANTWATER(IDAY+1,ITAR).GT.PLANTWATER0(1,ITAR))PLANTWATER(IDAY+1,ITAR) = PLANTWATER0(1,ITAR)
+                    ENDIF
+                    
                     ! Xylem water potential from stem relative water content and capacitance (MPa)
                     XYLEMPSI(IDAY+1,ITAR) = - (1- (PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR))) / CAPAC 
 
