@@ -3673,7 +3673,11 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     END IF
     NSIDESI = NSIDES
     
+    ! Break-point version of Tuzet model
     IF(G21(1).GE.0.) NEWTUZETI = 1
+    
+    ! Bug : if GNIGHT is zero, simulation goes wrong at IHOUR=2 and onwards. Not sure why yet...
+    IF(GNIGHTI.EQ.0.0)GNIGHTI = 1E-09
     
     RETURN
 END SUBROUTINE READGS
