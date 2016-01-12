@@ -1475,6 +1475,10 @@ PROGRAM maespa
                     ! Plant water storage decreases when ET > soil water uptake (kg tree-1).
                     PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
                     
+                    ! Cannot be negative (water taken from storage should actually depend on water potential,
+                    ! in which case this is not needed, see CALCXYLEMPSI)
+                    IF(PLANTWATER(IDAY+1,ITAR).LT.0.0)PLANTWATER(IDAY+1,ITAR) = 0.0
+                    
                     ! If there is no deficit, assume that current transpiration rate will refill the storage term.
                     ! In theory we should reduce the transpiration rate (since water won't be transpired, but used for refilling).
                     ! But since this is only for mortality - not for proper storage simulation - it should be OK.
@@ -1484,7 +1488,7 @@ PROGRAM maespa
                     ENDIF
                     
                     ! Xylem water potential from stem relative water content and capacitance (MPa)
-                    XYLEMPSI(IDAY+1,ITAR) = - (1- (PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR))) / CAPAC 
+                    XYLEMPSI(IDAY+1,ITAR) = CALCXYLEMPSI(PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR), CAPAC) 
 
                     ! Stem relative conductivity (0-1)
                     STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)

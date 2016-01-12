@@ -2513,7 +2513,34 @@ REAL FUNCTION RELKWEIBULL(P,P50,SX)
   V = -50*LOG(0.5)
   RELKWEIBULL = 0.5**((PA/P50A)**((P50A*SX)/V))
   
-END FUNCTION RELKWEIBULL
+    END FUNCTION RELKWEIBULL
+    
+  !**********************************************************************
+  ! This function is used to calculate the stem xylem water potential (P), based 
+  ! on relative water content (RWC) and capacitance. 
+  
+REAL FUNCTION CALCXYLEMPSI(RWC,CAPAC)
+
+   IMPLICIT NONE
+   REAL RWC,CAPAC,PSI1,PSI2
+   REAL, PARAMETER :: BREAK0 = 0.5  ! Determines shape of asymptote function
+   REAL, PARAMETER :: HMSHAPE = 0.99  ! Determines shape of hyperbolic minimum
+   
+   ! Linear dependence over most of the range.
+   PSI1 = - (1 - RWC) / CAPAC
+   
+   ! When approaching zero RWC, the water potential has to go to infinity.
+   PSI2 = -LOG(RWC/BREAK0)
+   IF(PSI2.LT.0.0)PSI2 = 0.0
+   PSI2 = -PSI2
+ 
+   ! Hyperbolic minimum
+   CALCXYLEMPSI = (PSI1+PSI2 - SQRT((PSI1+PSI2)**2-4*HMSHAPE*PSI1*PSI2))/(2*HMSHAPE)
+   
+   
+END FUNCTION CALCXYLEMPSI
+    
+    
     
     
 !**********************************************************************
