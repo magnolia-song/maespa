@@ -2503,17 +2503,14 @@ SUBROUTINE TVPDCANOPCALC (QN, QE, RADINTERC, ETMM, TAIRCAN,TAIRABOVE, VPDABOVE, 
 REAL FUNCTION RELKWEIBULL(P,P50,SX)
 
   IMPLICIT NONE
-  REAL P,P50,SX,V,PA,P50A,X
-
-  ! Xylem pressure as positive value
-  PA = -P
-  P50A = -P50
+  REAL P,P50,SX,V,X
 
   ! Parameterized as in Ogle et al. 2009.
   V = -50*LOG(0.5)
-  RELKWEIBULL = 0.5**((PA/P50A)**((P50A*SX)/V))
+  RELKWEIBULL = 1 - 0.5**((P/P50)**((P50*SX)/V))
   
-    END FUNCTION RELKWEIBULL
+END FUNCTION RELKWEIBULL
+
     
   !**********************************************************************
   ! This function is used to calculate the stem xylem water potential (P), based 
