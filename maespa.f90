@@ -782,10 +782,7 @@ PROGRAM maespa
                 PSIV = PSIVSPEC(ISPEC)   
                 NSIDES = NSIDESSPEC(ISPEC)
     
-                ! Assign plant hydraulic conductance from PLC curve and previous-timestep water potential
-                RELK = RELKWEIBULL(PREVPSILCAN(ITAR),P50,PLCSHAPE)
-                PLANTKACT = RELK * PLANTK
-                
+
                 ! If first timestep (but not first day of simulation), reset plant water store to yesterday's value
                 ! Need to be just after zerohrflux, because of canopy air T iteration
                 ! Note IDAY =0,1,..., but array index=1,2,...
@@ -801,11 +798,19 @@ PROGRAM maespa
                         !   Plantwater  (liters) = storecoef * leafarea ** (storeexp + 1)
                         PLANTWATER(1,ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** (STOREEXP + 1)
                         PLANTWATER0(1,ITAR) = PLANTWATER(1,ITAR)  !  To calculate RWC, keep track of initial water content.
-                        XYLEMPSI(1,ITAR) = 0.0  ! Xylem water potential.
+                        XYLEMPSI(1,ITAR) = WEIGHTEDSWP  ! Xylem water potential.
                     ENDIF
                 
+                    ! Assign plant hydraulic conductance from PLC curve and stem water potential
+                    RELK = RELKWEIBULL(XYLEMPSI(IDAY,ITAR),P50,PLCSHAPE)
+                    PLANTKACT = RELK * PLANTK
+                
                 ENDIF
-                                
+                ! No cavitation when stem water storage not simulated
+                IF(SIMSTORE.EQ.0)THEN
+                    PLANTKACT = PLANTK
+                ENDIF
+
                 ! Assign water balance and hydraulics.
                 MINLEAFWP = MINLEAFWPSPEC(ISPEC)
                 ! If multiple species but only one root distribution.
@@ -1472,24 +1477,41 @@ PROGRAM maespa
                 ! Update plant water store
                 IF(SIMSTORE.EQ.1)THEN
                 
-                    ! Plant water storage decreases when ET > soil water uptake (kg tree-1).
-                    PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
+                    ! Under normal circumstances: stem water potential is Soilwp - E/(2*k)
+                    IF(ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 .LT. 1E-06)THEN  ! Should be a percentage of total transpiration
+                        XYLEMPSI(IDAY+1, ITAR) = WEIGHTEDSWP - 1E-03 * FH2O(ITAR,IHOUR) / (2 * PLANTKACT * FOLT(1))
+                    
+                        ! Based on steady state water potential, calculate stem relative water content (must equilibrate!)
+                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER0(1,ITAR) * (1 + XYLEMPSI(IDAY+1, ITAR) * CAPAC)
+                    
+                    ELSE
+                    
+                        ! Now reduce stem water content even further by amount of transpiration that is not sustained by soil water uptake
+                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
+                    
+                        ! And recalculate corresponding xylem water potential
+                        XYLEMPSI(IDAY+1,ITAR) = CALCXYLEMPSI(PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR), CAPAC) 
+                        
+                    ENDIF
+                    
+                    RELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                    PLANTKACT = RELK * PLANTK
+                    
+                    WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),prevpsilcan(itar),weightedswp,XYLEMPSI(IDAY+1,1),plantkact
+                    
                     
                     ! Cannot be negative (water taken from storage should actually depend on water potential,
                     ! in which case this is not needed, see CALCXYLEMPSI)
-                    IF(PLANTWATER(IDAY+1,ITAR).LT.0.0)PLANTWATER(IDAY+1,ITAR) = 0.0
+                    !IF(PLANTWATER(IDAY+1,ITAR).LT.0.0)PLANTWATER(IDAY+1,ITAR) = 0.0
                     
                     ! If there is no deficit, assume that current transpiration rate will refill the storage term.
                     ! In theory we should reduce the transpiration rate (since water won't be transpired, but used for refilling).
                     ! But since this is only for mortality - not for proper storage simulation - it should be OK.
-                    IF(ETCANDEFICIT(ITAR,IHOUR).LT.1E-09)THEN
-                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) + FH2O(ITAR,IHOUR)*SPERHR*1E-09*18
-                        IF(PLANTWATER(IDAY+1,ITAR).GT.PLANTWATER0(1,ITAR))PLANTWATER(IDAY+1,ITAR) = PLANTWATER0(1,ITAR)
-                    ENDIF
+                    !IF(ETCANDEFICIT(ITAR,IHOUR).LT.1E-09)THEN
+                    !    PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) + FH2O(ITAR,IHOUR)*SPERHR*1E-09*18
+                    !    IF(PLANTWATER(IDAY+1,ITAR).GT.PLANTWATER0(1,ITAR))PLANTWATER(IDAY+1,ITAR) = PLANTWATER0(1,ITAR)
+                    !ENDIF
                     
-                    ! Xylem water potential from stem relative water content and capacitance (MPa)
-                    XYLEMPSI(IDAY+1,ITAR) = CALCXYLEMPSI(PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR), CAPAC) 
-
                     ! Stem relative conductivity (0-1)
                     STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
                     
@@ -1652,7 +1674,6 @@ PROGRAM maespa
             ! Save canopy-average leaf water potential for use in next time step
             PREVPSILCAN = PSILCAN(1:MAXT,IHOUR)
             
-            
         !**********************************************************************
         END DO ! End hourly loop
 
@@ -1664,7 +1685,7 @@ PROGRAM maespa
         TOTRESPFG = GRESP(FBINC,EFFYRF)
 
        
-        WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),XYLEMPSI(IDAY+1,1),P50
+        !WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),XYLEMPSI(IDAY+1,1),P50
         
         ! Output daily totals
         CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT, &
