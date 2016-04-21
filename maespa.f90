@@ -1489,6 +1489,12 @@ PROGRAM maespa
                         ! Now reduce stem water content even further by amount of transpiration that is not sustained by soil water uptake
                         PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
                     
+                        ! If we don't stop simulation when plant is dead (i.e. XYLEMPSI is very low), PLANTWATER may go to zero, causing crash.
+                        PLANTWMINVAL = 0.05*PLANTWATER0(1,ITAR)  ! 5 percent of full hydration
+                        IF(PLANTWATER(IDAY+1,ITAR).LT.PLANTWMINVAL)THEN
+                            PLANTWATER(IDAY+1,ITAR) = PLANTWMINVAL
+                        ENDIF
+                        
                         ! And recalculate corresponding xylem water potential
                         XYLEMPSI(IDAY+1,ITAR) = CALCXYLEMPSI(PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR), CAPAC) 
                         
@@ -1497,7 +1503,7 @@ PROGRAM maespa
                     RELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
                     PLANTKACT = RELK * PLANTK
                     
-                    WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),prevpsilcan(itar),weightedswp,XYLEMPSI(IDAY+1,1),plantkact
+                    !WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),prevpsilcan(itar),weightedswp,XYLEMPSI(IDAY+1,1),plantkact
                     
                     
                     ! Cannot be negative (water taken from storage should actually depend on water potential,
