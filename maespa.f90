@@ -233,7 +233,7 @@ PROGRAM maespa
         
         ! Added 29-3-2008 (RAD): reposition met file correctly,
         ! to account for the looping order change.
-        CALL RESTARTMETF(IDAY+ISTART,MSTART,MFLAG)
+        !CALL RESTARTMETF(IDAY+ISTART,MSTART,MFLAG)
        
         ! Prepare histogram
         CALL ZEROSTART(HISTO,CANOPYDIMS)
