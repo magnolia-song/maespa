@@ -802,7 +802,7 @@ PROGRAM maespa
                     ENDIF
                 
                     ! Assign plant hydraulic conductance from PLC curve and stem water potential
-                    RELK = RELKWEIBULL(XYLEMPSI(IDAY,ITAR),P50,PLCSHAPE)
+                    RELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
                     PLANTKACT = RELK * PLANTK
                 
                 ENDIF
