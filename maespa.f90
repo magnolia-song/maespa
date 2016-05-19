@@ -788,21 +788,17 @@ PROGRAM maespa
                 ! Note IDAY =0,1,..., but array index=1,2,...
                 IF(SIMSTORE.EQ.1.AND.IHOUR.EQ.1)THEN
             
-                    ! All days
-                    IF(IDAY.NE.0)THEN
-                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY, ITAR)
-                    
-                    ! First day of simulation (calculate from input parameters)
-                    ELSE   
+                    ! Initialize on first day of simulation
+                    IF(IDAY.EQ.0)THEN   
                         !   Plantwater/leafarea = storecoef * leafarea ** storeexp
                         !   Plantwater  (liters) = storecoef * leafarea ** (storeexp + 1)
-                        PLANTWATER(1,ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** (STOREEXP + 1)
-                        PLANTWATER0(1,ITAR) = PLANTWATER(1,ITAR)  !  To calculate RWC, keep track of initial water content.
-                        XYLEMPSI(1,ITAR) = WEIGHTEDSWP  ! Xylem water potential.
+                        PLANTWATER(ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** (STOREEXP + 1)
+                        PLANTWATER0(ITAR) = PLANTWATER(ITAR)  !  To calculate RWC, keep track of initial water content.
+                        XYLEMPSI(ITAR) = WEIGHTEDSWP  ! Xylem water potential.
                     ENDIF
                 
                     ! Assign plant hydraulic conductance from PLC curve and stem water potential
-                    RELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                    RELK = RELKWEIBULL(XYLEMPSI(ITAR),P50,PLCSHAPE)
                     PLANTKACT = RELK * PLANTK
                 
                 ENDIF
@@ -813,6 +809,7 @@ PROGRAM maespa
 
                 ! Assign water balance and hydraulics.
                 MINLEAFWP = MINLEAFWPSPEC(ISPEC)
+                
                 ! If multiple species but only one root distribution.
                 IF(NOROOTSPEC.EQ.1.AND.NOSPEC.GT.1)THEN
                     ICHOOSE = 1
@@ -1479,51 +1476,44 @@ PROGRAM maespa
                 
                     ! Under normal circumstances: stem water potential is Soilwp - E/(2*k)
                     IF(ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 .LT. 1E-06)THEN  ! Should be a percentage of total transpiration
-                        XYLEMPSI(IDAY+1, ITAR) = WEIGHTEDSWP - 1E-03 * FH2O(ITAR,IHOUR) / (2 * PLANTKACT * FOLT(1))
+                        WATFLUX = FH2O(ITAR,IHOUR)
+                        IF(WATFLUX.LT.0.0)WATFLUX = 0.0   ! Should never happen but it does
+                        XYLEMPSI(ITAR) = WEIGHTEDSWP - 1E-03 * WATFLUX / (2 * PLANTKACT * FOLT(1))
                     
                         ! Based on steady state water potential, calculate stem relative water content (must equilibrate!)
-                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER0(1,ITAR) * (1 + XYLEMPSI(IDAY+1, ITAR) * CAPAC)
+                        PLANTWATER(ITAR) = PLANTWATER0(ITAR) * (1 + XYLEMPSI(ITAR) * CAPAC)
                     
                     ELSE
                     
                         ! Now reduce stem water content even further by amount of transpiration that is not sustained by soil water uptake
-                        PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
-                    
+                        PLANTWATER(ITAR) = PLANTWATER(ITAR) - ETCANDEFICIT(ITAR,IHOUR)*SPERHR*1E-06*18 
+                         
                         ! If we don't stop simulation when plant is dead (i.e. XYLEMPSI is very low), PLANTWATER may go to zero, causing crash.
-                        PLANTWMINVAL = 0.05*PLANTWATER0(1,ITAR)  ! 5 percent of full hydration
-                        IF(PLANTWATER(IDAY+1,ITAR).LT.PLANTWMINVAL)THEN
-                            PLANTWATER(IDAY+1,ITAR) = PLANTWMINVAL
+                        PLANTWMINVAL = 0.05*PLANTWATER0(ITAR)  ! 5 percent of full hydration
+                        IF(PLANTWATER(ITAR).LT.PLANTWMINVAL)THEN
+                            PLANTWATER(ITAR) = PLANTWMINVAL
                         ENDIF
                         
                         ! And recalculate corresponding xylem water potential
-                        XYLEMPSI(IDAY+1,ITAR) = CALCXYLEMPSI(PLANTWATER(IDAY+1,ITAR)/PLANTWATER0(1,ITAR), CAPAC) 
-                        
+                        XYLEMPSI(ITAR) = CALCXYLEMPSI(PLANTWATER(ITAR)/PLANTWATER0(ITAR), CAPAC) 
+                            
                     ENDIF
                     
-                    RELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                    ! It might happen (somehow?!) that ETCANDEFICIT is positive (numeric drift?), causing problems..
+                    IF(PLANTWATER(ITAR).GT.PLANTWATER0(ITAR))PLANTWATER(ITAR) = PLANTWATER0(ITAR)
+                   
+                    ! Calculate relative conductivity of the stem, and actual plant conductance
+                    RELK = RELKWEIBULL(XYLEMPSI(ITAR),P50,PLCSHAPE)
                     PLANTKACT = RELK * PLANTK
                     
-                    !WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),prevpsilcan(itar),weightedswp,XYLEMPSI(IDAY+1,1),plantkact
-                    
-                    
-                    ! Cannot be negative (water taken from storage should actually depend on water potential,
-                    ! in which case this is not needed, see CALCXYLEMPSI)
-                    !IF(PLANTWATER(IDAY+1,ITAR).LT.0.0)PLANTWATER(IDAY+1,ITAR) = 0.0
-                    
-                    ! If there is no deficit, assume that current transpiration rate will refill the storage term.
-                    ! In theory we should reduce the transpiration rate (since water won't be transpired, but used for refilling).
-                    ! But since this is only for mortality - not for proper storage simulation - it should be OK.
-                    !IF(ETCANDEFICIT(ITAR,IHOUR).LT.1E-09)THEN
-                    !    PLANTWATER(IDAY+1,ITAR) = PLANTWATER(IDAY+1,ITAR) + FH2O(ITAR,IHOUR)*SPERHR*1E-09*18
-                    !    IF(PLANTWATER(IDAY+1,ITAR).GT.PLANTWATER0(1,ITAR))PLANTWATER(IDAY+1,ITAR) = PLANTWATER0(1,ITAR)
-                    !ENDIF
+                    WRITE(UWATTEST,*)PLANTWATER(1),ETCANDEFICIT(ITAR,IHOUR),plantwater0(1),XYLEMPSI(1),plantkact
                     
                     ! Stem relative conductivity (0-1)
-                    STEMRELK = RELKWEIBULL(XYLEMPSI(IDAY+1,ITAR),P50,PLCSHAPE)
+                    STEMRELK = RELKWEIBULL(XYLEMPSI(ITAR),P50,PLCSHAPE)
                     
                     ! If more than PLCDEAD loss in conductivity, plant is dead.
                     IF(STEMRELK.LT.(1-PLCDEAD))THEN
-                        DEADALIVE((IDAY+1):MAXDATE,ITAR) = 0
+                        DEADALIVE(ITAR) = 0
                         IF(STOPSIMONEMPTY.EQ.1)ABORTSIMULATION = .TRUE.
                     ENDIF
                     
@@ -1690,9 +1680,6 @@ PROGRAM maespa
         TOTRESPCRG = GRESP(RBINC*(1.-FRFRAC),EFFYRW)
         TOTRESPFG = GRESP(FBINC,EFFYRF)
 
-       
-        !WRITE(UWATTEST,*)PLANTWATER(IDAY+1,1),XYLEMPSI(IDAY+1,1),P50
-        
         ! Output daily totals
         CALL SUMDAILY(NOTARGETS,THRAB,FCO2,FRESPF,FRESPW,FRESPB,FRESPCR,FRESPFR,FH2O,FH2OCAN,FHEAT, &
                       TDYAB,TOTCO2,TOTRESPF,TOTRESPWM,TOTRESPB,TOTRESPCR,   &

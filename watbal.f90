@@ -2523,6 +2523,9 @@ REAL FUNCTION CALCXYLEMPSI(RWC,CAPAC)
    REAL, PARAMETER :: BREAK0 = 0.5  ! Determines shape of asymptote function
    REAL, PARAMETER :: HMSHAPE = 0.99  ! Determines shape of hyperbolic minimum
    
+   ! Safety
+   IF(RWC.GT.1.0)RWC = 1.0
+   
    ! Linear dependence over most of the range.
    PSI1 = - (1 - RWC) / CAPAC
    
