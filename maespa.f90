@@ -790,9 +790,8 @@ PROGRAM maespa
             
                     ! Initialize on first day of simulation
                     IF(IDAY.EQ.0)THEN   
-                        !   Plantwater/leafarea = storecoef * leafarea ** storeexp
-                        !   Plantwater  (liters) = storecoef * leafarea ** (storeexp + 1)
-                        PLANTWATER(ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** (STOREEXP + 1)
+                        !   Plantwater  (liters) = storecoef * leafarea ** storeexp
+                        PLANTWATER(ITAR) = STORECOEF * FOLTABLE1(1, ITREE) ** STOREEXP
                         PLANTWATER0(ITAR) = PLANTWATER(ITAR)  !  To calculate RWC, keep track of initial water content.
                         XYLEMPSI(ITAR) = WEIGHTEDSWP  ! Xylem water potential.
                     ENDIF
