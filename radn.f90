@@ -1060,7 +1060,7 @@ END SUBROUTINE EXDIFF
         XL,YL,ZL,RX,RY,RZ,DXT,DYT,DZT, &
         XMAX,YMAX,SHADEHT, &
         FOLT,ZBC,JLEAFT,BPTT,NOAGECT,PROPCT,JSHAPET,SHAPET, &
-        NEWTUTD,TU,TD,RELDF,DEXT )
+        NEWTUTD,TU,TD,RELDF,DEXT,IPOINTS)
       
 ! This subroutine calculates the diffuse transmittances, if required.
 !**********************************************************************
@@ -1071,7 +1071,7 @@ END SUBROUTINE EXDIFF
       INTEGER IRAD,I,NT,NZEN,NEWTUTD,IDAY
       INTEGER J,NUMPNT,NEWCANOPY, FLOAT,K
       INTEGER JSHAPET(MAXT),JLEAFT(MAXT),NOAGECT(MAXT)
-      INTEGER NAZ,IPT,IPROG,IFLAG
+      INTEGER NAZ,IPT,IPROG,IFLAG,IPOINTS
       REAL DXT(MAXT),DYT(MAXT),DZT(MAXT),RX(MAXT),RY(MAXT), &
            RZ(MAXT),ZBC(MAXT),FOLT(MAXT)
       REAL PROPCT(MAXC,MAXT)
@@ -1168,6 +1168,10 @@ END SUBROUTINE EXDIFF
                DEXTT(1:MAXT,J),NT,SL,SL1,DEXT(J),DEXTANGT,DEXTANG) 
 
             ADDDN = ADDDN + EXP(-DEXT(J)*(SL+SL1))
+            
+            IF(IPROG.EQ.ITEST.AND.IPOINTS.EQ.2)THEN
+            WRITE (UPTTD,*) IPT,DZUP,DAZ,EXP(-DEXT(J)*(SU+SU1))
+            ENDIF
 
   400     CONTINUE
 
@@ -1188,8 +1192,10 @@ END SUBROUTINE EXDIFF
         TD(IPT) = WNS/WDS
         TU(IPT) = WNG/WDG
         RELDF(IPT)= WNS1/WDS
-  900 CONTINUE
+900   CONTINUE
 
+      
+      
       RETURN
       END !Transd
 
@@ -1344,12 +1350,11 @@ END SUBROUTINE EXDIFF
         DO J = 1,NOAGEC
             BETA1 = BETA1 + BETA(BPT(1,J),BPT(2,J),BPT(3,J),BPT(4,J),RCH) * PROP(J)
         END DO
-
+        
         DFT = BETA1*FOLTQ/(TRD*TRD*RZQ)
-
+        
         IF (JLEAF.EQ.1) THEN
-          DFT = DFT/PI
-
+            DFT = DFT/PI
 ! Find beta in horizontal direction
         ELSE IF (JLEAF.EQ.2) THEN
           XX = X1 + (REAL(I)-0.5)* (X2-X1)/20.0 - DXTQ
@@ -1379,7 +1384,7 @@ END SUBROUTINE EXDIFF
         ENDIF
 
         SS = SS + DFT*PATH/20.0
-
+        
   100 CONTINUE
 
       RETURN
@@ -1393,7 +1398,11 @@ END SUBROUTINE EXDIFF
 ! this subroutine is used to calculate the pathlength inside all
 ! trees around the tree we do all these calculations for
 !**********************************************************************
-
+! RXQ/RYQ is indivradx/y ; RZQ is indivhtcrown ; ZBCQ is indivhttrunk
+! DXTQ/DYTQ are xycoords of the individual, DZTQ  is soil height 
+! compared to X0/Y0 (depending on slope) ;
+! XPP/YPP/ZPP are X/Y/Z coordinates of the voxel.      
+      
       USE maestcom
       IMPLICIT NONE
       INTEGER JSHAPE,IFLAG,ISITU
@@ -1880,7 +1889,7 @@ END SUBROUTINE EXDIFF
         TOTLAI,TAUMIN, &
         RTA,NLAY,DLAI,EXPDIF)
 
-      CALL ASSIGN(TU,TD,NUMPNT,NLAY,RTA, &
+      CALL ASSIGNE(TU,TD,NUMPNT,NLAY,RTA, &
         LAYER,MLAYER)
 
       RETURN
@@ -1944,11 +1953,11 @@ END SUBROUTINE EXDIFF
       ! Doesn't actually work, because ASSIGN can actually result in more layers than allowed (MLAYER>NLAY), somehow.
       !! Check that calculated maximum number of layers is not > MAXECHLAY
       !! This is very rare, unless NECHLAY set to very high value, TOTLAI very high, or MAXECHLAY poorly set.
-      !CALCMAXLAY = CEILING(TOTLAI / DLAI)
-      !IF(CALCMAXLAY.GT.MAXECHLAYER)THEN
-      !  CALL SUBERROR('WARNING: ACTUAL NUMBER OF ECH LAYERS > MAXECHLAY. RESET TO MAXECHLAY.',IWARN,0)
-      !  DLAI = TOTLAI / REAL(MAXECHLAYER)
-      !ENDIF
+      CALCMAXLAY = CEILING(TOTLAI / DLAI)
+      IF(CALCMAXLAY.GT.MAXECHLAYER)THEN
+        CALL SUBERROR('WARNING: ACTUAL NUMBER OF ECH LAYERS > MAXECHLAY. RESET TO MAXECHLAY.',IWARN,0)
+        DLAI = TOTLAI / REAL(MAXECHLAYER)
+      ENDIF
       
       
 ! Calculate transmittance through one elementary layer with thickness DLAI
@@ -1977,8 +1986,8 @@ END SUBROUTINE EXDIFF
 ! Check to see not too many elementary layers - if so, try again with
 ! higher DLAI.
 30    KK = KK + 1
-      IF (KK.GT.MAXECHLAYER) THEN
-        DLAI = DLAI + 0.02
+      IF (KK.GT.MAXECHLAYER/2) THEN ! glm div by 2, because NLAY is used afterward, hard to fix but problems with JTOT>MAXECHLAYER in scatter
+        DLAI = DLAI + 0.05
         GO TO 10
       END IF
 
@@ -1999,12 +2008,11 @@ END SUBROUTINE EXDIFF
       IF (RTA(KK).GE.TAUMIN) GO TO 30
       NLAY = KK
       RETURN
-
       END !Chart
 
 
 !**********************************************************************
-      SUBROUTINE ASSIGN(TU,TD,NUMPNT,NLAY,RTA, &
+      SUBROUTINE ASSIGNE(TU,TD,NUMPNT,NLAY,RTA, &
         LAYER,MLAYER)
 ! This subroutine matches the grid point to a point in the EHC.
 ! The ith grid point will correspond to LAYER(I) in an EHC having
@@ -2035,10 +2043,10 @@ END SUBROUTINE EXDIFF
           DIFUP = ABS(TU(IPT)-RTA(ILAYER))
           IF (DIFMU.GE.DIFUP) GO TO 200
           Z1 = ILAYER - 1
+ 
           GO TO 290
 200     DIFMU = DIFUP
         Z2 = NLAY
-
 290     DIFMD = 1.
         DO 300 ILAYER = 1,NLAY
           DIFDN = ABS(TD(IPT)-RTA(ILAYER))
@@ -2052,7 +2060,6 @@ END SUBROUTINE EXDIFF
         IF(Z2.EQ.-1)THEN
             Z2 = NLAY - Z1
         ENDIF
-        
 390     MLAYER(IPT) = Z2 + Z1
         LAYER(IPT) = Z1
         IF (LAYER(IPT).EQ.0) LAYER(IPT) = 1
@@ -2683,7 +2690,6 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
     D(JTOT) = RADABV ! Thermal flux above the top layer in EHC.
 
     ELEAF = SIGMA * (TK(TCAN2)**4.) ! Emission from leaf (assume Tleaf = Tcanopy)
-
     TRLEAF = EXPDIF !  transmissivity of elementary canopy layer
     RFLEAF = (1-EXPDIF)*(1-EMLEAF)  ! reflectivity of elementary canopy layer
     RFSOIL = (1-EMSOIL) ! soil reflectivity
@@ -2699,7 +2705,7 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
     ! Downward flux onto soil surface
     ! Same equation as above, but use soil reflectivity etc.
     D(1) = D(2)*EXPDIF * (1/(1-RFSOIL*RFLEAF)) + ELEAF*(1-EXPDIF)*EMLEAF*(1/(1-RFSOIL*RFLEAF))
-
+   
     ! Soil emission
     ESOIL = ESOILFUN(TSOIL)
 
@@ -2724,7 +2730,7 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
     SCLOST(IPT,3) = U(JTOT)
     
     DOWNTH(IPT) = D(1)
-    
+
     RETURN
 END SUBROUTINE ABSTHERM
 
@@ -2809,7 +2815,7 @@ SUBROUTINE ABSRAD(ITAR,IPT,IWAVE, &
     ENDIF
 
     IF(IWAVE.EQ.3) THEN                 ! Modification Christina June 2014
-        DFLUX(IPT,IWAVE)= DFLUX(IPT,IWAVE)!*ABSRP !- ELEAF*EMLEAF ! emmission from leaf (2 directions)
+        DFLUX(IPT,IWAVE)= DFLUX(IPT,IWAVE) !*ABSRP !- ELEAF*EMLEAF ! emmission from leaf (2 directions)
     ELSE
     DFLUX(IPT,IWAVE)= DFLUX(IPT,IWAVE)*ABSRP
     SCATFX(IPT,IWAVE)= SCATFX(IPT,IWAVE)*ABSRP
@@ -2850,7 +2856,8 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
                     DOWNTHTREE,EXPFACTORS,RGLOBABV,RGLOBABV12, &
                     RGLOBUND,RADINTERC12,RADINTERC1,RADINTERC2, &
                     RADINTERC3,SCLOSTTOT,FRACAPAR,RADINTERC, &
-                    RGLOBUND1, RGLOBUND2,DOWNTHAV)
+                    RGLOBUND1, RGLOBUND2,DOWNTHAV, SCLOSTTOT3, &
+                    TOTLAI,TSOIL,RHOSOL) !glm ajout
 ! This subroutine calculates average global radiation (W m-2) underneath the
 ! canopy, for use in heat balance calculations.
 ! RAD June 2008.
@@ -2868,6 +2875,9 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     REAL FANIROS,FANIRMULT,RADINTERC12TOT
     REAL DOWNTHAV,RGLOBUND,RADINTERC, SCLOSTTOT3
     REAL RGLOBUND1,RGLOBUND2,RGLOBUND3,SCLOSTTOT1,SCLOSTTOT2
+    REAL FCOVER,TOTLAI,TSOIL,RHOSOL(3),DOWNTHAV_tree
+    REAL SCLOSTTOT_tree,SCLOSTTOT1_tree,SCLOSTTOT2_tree,SCLOSTTOT3_tree
+    REAL, EXTERNAL :: ESOILFUN
     
     ! Units: SCLOST W m-2, THRAB W tree-1, RADABV W tree -1,
     RADINTERC = 0.0
@@ -2880,6 +2890,7 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     SCLOSTTOT = 0.0
     SCLOSTTOT1 = 0.0
     SCLOSTTOT2 = 0.0
+    SCLOSTTOT3 = 0.0
     
     ! Interception in W.
     DO I=1,NOTARGETS
@@ -2943,19 +2954,42 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
         RGLOBABV = RGLOBABV + RADABV(IHOUR,J)
     END DO
 
+      
+    FCOVER= 1 ! RV 12/12/2016 
+    ! FCOVER=MIN(MAX(TOTLAI/4.5,0.),1.) !glm test 
+    
     ! Lost scattered radiation
     ! Take the average across the trees
-    SCLOSTTOT = SUM(SCLOSTTREE(1:NOTARGETS,1:2)) / NOTARGETS
-    SCLOSTTOT1 = SUM(SCLOSTTREE(1:NOTARGETS,1)) / NOTARGETS
-    SCLOSTTOT2 = SUM(SCLOSTTREE(1:NOTARGETS,2)) / NOTARGETS
+    SCLOSTTOT_tree = SUM(SCLOSTTREE(1:NOTARGETS,1:2)) / NOTARGETS
+    SCLOSTTOT1_tree = SUM(SCLOSTTREE(1:NOTARGETS,1)) / NOTARGETS
+    SCLOSTTOT2_tree = SUM(SCLOSTTREE(1:NOTARGETS,2)) / NOTARGETS
+    SCLOSTTOT3_tree = SUM(SCLOSTTREE(1:NOTARGETS,3)) / NOTARGETS !glm test proportion fcover
+    
+    ! FCOVER=MIN(MAX(TOTLAI/4.5,0.),1.) !glm test
+    
+    !glm: test to add the proportion of radiation from soil
+    ! Soil emission
+    SCLOSTTOT=(FCOVER)*SCLOSTTOT_tree + (1-FCOVER)*(RHOSOL(1)*RADABV(IHOUR,1)+RHOSOL(2)*RADABV(IHOUR,2))
+    SCLOSTTOT1=(FCOVER)*SCLOSTTOT1_tree + (1-FCOVER)*(RHOSOL(1)*RADABV(IHOUR,1))
+    SCLOSTTOT2=(FCOVER)*SCLOSTTOT2_tree + (1-FCOVER)*(RHOSOL(2)*RADABV(IHOUR,2))
+    
+    SCLOSTTOT3 = (FCOVER)*SCLOSTTOT3_tree + (1-FCOVER)*(ESOILFUN(TSOIL)+ RHOSOL(3)*RADABV(IHOUR,3))
+    !print*,'TH',FCOVER,SCLOSTTOT3_tree,SCLOSTTOT3,TSOIL
+    !print*,'SCLOSTTOT',SCLOSTTOT_tree,SCLOSTTOT,(RHOSOL(1)*RADABV(IHOUR,1)+RHOSOL(2)*RADABV(IHOUR,2))
+    
     
     ! Average downward thermal flux - averaged across trees:
-    DOWNTHAV = SUM(DOWNTHTREE(1:NOTARGETS)) / NOTARGETS
-
-    ! Global radiation under the canopy, reaching the soil surface.
-    RGLOBUND = RGLOBABV12 - RADINTERC12TOT - SCLOSTTOT + DOWNTHAV
+    DOWNTHAV_tree = SUM(DOWNTHTREE(1:NOTARGETS)) / NOTARGETS
+    DOWNTHAV = (FCOVER)*DOWNTHAV_tree + (1-FCOVER)*RADABV(IHOUR,3)
+    !print*,'DOWNTHAV',DOWNTHAV_tree,RADABV(IHOUR,3)
+    
+    ! Global radiation under the canopy, reaching the soil surface. includes Thermal
+    ! RGLOBUND = RGLOBABV12 - RADINTERC12TOT - SCLOSTTOT + DOWNTHAV
+    RGLOBUND=MAX(RGLOBABV12 - RADINTERC12TOT - SCLOSTTOT, 0.) + DOWNTHAV
     RGLOBUND1 = RADABV(IHOUR,1) - RADINTERC1 - SCLOSTTOT1
-    RGLOBUND2 = RADABV(IHOUR,2) - RADINTERC2 - SCLOSTTOT2
+    RGLOBUND2 = RADABV(IHOUR,2) - RADINTERC2 - SCLOSTTOT2     
+    RGLOBUND1=MAX(RGLOBUND1, 0.)
+    RGLOBUND2=MAX(RGLOBUND2, 0.)
     
     RETURN
 END SUBROUTINE GETRGLOB

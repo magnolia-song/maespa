@@ -162,8 +162,10 @@ REAL FUNCTION BETA(BC1,BC2,BC3,BC4,RP)
     IMPLICIT NONE
     REAL BC1,BC2,BC3,BC4,RP
     
-    IF (RP.EQ.0.0) RP=0.0000001
+    ! IF (RP.EQ.0.0) RP=0.0000001
+    IF (RP.LE.0.0) RP=0.0000001 ! RV 09/01/2017
     IF (RP.EQ.1.0) RP=0.9999999
+    
     IF (RP.GE.BC4) THEN
         BETA = 0.0
     ELSE
@@ -366,7 +368,8 @@ END FUNCTION RHOFUN
         TOL1=2.*EPS*ABS(B)+0.5*TOLZ
         XM=.5*(C-B)
         IF(ABS(XM).LE.TOL1 .OR. FB.EQ.0.)THEN
-            ZBRENT=B      
+            ZBRENT=B   
+            !print*,ITER
             RETURN        
         ENDIF
         IF(ABS(E).GE.TOL1 .AND. ABS(FA).GT.ABS(FB)) THEN

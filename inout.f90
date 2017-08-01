@@ -19,7 +19,7 @@
 ! you should have received a copy of the gnu general public license
 ! along with MAESPA.  if not, see <http://www.gnu.org/licenses/>.
 !=======================================================================================
-    
+
 ! This file contains all the subroutines for reading and writing to
 ! input and output files.
 ! The main subroutines (called externally) are:
@@ -43,11 +43,11 @@
 
 ! Subsidiary subroutines are:
 ! INPUTSTR
-!   READCROWN - read crown shape 
-!   READAERO - read aerodynamic properties (e.g. extinction of wind) 
+!   READCROWN - read crown shape
+!   READAERO - read aerodynamic properties (e.g. extinction of wind)
 !   READBETA - read leaf area density distribution
 !   READALLOM - read parameters for biomass vs height & diameter
-!   READLIA - read leaf incidence angle 
+!   READLIA - read leaf incidence angle
 ! READLIA uses the following
 !   ANGLE - calculate the fraction of leaf area in each angle class
 !   AVGLIA - calculate the average LIA for a given ellipsoidal parameter
@@ -69,7 +69,7 @@
 !   READLEAFN - read in leaf nitrogen concentrations
 !   READJMAX - read in Jmax and Vcmax values
 !   READRD - read in parameters of leaf respiration
-!   READPHYARRAY - read array of physiological parameters 
+!   READPHYARRAY - read array of physiological parameters
 !     (called by READLEAFN, READJMAX, READRD)
 !   READRW - read in parameters for woody respiration
 !   READRR - read in parameters for root respiration
@@ -102,78 +102,101 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
 !**********************************************************************
     USE switches
     USE maestcom
-    
+
     IMPLICIT NONE
     INTEGER LEN1,IOERROR,IWATFILE, KEEPZEN, IPOINTSI,IPOINTS,ISIMUS,ISIMUSI,IUSTFILE
     CHARACTER(LEN=*) CTITLE, TTITLE, PTITLE, STITLE, WTITLE, UTITLE
     CHARACTER(LEN=*) in_path, out_path
     CHARACTER(LEN=256) :: fin_dir, fout_dir
     LOGICAL EXT
-    
+
+    CHARACTER*20 filenamenum !glm!
+	INTEGER :: numpar !glm!
+    COMMON /PAR/ numpar !glm!
+
     ! Modified RAD
     NAMELIST /CONTROL/ IOHRLY,IOTUTD,IOHIST,IORESP,IOWATBAL,IOFORMAT,ISUNLA,KEEPZEN,IPOINTS,ISIMUS,VERBOSE
     NAMELIST /flocations/ fin_dir, fout_dir   ! MGDK
-    
+
     990 FORMAT (A256)     ! For reading titles in input files.
-    
     ! Output file for errors and warnings
-    OPEN (UERROR, FILE = 'Maeserr.dat', STATUS = 'UNKNOWN')
-    
+    ! OPEN (UERROR, FILE = 'Maeserr.dat', STATUS = 'UNKNOWN')
+    if (numpar.lt.10) then
+	write(filenamenum,'(I1.1,A)') numpar,'_Maeserr.dat' !glm
+    elseif (numpar.lt.100) then
+	write(filenamenum,'(I2.2,A)') numpar,'_Maeserr.dat' !glm
+    elseif (numpar.lt.1000) then
+	write(filenamenum,'(I3.3,A)') numpar,'_Maeserr.dat' !glm
+    else
+	write(filenamenum,'(I4.4,A)') numpar,'_Maeserr.dat' !glm
+    endif
+
+    !OPEN (UERROR, FILE = 'Maeserr.dat', STATUS = 'UNKNOWN')
+    OPEN (UERROR, FILE = trim(in_path)//filenamenum, STATUS = 'UNKNOWN') !glm
+
+
    ! Read input file as tradition from confile.dat with control switches
-    INQUIRE(FILE = trim(in_path)//'confile.dat', EXIST=EXT)
-    IF(.NOT.EXT)THEN
+   write(filenamenum,'(I4.4,A)') numpar,'_confile.dat' !glm
+   INQUIRE(FILE = trim(in_path)//filenamenum, EXIST=EXT)
+   IF(.NOT.EXT)THEN
         CALL SUBERROR('ERROR: CONFILE.DAT DOES NOT EXIST' ,IFATAL,0)
-    ELSE
-        OPEN (UCONTROL, FILE = 'confile.dat', STATUS = 'OLD',IOSTAT=IOERROR)
+   ELSE
+       ! OPEN (UCONTROL, FILE = 'confile.dat', STATUS = 'OLD',IOSTAT=IOERROR)
+         OPEN (UCONTROL, FILE = trim(in_path)//filenamenum, STATUS = 'OLD',IOSTAT=IOERROR) ! RV 14/03/2016
     ENDIF
-    
+
+
     ! get locations of input files and where to write the output files
     READ (UCONTROL, flocations, IOSTAT=IOERROR)
     IF (IOERROR == -1) THEN
-        ! i.e. it has reached the end of the file and not found the tag, I am sure 
+        ! i.e. it has reached the end of the file and not found the tag, I am sure
         ! there is a nicer way to do this
         CALL SUBERROR('FLOCATIONS not set, using current directory for output.', IWARN, 0)
         REWIND(UCONTROL)
     ENDIF
-    
+
     READ (UCONTROL, 990) CTITLE
     CTITLE = TRIM(CTITLE)
-    
+
     ! Default
-    KEEPZEN = 0 
+    KEEPZEN = 0
     IPOINTS = 0
     VERBOSE = 1
-    
+
     READ (UCONTROL, CONTROL, IOSTAT = IOERROR)
-    IF (IOERROR.NE.0) CALL SUBERROR('WARNING: USING DEFAULT VALUES FOR CONTROL FILE', IWARN, IOERROR)  
+    IF (IOERROR.NE.0) CALL SUBERROR('WARNING: USING DEFAULT VALUES FOR CONTROL FILE', IWARN, IOERROR)
     IPOINTSI = IPOINTS
     ISIMUSI = ISIMUS
-    
+
     ! Input file with data on tree position and size
-    INQUIRE(FILE = trim(in_path)//'trees.dat', EXIST=EXT)
+   	write(filenamenum,'(I4.4,A)') numpar,'_trees.dat' !glm
+    INQUIRE(FILE = trim(in_path)//filenamenum, EXIST=EXT)
     IF (.NOT.EXT) THEN
         CALL SUBERROR('ERROR: TREES.DAT DOES NOT EXIST', IFATAL, 0)
     ELSE
-        OPEN (UTREES, FILE = trim(in_path)//'trees.dat', STATUS='OLD', IOSTAT=IOERROR)
+        OPEN (UTREES, FILE = trim(in_path)//filenamenum, STATUS='OLD', IOSTAT=IOERROR)
     ENDIF
-    
+
     ! Input file with water balance parameters (RAD)
-    INQUIRE (FILE=TRIM(IN_PATH)//'watpars.dat', EXIST=EXT)
+    write(filenamenum,'(I4.4,A)') numpar,'_watpars.dat' !glm
+    INQUIRE (FILE=trim(in_path)//filenamenum, EXIST=EXT)
     IF(.NOT.EXT)THEN
         CALL SUBERROR('MAESTRA MODE - watpars.dat NOT FOUND. WATER BALANCE NOT SIMULATED.',IWARN,0)
         IWATFILE = 0
-    ELSE 
+    ELSE
         CALL SUBERROR('MAESPA MODE - watpars.dat FOUND. WATER BALANCE IS SIMULATED.',IWARN,0)
-        OPEN (UWATPARS, FILE = trim(in_path)//'watpars.dat', STATUS='OLD',IOSTAT=IOERROR)      
+        OPEN (UWATPARS, FILE = trim(in_path)//filenamenum, STATUS='OLD',IOSTAT=IOERROR)
         IWATFILE = 1
     ENDIF
-    
+
     ! Input/output file with diffuse transmittances
-    OPEN (UTUTD, FILE = 'tutd.dat', STATUS='UNKNOWN')  
-       
+    write(filenamenum,'(I4.4,A)') numpar,'_tutd.dat' !glm
+    OPEN (UTUTD, FILE = trim(in_path)//filenamenum, STATUS='UNKNOWN')
+
     ! Input file for understorey parameters.
     ! Or if filename is missing:
-    INQUIRE (FILE=trim(in_path)//'ustorey.dat', EXIST=EXT)
+    write(filenamenum,'(I4.4,A)') numpar,'_ustorey.dat' !glm
+    INQUIRE (FILE=trim(in_path)//filenamenum, EXIST=EXT)
     IF(.NOT.EXT)THEN
         ISIMUS = 0
         IUSTFILE = 0
@@ -183,25 +206,25 @@ SUBROUTINE OPENINPUTF(CTITLE,TTITLE,PTITLE,STITLE,WTITLE,UTITLE,IWATFILE,KEEPZEN
         IF(ISIMUS.EQ.0)THEN
             CALL SUBERROR('USTOREY.DAT FOUND BUT ISIMUS=0 IN CONTROL NAMELIST. NO UNDERSTOREY SIMULATED.',IWARN,0)
         ENDIF
-        OPEN(USTOREYI, FILE=trim(in_path)//'ustorey.dat', STATUS='UNKNOWN',IOSTAT=IOERROR)
+        OPEN(USTOREYI, FILE=trim(in_path)//filenamenum, STATUS='UNKNOWN',IOSTAT=IOERROR)
     ENDIF
-      
+
     IF(IUSTFILE.EQ.1.AND.IOERROR.EQ.0)THEN
         UTITLE = ' ' !READ (USTOREYI, 990) UTITLE
     ELSE
         UTITLE = ' '
     ENDIF
-    
+
     ! Read titles from input files
     READ (UTREES, 990) TTITLE
-    
+
     IF(IWATFILE.EQ.1)THEN
         READ (UWATPARS, 990) WTITLE  !RAD
         WTITLE = TRIM(WTITLE)
     ELSE
         WTITLE = ' '
     ENDIF
-    
+
     RETURN
 END SUBROUTINE OPENINPUTF
 
@@ -222,34 +245,74 @@ SUBROUTINE OPEN_OUTPUT_FILES(ISIMUS,CTITLE,TTITLE,PTITLE,&
     CHARACTER(*) :: CTITLE,TTITLE,PTITLE,STITLE,MTITLE,WTITLE,VTITLE,OUT_PATH
     LOGICAL ISMAESPA
     CHARACTER SPECIESNAMES(MAXSP)*30
-    
+
+    CHARACTER*20 filenamenum !glm
+	INTEGER :: numpar !glm!
+	COMMON /PAR/ numpar !glm!
     ! Output file with daily fluxes
     IF (IODAILY .GT. 0 .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'Dayflx.dat', UDAILY, 'write', 'asc', 'replace')
+        if (numpar.lt.10) then
+	    write(filenamenum,'(I1.1,A)') numpar,'_Dayflx.dat' !glm
+        elseif (numpar.lt.100) then
+	    write(filenamenum,'(I2.2,A)') numpar,'_Dayflx.dat' !glm
+        elseif (numpar.lt.1000) then
+	    write(filenamenum,'(I3.3,A)') numpar,'_Dayflx.dat' !glm
+        else
+	    write(filenamenum,'(I4.4,A)') numpar,'_Dayflx.dat' !glm
+        endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UDAILY, 'write', 'asc', 'replace')
     ELSE IF (IODAILY .GT. 0 .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'Dayflx.bin', UDAILY, 'write', 'bin', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'Dayflx.hdr', UDAYHDR, 'write', 'asc', 'replace')  
+        CALL OPEN_FILE(trim(out_path)//'Dayflx.hdr', UDAYHDR, 'write', 'asc', 'replace')
     END IF
-    
+
     ! Output file with hourly fluxes (if required).
     IF (IOHRLY.GT.0 .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'hrflux.dat', UHRLY, 'write', 'asc', 'replace')
+        if (numpar.lt.10) then
+	    write(filenamenum,'(I1.1,A)') numpar,'_hrflux.dat' !glm
+        elseif (numpar.lt.100) then
+	    write(filenamenum,'(I2.2,A)') numpar,'_hrflux.dat' !glm
+        elseif (numpar.lt.1000) then
+	    write(filenamenum,'(I3.3,A)') numpar,'_hrflux.dat' !glm
+        else
+	    write(filenamenum,'(I4.4,A)') numpar,'_hrflux.dat' !glm
+        endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UHRLY, 'write', 'asc', 'replace')
     ELSE IF (IOHRLY.GT.0 .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'hrflux.bin', UHRLY, 'write', 'bin', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'hrflux.hdr', UHRLYHDR, 'write', 'asc', 'replace')  
+        CALL OPEN_FILE(trim(out_path)//'hrflux.hdr', UHRLYHDR, 'write', 'asc', 'replace')
     ENDIF
-    
+
     ! Output file with layer fluxes (if required).
     IF (IOHRLY.GT.1 .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'layflx.dat', ULAY, 'write', 'asc', 'replace')
+         if (numpar.lt.10) then
+	    write(filenamenum,'(I1.1,A)') numpar,'_layflx.dat' !glm
+        elseif (numpar.lt.100) then
+	    write(filenamenum,'(I2.2,A)') numpar,'_layflx.dat' !glm
+        elseif (numpar.lt.1000) then
+	    write(filenamenum,'(I3.3,A)') numpar,'_layflx.dat' !glm
+        else
+	    write(filenamenum,'(I4.4,A)') numpar,'_layflx.dat' !glm
+        endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, ULAY, 'write', 'asc', 'replace')
     ELSE IF (IOHRLY.GT.1 .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'layflx.bin', ULAY, 'write', 'bin', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'layflx.hdr', ULAYHDR, 'write', 'asc', 'replace')   
+        CALL OPEN_FILE(trim(out_path)//'layflx.hdr', ULAYHDR, 'write', 'asc', 'replace')
     ENDIF
 
     ! Output file with histogram (if required).
     IF (IOHIST.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'histo.dat', UHIST, 'write', 'asc', 'replace')
+        if (numpar.lt.10) then
+            write(filenamenum,'(I1.1,A)') numpar,'_histo.dat' !glm
+        elseif (numpar.lt.100) then
+            write(filenamenum,'(I2.2,A)') numpar,'_histo.dat' !glm
+        elseif (numpar.lt.1000) then
+            write(filenamenum,'(I3.3,A)') numpar,'_histo.dat' !glm
+        else
+            write(filenamenum,'(I4.4,A)') numpar,'_histo.dat' !glm
+        endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UHIST, 'write', 'asc', 'replace')
+
     ELSE IF (IOHIST.EQ.1 .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'histo.bin', UHIST, 'write', 'bin', 'replace')
         CALL OPEN_FILE(trim(out_path)//'histo.hdr', UHISTHDR, 'write', 'asc', 'replace')
@@ -257,24 +320,105 @@ SUBROUTINE OPEN_OUTPUT_FILES(ISIMUS,CTITLE,TTITLE,PTITLE,&
 
     ! Output file for respiration (if required).
     IF (IORESP.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'resp.dat', URESP, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'resphr.dat', URESPHR, 'write', 'asc', 'replace')
+         if (numpar.lt.10) then
+	    write(filenamenum,'(I1.1,A)') numpar,'_resp.dat' !glm
+        elseif (numpar.lt.100) then
+	    write(filenamenum,'(I2.2,A)') numpar,'_resp.dat' !glm
+        elseif (numpar.lt.1000) then
+	    write(filenamenum,'(I3.3,A)') numpar,'_resp.dat' !glm
+        else
+	    write(filenamenum,'(I4.4,A)') numpar,'_resp.dat' !glm
+        endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, URESP, 'write', 'asc', 'replace')
+        if (numpar.lt.10) then
+	    write(filenamenum,'(I1.1,A)') numpar,'_resph.dat' !glm
+        elseif (numpar.lt.100) then
+	    write(filenamenum,'(I2.2,A)') numpar,'_resph.dat' !glm
+        elseif (numpar.lt.1000) then
+	    write(filenamenum,'(I3.3,A)') numpar,'_resph.dat' !glm
+        else
+	    write(filenamenum,'(I4.4,A)') numpar,'_resph.dat' !glm
+        endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, URESPHR, 'write', 'asc', 'replace')
     ELSE IF (IORESP .EQ. 1 .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'resp.bin', URESP, 'write', 'bin', 'replace')
         CALL OPEN_FILE(trim(out_path)//'resp.hdr', URESPHDR, 'write', 'asc', 'replace')
         CALL OPEN_FILE(trim(out_path)//'resphr.bin', URESPHR, 'write', 'bin', 'replace')
         CALL OPEN_FILE(trim(out_path)//'resphr.hdr', URESPHRHDR, 'write', 'asc', 'replace')
     END IF
-    
+
     ! Output file for water balance (if requested by setting IOWATBAL = 1 in confile.dat).
     IF (ISMAESPA .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'watbal.dat', UWATBAL, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'watlay.dat', UWATLAY, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'swplay.dat', USWPLAY, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'watsoilt.dat', USOILT, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'wattest.dat', UWATTEST, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'watupt.dat', UWATUPT, 'write', 'asc', 'replace')
-        CALL OPEN_FILE(trim(out_path)//'watbalday.dat', UWATDAY, 'write', 'asc', 'replace')   
+         if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_watbal.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_watbal.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_watbal.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_watbal.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UWATBAL, 'write', 'asc', 'replace')
+          if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_watlay.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_watlay.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_watlay.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_watlay.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UWATLAY, 'write', 'asc', 'replace')
+          if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_swplay.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_swplay.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_swplay.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_swplay.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, USWPLAY, 'write', 'asc', 'replace')
+          if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_watsoilt.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_watsoilt.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_watsoilt.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_watsoilt.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, USOILT, 'write', 'asc', 'replace')
+                    if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_wattest.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_wattest.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_wattest.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_wattest.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UWATTEST, 'write', 'asc', 'replace')
+            if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_watupt.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_watupt.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_watupt.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_watupt.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UWATUPT, 'write', 'asc', 'replace')
+            if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_watbalday.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_watbalday.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_watbalday.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_watbalday.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UWATDAY, 'write', 'asc', 'replace')
     ELSE IF (ISMAESPA .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'watbal.bin', UWATBAL, 'write', 'bin', 'replace')
         CALL OPEN_FILE(trim(out_path)//'watbal.hdr', UWATBALHDR, 'write', 'asc', 'replace')
@@ -289,15 +433,33 @@ SUBROUTINE OPEN_OUTPUT_FILES(ISIMUS,CTITLE,TTITLE,PTITLE,&
         CALL OPEN_FILE(trim(out_path)//'watbalday.bin', UWATDAY, 'write', 'bin', 'replace')
         CALL OPEN_FILE(trim(out_path)//'watbalday.hdr', UWATDAYHDR, 'write', 'asc', 'replace')
     END IF
-    
+
     ! Write to sunla flux
       IF(ISUNLA.EQ.1)THEN
-        CALL OPEN_FILE(trim(out_path)//'sunla.dat', USUNLA, 'write', 'asc', 'replace')
+            if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_sunla.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_sunla.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_sunla.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_sunla.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, USUNLA, 'write', 'asc', 'replace')
       ENDIF
 
-      
+
     IF(ISIMUS.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
-        CALL OPEN_FILE(trim(out_path)//'uspar.dat', UPARUS, 'write', 'asc', 'replace')
+                    if (numpar.lt.10) then
+	        write(filenamenum,'(I1.1,A)') numpar,'_uspar.dat' !glm
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_uspar.dat' !glm
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_uspar.dat' !glm
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_uspar.dat' !glm
+            endif
+        CALL OPEN_FILE(trim(out_path)//filenamenum, UPARUS, 'write', 'asc', 'replace')
     ELSE IF(ISIMUS.EQ.1 .AND. IOFORMAT .EQ. 1) THEN
         CALL OPEN_FILE(trim(out_path)//'uspar.bin', UPARUS, 'write', 'bin', 'replace')
     ENDIF
@@ -317,17 +479,17 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 
     USE switches
     USE maestcom
-    
+
     IMPLICIT NONE
     INTEGER I,NSPECIES,ISIMUS
     CHARACTER(*), INTENT(IN) :: CTITLE,TTITLE,PTITLE,STITLE,MTITLE,WTITLE,VTITLE
     CHARACTER SPECIESNAMES(MAXSP)*30
     LOGICAL ISMAESPA
-    
-  
+
+
     ! write headers to single ascii file
     IF (IOFORMAT .EQ. 0) THEN
-        
+
         IF (ISUNLA.EQ.1) THEN
             WRITE (USUNLA,461)    ! MAthias 27/11/12
         END IF
@@ -342,7 +504,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UDAILY, 991) 'Met data:   ', MTITLE
             IF(IOWATBAL.EQ.1)WRITE (UDAILY, 991) 'Water bal.: ', WTITLE
             WRITE (UDAILY, 990) ' '
-    
+
             IF(NSPECIES.GT.1)THEN
                 WRITE(UDAILY, *)'Species codes:'
                 DO I = 1,NSPECIES
@@ -350,7 +512,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
                 END DO
                 WRITE(UDAILY,990) ' '
             ENDIF
-    
+
             WRITE (UDAILY,501)
             WRITE (UDAILY,502)
             WRITE (UDAILY,503)
@@ -366,7 +528,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UDAILY,990) ' '
             WRITE (UDAILY,513)
         END IF
-        
+
         ! Comments to hourly output file (if required).
         IF (IOHRLY.gt.0) THEN
             WRITE (UHRLY, 991) 'Program:    ', VTITLE
@@ -403,7 +565,6 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 !            WRITE (UHRLY,717)
             WRITE (UHRLY,718)
             WRITE (UHRLY,719)
-            WRITE (UHRLY,7191)
             WRITE (UHRLY,720)
             WRITE (UHRLY,721)
             WRITE (UHRLY,722)
@@ -414,8 +575,8 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UHRLY, 990) ' '
             WRITE (UHRLY,728)
         END IF
-    
-        ! Comments to respiration output file (if required).    
+
+        ! Comments to respiration output file (if required).
         IF (IORESP.gt.0) THEN
             WRITE (URESP, 991) 'Program:    ', VTITLE
             WRITE (URESP, 991) 'Control:    ', CTITLE
@@ -437,7 +598,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (URESP,611)
             WRITE (URESP, 990) ' '
             WRITE (URESP,612)
-    
+
             WRITE (URESPHR, 991) 'Program:    ', VTITLE
             WRITE (URESPHR, 991) 'Control:    ', CTITLE
             WRITE (URESPHR, 991) 'Trees:      ', TTITLE
@@ -454,7 +615,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (URESPHR, 990) ' '
             WRITE (URESPHR,307)
           END IF
-    
+
         ! Write comments to layer output file.
         IF (IOHRLY.GT.1) THEN
             WRITE (ULAY, 991) 'Program:    ', VTITLE
@@ -464,7 +625,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (ULAY, 804)
             WRITE (ULAY, *)
         END IF
-        
+
         ! Write comments to water balance output file.
         IF (ISMAESPA) THEN
             WRITE (UWATBAL, 991) 'Program:                  ', VTITLE
@@ -480,7 +641,6 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBAL, 408)
             WRITE (UWATBAL, 409)
             WRITE (UWATBAL, 410)
-            WRITE (UWATBAL, 4191)
             WRITE (UWATBAL, 411)
             WRITE (UWATBAL, 412)
             WRITE (UWATBAL, 413)
@@ -508,10 +668,16 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBAL, 4301)
             WRITE (UWATBAL, 4302)
             WRITE (UWATBAL, 4303)
+            WRITE (UWATBAL, 4304)
+            WRITE (UWATBAL, 4305)
+            WRITE (UWATBAL, 4306)
+            WRITE (UWATBAL, 4307)
+            WRITE (UWATBAL, 4308) !glm canopy evap
+            WRITE (UWATBAL, 4309) !glm canopy evap
             !WRITE (UWATBAL, 432)
             WRITE (UWATBAL, 990) '  '
             WRITE (UWATBAL, 431)
-    
+
             ! Daily water balance output file.
             WRITE (UWATDAY, 991) 'Program:                  ', VTITLE
             WRITE (UWATDAY, 992) 'Water balance parameters: ', WTITLE
@@ -535,7 +701,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATDAY, 990) '  '
             WRITE (UWATDAY, 457)
         END IF
-        
+
         IF(ISIMUS.EQ.1)THEN
             WRITE(UPARUS, 991) 'Program:                  ', VTITLE
             WRITE(UPARUS, 990) '  '
@@ -551,10 +717,10 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATDAY, 990) '  '
             WRITE(UPARUS, 202)
         ENDIF
-        
-        
+
+
     ! write headers to a .hdr file, binary out
-    ELSE IF (IOFORMAT .EQ. 1) THEN      
+    ELSE IF (IOFORMAT .EQ. 1) THEN
         ! Write headings to daily flux file
         IF (IODAILY.GT.0) THEN
             WRITE (UDAYHDR, 991) 'Program:    ', VTITLE
@@ -565,7 +731,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UDAYHDR, 991) 'Met data:   ', MTITLE
             IF(IOWATBAL.EQ.1)WRITE (UDAYHDR, 991) 'Water bal.: ', WTITLE
             WRITE (UDAYHDR, 990) ' '
-    
+
             IF(NSPECIES.GT.1)THEN
                 WRITE(UDAYHDR, *)'Species codes:'
                 DO I = 1,NSPECIES
@@ -573,7 +739,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
                 END DO
                 WRITE(UDAYHDR,990) ' '
             ENDIF
-    
+
             WRITE (UDAYHDR,501)
             WRITE (UDAYHDR,502)
             WRITE (UDAYHDR,503)
@@ -589,7 +755,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UDAYHDR,990) ' '
             WRITE (UDAYHDR,513)
         END IF
-        
+
         ! Comments to hourly output file (if required).
         IF (IOHRLY.gt.0) THEN
             WRITE (UHRLYHDR, 991) 'Program:    ', VTITLE
@@ -633,8 +799,8 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UHRLYHDR, 990) ' '
             WRITE (UHRLYHDR,725)
         END IF
-    
-        ! Comments to respiration output file (if required).    
+
+        ! Comments to respiration output file (if required).
         IF (IORESP.gt.0) THEN
             WRITE (URESPHDR, 991) 'Program:    ', VTITLE
             WRITE (URESPHDR, 991) 'Control:    ', CTITLE
@@ -656,7 +822,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (URESPHDR,611)
             WRITE (URESPHDR, 990) ' '
             WRITE (URESPHDR,612)
-    
+
             WRITE (URESPHRHDR, 991) 'Program:    ', VTITLE
             WRITE (URESPHRHDR, 991) 'Control:    ', CTITLE
             WRITE (URESPHRHDR, 991) 'Trees:      ', TTITLE
@@ -673,7 +839,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (URESPHRHDR, 990) ' '
             WRITE (URESPHRHDR,307)
           END IF
-    
+
         ! Write comments to layer output file (if required)
         IF (IOHRLY.GT.1) THEN
             WRITE (ULAYHDR, 991) 'Program:    ', VTITLE
@@ -683,7 +849,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (ULAYHDR, 804)
             WRITE (ULAYHDR, *)
         END IF
-    
+
         ! Write comments to water balance output file (if required). (RAD).
         IF (ISMAESPA) THEN
             WRITE (UWATBALHDR, 991) 'Program:                  ', VTITLE
@@ -699,7 +865,6 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBALHDR, 408)
             WRITE (UWATBALHDR, 409)
             WRITE (UWATBALHDR, 410)
-            WRITE (UWATBALHDR, 4191)
             WRITE (UWATBALHDR, 411)
             WRITE (UWATBALHDR, 412)
             WRITE (UWATBALHDR, 413)
@@ -722,7 +887,7 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATBALHDR, 430)
             WRITE (UWATBALHDR, 990) '  '
             WRITE (UWATBALHDR, 431)
-    
+
             ! Daily water balance output file.
             WRITE (UWATDAYHDR, 991) 'Program:                  ', VTITLE
             WRITE (UWATDAYHDR, 992) 'Water balance parameters: ', WTITLE
@@ -747,15 +912,15 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
             WRITE (UWATDAYHDR, 457)
         END IF
     END IF
-    
-461     FORMAT('DOY   Hour    Tree    IPT    SUNLA   AREA    BEXT    FBEAM   ZEN  ABSRPPAR  ',&  
-                 'ABSRPNIR ABSRPTH BFPAR DFPAR BFNIR DFNIR DFTHR  ',& 
-                 'SCLOSTPAR SCLOSTNIR SCLOSTTH DOWNTH PARABV NIRABV THRABV')
-    
+
+! 461     FORMAT('DOY   Hour    Tree    IPT    SUNLA   AREA    BEXT    FBEAM   ZEN  ABSRPPAR  ',&
+!                  'ABSRPNIR ABSRPTH BFPAR DFPAR BFNIR DFNIR DFTHR  ',&
+!                  'SCLOSTPAR SCLOSTNIR SCLOSTTH DOWNTH PARABV NIRABV THRABV')
+461     FORMAT('DOY   Hour    Tree    MaxTleaf    MinTleaf   MeanTleaf')
 990     FORMAT (A80)
 991     FORMAT (A12,A80) ! For writing comments to output files.
 992     FORMAT (A25, A55)
-        
+
 501     FORMAT('DOY: simulation date')
 502     FORMAT('Tree: tree number')
 503     FORMAT('Spec: tree species number')
@@ -790,18 +955,17 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 716     FORMAT('TCAN: Average foliage temperature (deg C)')
 718     FORMAT('ALMAX: Canopy maximum leaf photosynthesis rate (umol m-2 s-1)')
 719     FORMAT('ETDEFICIT : Transpiration not met by soil supply (mmol tree-1 s-1)')
-7191    FORMAT('PLANTWATER : Plant water storage term (if simulated) (kg tree-1)')
 720     FORMAT('PSIL: Canopy average leaf water potential (MPa)')
 721     FORMAT('PSILMIN: Canopy minimum leaf water potential (MPa)')
 722     FORMAT('CI : Canopy average intercellular CO2 conc. (ppm)')
 723     FORMAT('TAIR: Air temperature (deg C)')
 724     FORMAT('VPD: vapor pressure deficit (kPa)')
 725     FORMAT('PAR: Above-canopy incident PAR (umol m-2 s-1)')
-726     FORMAT('ZEN: Zenithal angle (rad)') 
+726     FORMAT('ZEN: Zenithal angle (rad)')
 727     FORMAT('AZ: Asimutal angle (rad)')
-728     FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIRf hrTHM', &
+728     FORMAT('Columns: DOY Tree Spec HOUR hrPAR hrNIR hrTHM', &
                ' hrPs hrRf hrRmW hrLE', &
-               ' LECAN Gscan Gbhcan hrH TCAN ALMAX ETDEFICIT PLANTWATER PSIL PSILMIN CI TAIR VPD PAR ZEN AZ')   
+               ' LECAN Gscan Gbhcan hrH TCAN ALMAX ETDEFICIT PSIL PSILMIN CI TAIR VPD PAR ZEN AZ FBEAM')
 
 801     FORMAT(' Fluxes for each layer on an hourly basis')
 802     FORMAT(' Rows: absorbed PAR (umol m-2 leaf s-1) ')
@@ -839,7 +1003,6 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 408     FORMAT('tfall : throughfall of rain                           mm')
 409     FORMAT('et : modelled canopy transpiration                    mm')
 410     FORMAT('etmeas: measured ET, if provided in input             mm')
-4191    FORMAT('etplant : ET drawn from plant storage (included in et) mm')        
 411     FORMAT('discharge: drainage at bottom of profile              mm')
 412     FORMAT('overflow: over-land flow                              mm')
 413     FORMAT('weightedswp: soil water potential weighted by roots  MPa')
@@ -866,16 +1029,23 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 430     FORMAT('fracw1,fracw2: water content 1st and 2nd layer    m3 m-3')
 4301    FORMAT('VPDair,VPDaircan: air above and within the canopy VPD  ')
 4302    FORMAT('Gcan: air-canopy conductance mol m-2 s-1  ')
-4303    FORMAT('Itertair : number of iterations for taircan estimation')        
-        
+4303    FORMAT('Itertair : number of iterations for taircan estimation')
+4304    FORMAT('htot: sensible heat flux                           W m-2')
+4305    FORMAT('rtherinc=radabv(ihr,3): incoming thermal radiation W m-2')
+4306    FORMAT('sclosttot3: upward thermal                         W m-2')
+4307    FORMAT('sclosttot: upward reflected shortwave              W m-2')
+4308    FORMAT('ev : modelled canopy wet evaporation               mm')  !glm canopy evap
+4309    FORMAT('drycan : modelled dry canopy fraction            0-1')   !glm canopy evap
+
 431     FORMAT('Columns: day hour wsoil wsoilroot ppt canopystore '         &
-                'evapstore drainstore tfall et etmeas etplant discharge overflow ' &
+                'evapstore drainstore tfall et etmeas discharge overflow ' &
                 'weightedswp ktot drythick soilevap '                 &
                 'soilmoist fsoil qh qe qn qc rglobund '                     &
                 'rglobabv radinterc rnet totlai tair taircan tcan tsoilsurf tsoildry soilt1 soilt2 '        &
-                'fracw1 fracw2 fracaPAR VPDair VPDaircan GCAN itertair')
-432     FORMAT('FracaPAR: fraction of absorbed PAR')   
-                    
+                'fracw1 fracw2 fracaPAR VPDair VPDaircan GCAN itertair htot rtherinc sclosttot3 sclosttot ' &
+                'ev drycan') !glm canopy evap
+432     FORMAT('FracaPAR: fraction of absorbed PAR')
+
 441     FORMAT('Daily water and heat balance components.')
 442     FORMAT('wsoil: total soil water storage                       mm')
 443     FORMAT('wsoilroot: soil water storage in rooted zone          mm')
@@ -896,18 +1066,19 @@ SUBROUTINE WRITE_HEADER_INFORMATION(NSPECIES,SPECIESNAMES, &
 457     FORMAT('Columns: day wsoil wsoilroot swp ppt &
               &tfall et etmeas discharge soilevap &
               &fsoil qh qe qn qc radinterc')
-        
+
 201     FORMAT('Understorey simulation results by timestep and point')
 202     FORMAT('Columns: day hour point X Y Z PARbeam PARdiffuse PARtotal APAR hrPSus hrETus')
 203     FORMAT('day : day of simulation (1,2,etc.)')
 204     FORMAT('hour: timestep (1,2,etc.)')
 205     FORMAT('X,Y,Z: spatial coordinates of understorey test point (m)')
-206     FORMAT('PARbeam, PARdiffuse, PARtot : PAR reaching the top of the understorey, in direct, diffuse or total (mu mol m-2 s-1)')
+206     FORMAT('PARbeam, PARdiffuse, PARtot : PAR reaching the top of the understorey,&
+                &in direct, diffuse or total (mu mol m-2 s-1)')
 207     FORMAT('APAR : absorbed PAR by the understorey (mu mol m-2 s-1) ')
-208     FORMAT('hrPSus : photosynthesis for the understorey point (mu mol m-2 s-1)')            
+208     FORMAT('hrPSus : photosynthesis for the understorey point (mu mol m-2 s-1)')
 209     FORMAT('hrETus : transpiration for the understorey point (If zero it is not calculated) (mmol m-2 s-1)')
 
-    
+
 END SUBROUTINE WRITE_HEADER_INFORMATION
 
 
@@ -920,10 +1091,12 @@ SUBROUTINE CLOSEF()
     USE switches
     USE maestcom
     IMPLICIT NONE
-    
+
     CLOSE(USUNLA)  ! Mathias 27/11/12
     CLOSE(STDIN)
     CLOSE(UTREES)
+    CLOSE(UPTTD)    ! RV 30/06/17
+    CLOSE(UPOINTSO)    ! RV 30/06/17
     CLOSE(USTR)
     CLOSE(UPHY)
     CLOSE(UMET)
@@ -936,54 +1109,54 @@ SUBROUTINE CLOSEF()
         CLOSE(UDAILY)
         CLOSE(UDAYHDR)
     END IF
-    
+
     IF (IOHRLY.GT.0 .AND. IOFORMAT .EQ. 0) THEN
         CLOSE(UHRLY)
     ELSE IF (IOHRLY.GT.0 .AND. IOFORMAT .EQ. 1) THEN
         CLOSE(UHRLY)
         CLOSE(UHRLYHDR)
-    END IF    
-    
+    END IF
+
     IF (IOHRLY.GT.1 .AND. IOFORMAT .EQ. 0) THEN
         CLOSE(ULAY)
     ELSE IF (IOHRLY.GT.1 .AND. IOFORMAT .EQ. 1) THEN
         CLOSE(ULAY)
         CLOSE(ULAYHDR)
     END IF
-    
+
     IF (IOHIST.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
         CLOSE(UHIST)
     ELSE IF (IOHIST.EQ.1 .AND. IOFORMAT .EQ. 1) THEN
         CLOSE(UHIST)
         CLOSE(UHISTHDR)
     END IF
-    
+
     IF (IORESP.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
         CLOSE(URESP)
     ELSE IF (IORESP.EQ.1 .AND. IOFORMAT .EQ. 1) THEN
         CLOSE(URESP)
         CLOSE(URESPHDR)
     END IF
-  
+
     IF (IOWATBAL.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
-        CLOSE(UWATBAL)     
-        CLOSE(UWATDAY)     
-        CLOSE(UWATLAY)     
-        CLOSE(USWPLAY) ! mathias décembre 2012     
-        CLOSE(USOILT)      
+        CLOSE(UWATBAL)
+        CLOSE(UWATDAY)
+        CLOSE(UWATLAY)
+        CLOSE(USWPLAY) ! mathias décembre 2012
+        CLOSE(USOILT)
         CLOSE(UWATUPT)
     ELSE IF (IOWATBAL.EQ.1 .AND. IOFORMAT .EQ. 1) THEN
         CLOSE(UWATBAL)
         CLOSE(UWATBALHDR)
-        CLOSE(UWATDAY) 
-        CLOSE(UWATDAYHDR) 
-        CLOSE(UWATLAY) 
-        CLOSE(USWPLAY) ! mathias décembre 2012     
-        CLOSE(UWATLAYHDR) 
-        CLOSE(USOILT)  
-        CLOSE(USOILTHDR)  
-        CLOSE(UWATUPT) 
-        CLOSE(UWATUPTHDR) 
+        CLOSE(UWATDAY)
+        CLOSE(UWATDAYHDR)
+        CLOSE(UWATLAY)
+        CLOSE(USWPLAY) ! mathias décembre 2012
+        CLOSE(UWATLAYHDR)
+        CLOSE(USOILT)
+        CLOSE(USOILTHDR)
+        CLOSE(UWATUPT)
+        CLOSE(UWATUPTHDR)
     ENDIF
 
     RETURN
@@ -1014,8 +1187,8 @@ SUBROUTINE INPUTCON(ISTART, IEND, NSTEP,                                    &
     CHARACTER STRFILES(MAXSP)*30
     !CHARACTER STITLE*60
     REAL BINSIZE,CO2INC,TINC,TOTC,WINDOTC,PAROTC,FBEAMOTC
-    
-    ! if reading from the confile.dat  
+
+    ! if reading from the confile.dat
     CALL READDATES(UCONTROL, ISTART, IEND, NSTEP)
     CALL READSPECIES(UCONTROL, NSPECIES, SPECIESNAMES,PHYFILES, STRFILES)
     CALL READZEN(UCONTROL, NUMPNT, NOLAY, PPLAY, NZEN, NAZ, DIFZEN)
@@ -1023,7 +1196,7 @@ SUBROUTINE INPUTCON(ISTART, IEND, NSTEP,                                    &
     CALL READHIST(UCONTROL,IOHIST,BINSIZE)
     CALL READCCSCEN(UCONTROL,ICC,CO2INC,TINC)
     CALL READOTC(UCONTROL,IOTC,TOTC,WINDOTC,PAROTC,FBEAMOTC)
-    
+
     RETURN
 END SUBROUTINE INPUTCON
 
@@ -1031,8 +1204,8 @@ END SUBROUTINE INPUTCON
 !**********************************************************************
 SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
                         ROOTRADTABLE, ROOTSRLTABLE,ROOTMASSTOTTABLE,                  &
-                        MINROOTWP,MINLEAFWP,PLANTKTABLE, KSCALING,P50,PLCSHAPE,PLCDEAD,     &
-                        THROUGHFALL, REASSIGNRAIN,RUTTERB,RUTTERD,MAXSTORAGE,    &
+                        MINROOTWP,MINLEAFWP,PLANTKTABLE, KSCALING, THROUGHFALL,    &
+                        REASSIGNRAIN,RUTTERB,RUTTERD,MAXSTORAGE,    &
                         DRAINLIMIT,ROOTXSECAREA,EQUALUPTAKE,        &
                         NLAYER, NROOTLAYER, LAYTHICK, INITWATER,    &
                         FRACROOTTABLE, POREFRAC, SOILTEMP, KEEPWET, KEEPDRY,     &
@@ -1042,7 +1215,7 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
                         NRET,DATESKP,NOKPDATES,DATESROOT,NOROOTDATES,NOROOTSPEC,&
                         RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT, &
                         IWATTABLAYER, PLATDRAIN,ISIMWATTAB,DRYTHERM, &
-                        SIMSTORE,STORECOEF,STOREEXP,CAPAC,STOPSIMONEMPTY)
+                        SIMSTORE,STORECOEF,STOREEXP,STOPSIMONEMPTY)
 ! Read in water balance parameters
 !**********************************************************************
 
@@ -1066,9 +1239,8 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
     REAL KSCALING,ROOTBETA
     REAL ALPHARET(MAXSOILLAY),WS(MAXSOILLAY),WR(MAXSOILLAY),NRET(MAXSOILLAY),PLATDRAIN
     REAL RFPAR1(MAXSP),RFPAR2(MAXSP),RFPAR3(MAXSP), DRYTHERM
-    REAL P50,PLCSHAPE,CAPAC,PLCDEAD
     INTEGER ROOTFRONTLIMIT,RFAGEBEGIN(MAXSP),IWATTABLAYER,ISIMWATTAB,STOPSIMONEMPTY
-    
+
     LOGICAL ANYFIX
 
     ! Init.
@@ -1090,44 +1262,43 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
     WS = 0.0
     WR = 0.0
     NRET = 0.0
-    PLATDRAIN = 0.0    
-    
+    PLATDRAIN = 0.0
+
     ! Read all namelists in the "watpars.dat" file.
     CALL READWATCONTROL(UWATPARS,KEEPWET,KEEPDRY,SIMTSOIL,REASSIGNRAIN,WSOILMETHOD,RETFUNCTION,EQUALUPTAKE, &
                         USEMEASET,USEMEASSW,SIMSOILEVAP,USESTAND,SIMSTORE,ISIMWATTAB)
-    
+
     CALL READWATTFALL(UWATPARS, RUTTERB,RUTTERD,MAXSTORAGE,THROUGHFALL)
 
     CALL READINFILT(UWATPARS, EXPINF)
 
     CALL READLAYPARS(UWATPARS, NLAYER, LAYTHICK, COREWATER,POREFRAC, DRAINLIMIT, FRACORGANIC,&
-        IWATTABLAYER,ISIMWATTAB,PLATDRAIN)
+        IWATTABLAYER,PLATDRAIN)
 
     ! Fill LAYTHICK; needed for root calculations.
-    CALL FILLWITHLAST(LAYTHICK, MAXSOILLAY, NLAYER, -900.0)    
-    
+    CALL FILLWITHLAST(LAYTHICK, MAXSOILLAY, NLAYER, -900.0)
+
     CALL READROOTPARS(UWATPARS,NOSPEC,ROOTRESFRAC, ROOTRADTABLE,ROOTSRLTABLE,ROOTMASSTOTTABLE, NROOTLAYER,FRACROOTTABLE, &
         LAYTHICK, ROOTBETA,DATESROOT,NOROOTDATES,NOROOTSPEC,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3,ROOTFRONTLIMIT)
-        
-    CALL READPLANTPARS(UWATPARS,MINROOTWP,MINLEAFWP,PLANTKTABLE, KSCALING,DATESKP,NOKPDATES,P50,PLCSHAPE,PLCDEAD)
-    
+
+    CALL READPLANTPARS(UWATPARS,MINROOTWP,MINLEAFWP,PLANTKTABLE, KSCALING,DATESKP,NOKPDATES)
+
     CALL READSOILRET(UWATPARS, BPAR, PSIE, KSAT,ALPHARET,WS,WR,NRET)
 
     IF(NROOTLAYER.GT.NLAYER)THEN
         NLAYER = NROOTLAYER
     ENDIF
-    
+
     CALL READINITPARS (UWATPARS, INITWATER, SOILTEMP)
-    
+
     CALL READSOILEVAPPARS (UWATPARS, DRYTHICKMIN, TORTPAR,DRYTHERM)
 
     IF(SIMSTORE.EQ.1)THEN
-        CALL READPLANTSTORE(UWATPARS, STORECOEF, STOREEXP, CAPAC, STOPSIMONEMPTY)
+        CALL READPLANTSTORE(UWATPARS, STORECOEF, STOREEXP, STOPSIMONEMPTY)
     ELSE
         STORECOEF = 0.0
         STOREEXP = 0.0
         STOPSIMONEMPTY = 0
-        CAPAC = 0.08
     ENDIF
 
     ! Some arrays can be given a few values, rest is filled with last entered value:
@@ -1143,21 +1314,21 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
     CALL FILLWITHLAST(WS,MAXSOILLAY,NLAYER,-900.0)
     CALL FILLWITHLAST(WR,MAXSOILLAY,NLAYER,-900.0)
     CALL FILLWITHLAST(NRET,MAXSOILLAY,NLAYER,-900.0)
-    
-    
+
+
     ! Set (constant!) water content of layer below those simulated, if provided:
     IF(COREWATER.GT.0.0)THEN
         INITWATER(NLAYER+1) = COREWATER
     ENDIF
-    
+
     ! Soil temperature input is in C, within the model in K.
     SOILTEMP = SOILTEMP + FREEZE
-    
+
     ! Soil temperature of the core:
     SOILTEMP(NLAYER+1) = SOILTEMP(NLAYER)
-    
+
     ! Check if initwater is lower than porefrac, if not fix it;
-    
+
     DO I = 1,NLAYER
         ANYFIX = .FALSE.
         IF(INITWATER(I).GT.POREFRAC(I))THEN
@@ -1165,8 +1336,8 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
             ANYFIX = .TRUE.
         END IF
     END DO
-    
-    
+
+
     IF(ANYFIX)THEN
         CALL SUBERROR('WARNING : ONE OR MORE INITWATER > POREFRAC - SET TO POREFRAC.', IWARN,0)
     ENDIF
@@ -1180,10 +1351,10 @@ SUBROUTINE INPUTWATBAL(NOSPEC,BPAR, PSIE, KSAT, ROOTRESIST, ROOTRESFRAC,   &
 
     ! Root cross-sectional area (m2), calculated in INTERPOLATEW (need to init here??
     ROOTXSECAREA = 0
-         
+
     ! Convert hydraulic conductivity to m s-1 (from mol m-1 s-1 MPa-1)
     KSAT = KSAT * H2OVW * GRAV * 1E-03
-    
+
     RETURN
 END SUBROUTINE INPUTWATBAL
 
@@ -1217,7 +1388,7 @@ SUBROUTINE READSOILEVAPPARS(UFILE, DRYTHICKMINI, TORTPARI,DRYTHERMI)
         TORTPAR = 1.0 / TORTPAR
     ENDIF
 
-    
+
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('ERROR READING SOIL EVAPORATION PARAMETERS (SOILETPARS)',IFATAL,IOERROR)
     END IF
@@ -1239,7 +1410,7 @@ SUBROUTINE READINITPARS(UFILE, INITWATERI, SOILTEMPI)
     REAL INITWATER(MAXSOILLAY),SOILTEMP(MAXSOILLAY)
     REAL INITWATERI(MAXSOILLAY),SOILTEMPI(MAXSOILLAY)
     NAMELIST /INITPARS/   INITWATER, SOILTEMP
-    
+
     SOILTEMP = -999.9
     INITWATER = -999.9
 
@@ -1259,27 +1430,27 @@ END SUBROUTINE READINITPARS
 !**********************************************************************
 SUBROUTINE READLAYPARS(UFILE, NLAYERI, LAYTHICKI, COREWATERI, &
                        POREFRACI, DRAINLIMITI, FRACORGANICI,IWATTABLAYERI,&
-                       ISIMWATTABI,PLATDRAINI)
+                       PLATDRAINI)
 !**********************************************************************
 
     USE maestcom
     IMPLICIT NONE
     INTEGER UFILE, NLAYER, NLAYERI, IOERROR
-    
+
     REAL LAYTHICK(MAXSOILLAY), POREFRAC(MAXSOILLAY)
     REAL DRAINLIMIT(MAXSOILLAY), FRACORGANIC(MAXSOILLAY)
     REAL LAYTHICKI(MAXSOILLAY), POREFRACI(MAXSOILLAY)
     REAL DRAINLIMITI(MAXSOILLAY), FRACORGANICI(MAXSOILLAY)
     REAL COREWATER,COREWATERI
     REAL PLATDRAIN, PLATDRAINI
-    INTEGER IWATTABLAYER,IWATTABLAYERI,ISIMWATTABI
+    INTEGER IWATTABLAYER,IWATTABLAYERI
     INTEGER IDATE
     INTEGER, EXTERNAL :: IDATE50
 
     NAMELIST /LAYPARS/    NLAYER, LAYTHICK, COREWATER, &
                           POREFRAC, DRAINLIMIT, FRACORGANIC,&
-                          IWATTABLAYER, PLATDRAIN
-    
+                          IWATTABLAYER,PLATDRAIN
+
     ! Initial.
     LAYTHICK = -999.9
     POREFRAC = -999.9
@@ -1303,8 +1474,8 @@ SUBROUTINE READLAYPARS(UFILE, NLAYERI, LAYTHICKI, COREWATERI, &
     FRACORGANICI=FRACORGANIC
     IWATTABLAYERI = IWATTABLAYER
     PLATDRAINI = PLATDRAIN
-    IF (IWATTABLAYERI.GT.0)     ISIMWATTABI = 1
-    
+    ! IF (IWATTABLAYERI.GT.0)     ISIMWATTABI = 1 !simpler to read isimwattab in control of water balance sim
+
     RETURN
 END SUBROUTINE READLAYPARS
 
@@ -1314,7 +1485,7 @@ SUBROUTINE READSOILRET(UFILE, BPAR, PSIE, KSAT,ALPHA,WS,WR,N)
 
     USE maestcom
     IMPLICIT NONE
-    
+
     INTEGER UFILE,IOERROR,RETFUNCTION
     REAL BPAR(MAXSOILLAY),PSIE(MAXSOILLAY),KSAT(MAXSOILLAY)
     REAL BPARI(MAXSOILLAY),PSIEI(MAXSOILLAY),KSATI(MAXSOILLAY)
@@ -1322,7 +1493,7 @@ SUBROUTINE READSOILRET(UFILE, BPAR, PSIE, KSAT,ALPHA,WS,WR,N)
     REAL ALPHAI(MAXSOILLAY),WSI(MAXSOILLAY),WRI(MAXSOILLAY),NI(MAXSOILLAY)
     NAMELIST /SOILRET/ BPAR, PSIE, KSAT,ALPHA,WS,WR,N
 
-    
+
     ! Initial.
     KSAT = -999.9
     BPAR = -999.9
@@ -1347,13 +1518,12 @@ SUBROUTINE READSOILRET(UFILE, BPAR, PSIE, KSAT,ALPHA,WS,WR,N)
     WRI = WS
     NI = N
 
-    
+
     RETURN
     END SUBROUTINE READSOILRET
-    
+
 !**********************************************************************
-SUBROUTINE READPLANTPARS(UFILE,MINROOTWPI,MINLEAFWPI,PLANTKTABLEI,KSCALINGI,DATESKPI,NOKPDATES,  &
-                         P50I,PLCSHAPEI,PLCDEADI)
+SUBROUTINE READPLANTPARS(UFILE,MINROOTWPI,MINLEAFWPI,PLANTKTABLEI,KSCALINGI,DATESKPI,NOKPDATES)
 !**********************************************************************
 
     USE maestcom
@@ -1365,16 +1535,13 @@ SUBROUTINE READPLANTPARS(UFILE,MINROOTWPI,MINLEAFWPI,PLANTKTABLEI,KSCALINGI,DATE
     INTEGER NODATESKP,DATESKPI(MAXDATE),NOKPDATES
     REAL MINROOTWP,PLANTK(MAXDATE),MINROOTWPI,PLANTKTABLEI(MAXDATE)
     REAL MINLEAFWP(MAXSP),MINLEAFWPI(MAXSP)
-    REAL KSCALINGI,KSCALING,P50,PLCSHAPE,P50I,PLCSHAPEI,PLCDEAD,PLCDEADI
-    NAMELIST /PLANTPARS/  DATESKP,NODATESKP, MINROOTWP,MINLEAFWP,PLANTK,KSCALING,P50,PLCSHAPE,PLCDEAD
+    REAL KSCALINGI,KSCALING
+    NAMELIST /PLANTPARS/  DATESKP,NODATESKP, MINROOTWP,MINLEAFWP,PLANTK,KSCALING
 
     !default
     NODATESKP = 1
     MINLEAFWP = -999.0
     MINROOTWP = -999.0
-    P50 = -999.0
-    PLCDEAD = 50
-    PLCSHAPE = 1E-04
     DATESKP(1)= '01/01/99'
 
     REWIND(UFILE)
@@ -1383,35 +1550,32 @@ SUBROUTINE READPLANTPARS(UFILE,MINROOTWPI,MINLEAFWPI,PLANTKTABLEI,KSCALINGI,DATE
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('ERROR READING PLANT PARAMETERS IN WATPARS.DAT',IFATAL,IOERROR)
     END IF
-    
-    
+
+
     DO IDATE = 1,NODATESKP
             DATESKPI(IDATE)=IDATE50(DATESKP(IDATE))
     END DO
-    
+
     MINLEAFWPI = MINLEAFWP
     MINROOTWPI = MINROOTWP
-    P50I = P50
-    PLCSHAPEI = PLCSHAPE
-    PLCDEADI = PLCDEAD / 100   ! Input in %, internally as fraction.
     IF(MINROOTWPI.LT.-900.0)MINROOTWPI = MINLEAFWP(1)
-    
+
     CALL FILLWITHLAST(MINLEAFWPI,MAXSP,MAXSP,-999.0)
-    
+
     PLANTKTABLEI = PLANTK
     KSCALINGI = KSCALING
     NOKPDATES = NODATESKP
-    
+
 
     RETURN
 END SUBROUTINE READPLANTPARS
 
 
 !**********************************************************************
-SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, &  
+SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, &
                          ROOTMASSTOTTABLEI, NROOTLAYERI,FRACROOTI, &
                          LAYTHICK,ROOTBETA,DATESROOTI,NOROOTDATES,NOROOTSPEC,&
-                         RFAGEBEGINI,RFPAR1I,RFPAR2I,RFPAR3I,ROOTFRONTLIMITI) 
+                         RFAGEBEGINI,RFPAR1I,RFPAR2I,RFPAR3I,ROOTFRONTLIMITI)
 !**********************************************************************
 
     USE maestcom
@@ -1430,10 +1594,10 @@ SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, 
     REAL ROOTBETA, ROOTDENSTABLEI(maxdate), ROOTDENS(MAXDATE)
     INTEGER RFAGEBEGIN(maxsp), ROOTFRONTLIMIT, RFAGEBEGINI(maxsp), ROOTFRONTLIMITI
     REAL RFPAR1(maxsp),RFPAR2(maxsp),RFPAR3(maxsp),RFPAR1I(maxsp),RFPAR2I(maxsp),RFPAR3I(maxsp)
-    
+
     NAMELIST /ROOTPARS/   DATESROOT, NODATESROOT,NOROOTSPEC,ROOTRESFRAC,ROOTRAD,ROOTSRL,ROOTMASSTOT, &
                           NROOTLAYER,FRACROOT,ROOTBETA, ROOTDENS,RFAGEBEGIN,RFPAR1,RFPAR2,RFPAR3
-    
+
     ! Initial.
     ROOTBETA = 0
     FRACROOT = -999.9
@@ -1450,7 +1614,7 @@ SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, 
 
     REWIND(UFILE)
     READ (UFILE, ROOTPARS, IOSTAT = IOERROR)
-        
+
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('ERROR READING ROOT PARAMETERS IN WATPARS.DAT',IFATAL,IOERROR)
     END IF
@@ -1471,12 +1635,12 @@ SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, 
     ROOTRADTABLEI=ROOTRAD
     ROOTMASSTOTTABLEI=ROOTMASSTOT
     NROOTLAYERI=NROOTLAYER
-    NOROOTDATES = NODATESROOT    
+    NOROOTDATES = NODATESROOT
     RFAGEBEGINI = RFAGEBEGIN
     RFPAR1I = RFPAR1
     RFPAR2I = RFPAR2
     RFPAR3I = RFPAR3
-    IF (RFPAR1(1).EQ.0.) THEN 
+    IF (RFPAR1(1).EQ.0.) THEN
         ROOTFRONTLIMITI = 0
     ELSE
         ROOTFRONTLIMITI = 1
@@ -1492,10 +1656,10 @@ SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, 
             END DO
         END DO
     END DO
-    
+
     ! If more species than number of rooting profiles, assign first species to all others.
     IF(NOSPEC.GE.2.AND.NOSPEC.GT.NOROOTSPEC)THEN
-        
+
         DO ISPEC = 2,NOSPEC
             DO IDATE = 1,NOROOTDATES
                 DO ILAY = 1,NROOTLAYERI
@@ -1503,9 +1667,9 @@ SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, 
                 ENDDO
             ENDDO
         ENDDO
-        
+
     ENDIF
-    
+
     ! Check which one to use between ROOTSRL and ROOTDENS
     ROOTSRLTABLEI = ROOTSRL
     IF (ROOTDENS(1).GE.0.AND.ROOTSRL(1).GE.0) THEN
@@ -1516,7 +1680,7 @@ SUBROUTINE READROOTPARS(UFILE, NOSPEC,ROOTRESFRACI,ROOTRADTABLEI,ROOTSRLTABLEI, 
             ROOTSRLTABLEI(IDATE) = 1/ (ROOTDENSTABLEI(IDATE) * PI * ROOTRADTABLEI(IDATE)**2)
         ENDDO
     ENDIF
-    
+
     RETURN
 END SUBROUTINE READROOTPARS
 
@@ -1525,39 +1689,39 @@ END SUBROUTINE READROOTPARS
 SUBROUTINE ASSIGNFRACROOT(ROOTBETA,FRACROOT,NROOTLAYER,LAYTHICK)
 !**********************************************************************
 
-    USE maestcom   
+    USE maestcom
     IMPLICIT NONE
     INTEGER NROOTLAYER,I
     REAL ROOTBETA,FRACROOT(MAXSOILLAY),LAYTHICK(MAXSOILLAY)
     REAL CUMLAYTHICK(MAXSOILLAY),TOTFRAC
-    
+
     ! Cumulative depth to bottom of layer i.
     CUMLAYTHICK(1) = LAYTHICK(1)
     DO I=2,NROOTLAYER
-        CUMLAYTHICK(I) = LAYTHICK(I) + CUMLAYTHICK(I-1)    
+        CUMLAYTHICK(I) = LAYTHICK(I) + CUMLAYTHICK(I-1)
     ENDDO
     ! Convert to cm; to be consistent with Jackson et al. 1996
     CUMLAYTHICK = 100*CUMLAYTHICK
-   
+
     ! Fraction roots.
     FRACROOT(1) = 1 - ROOTBETA ** CUMLAYTHICK(1)
     DO I=2,NROOTLAYER
         FRACROOT(I) = (1 - ROOTBETA ** CUMLAYTHICK(I)) - (1 - ROOTBETA ** CUMLAYTHICK(I-1))
     ENDDO
-    
+
     ! Make sure total FRACROOT adds up to unity.
     TOTFRAC = SUM(FRACROOT(1:NROOTLAYER))
     DO I=1,NROOTLAYER
         FRACROOT(I) = FRACROOT(I) / TOTFRAC
     ENDDO
-    
-    
+
+
     RETURN
 END SUBROUTINE ASSIGNFRACROOT
 
 
 !**********************************************************************
-SUBROUTINE READPLANTSTORE(UFILE, STORECOEFI, STOREEXPI, CAPACI, STOPSIMONEMPTYI)
+SUBROUTINE READPLANTSTORE(UFILE, STORECOEFI, STOREEXPI, STOPSIMONEMPTYI)
 !**********************************************************************
 
     USE maestcom
@@ -1565,9 +1729,8 @@ SUBROUTINE READPLANTSTORE(UFILE, STORECOEFI, STOREEXPI, CAPACI, STOPSIMONEMPTYI)
     INTEGER UFILE,IOERROR
     INTEGER STOPSIMONEMPTY,STOPSIMONEMPTYI
     REAL STORECOEF, STOREEXP, STORECOEFI, STOREEXPI
-    REAL CAPACI, CAPAC
-    NAMELIST /PLANTSTORAGE/  STORECOEF, STOREEXP, CAPAC, STOPSIMONEMPTY
-    
+    NAMELIST /PLANTSTORAGE/  STORECOEF, STOREEXP, STOPSIMONEMPTY
+
     REWIND(UFILE)
     READ (UFILE, PLANTSTORAGE, IOSTAT = IOERROR)
 
@@ -1578,7 +1741,6 @@ SUBROUTINE READPLANTSTORE(UFILE, STORECOEFI, STOREEXPI, CAPACI, STOPSIMONEMPTYI)
     STORECOEFI = STORECOEF
     STOREEXPI = STOREEXP
     STOPSIMONEMPTYI = STOPSIMONEMPTY
-    CAPACI = CAPAC 
 
     RETURN
 END SUBROUTINE READPLANTSTORE
@@ -1595,7 +1757,7 @@ SUBROUTINE READINFILT(UFILE,EXPINFI)
     INTEGER UFILE,IOERROR
     REAL EXPINF, EXPINFI
     NAMELIST /WATINFILT/  EXPINF
-    
+
 
     REWIND(UFILE)
     READ (UFILE, WATINFILT, IOSTAT = IOERROR)
@@ -1619,7 +1781,7 @@ SUBROUTINE READWATTFALL(UFILE, RUTTERBI,RUTTERDI,MAXSTORAGEI,THROUGHFALLI)
     INTEGER UFILE,IOERROR
     REAL MAXSTORAGE,MAXSTORAGEI,RUTTERB,RUTTERBI,RUTTERD,RUTTERDI
     REAL THROUGHFALL,THROUGHFALLI
-    
+
     NAMELIST /WATTFALL/   RUTTERB,RUTTERD,MAXSTORAGE, &
                           THROUGHFALL
 
@@ -1658,11 +1820,11 @@ SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
     INTEGER USESTAND,USESTANDI
     INTEGER SIMSTORE, SIMSTOREI
     INTEGER ISIMWATTAB, ISIMWATTABI
-    
+
     NAMELIST /WATCONTROL/ KEEPWET,KEEPDRY,SIMTSOIL,REASSIGNRAIN,WSOILMETHOD, &
                           RETFUNCTION,EQUALUPTAKE,USEMEASET,USEMEASSW, &
                           SIMSOILEVAP,USESTAND,SIMSTORE,ISIMWATTAB
-    
+
     WSOILMETHOD = 1 ! Emax approach
     USEMEASET = 0   ! Don't use measured ET for water balance calc.
     USEMEASSW = 0   ! Don't use measured soil water content.
@@ -1673,7 +1835,7 @@ SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
     KEEPDRY = 0     ! Do not set precipitation to zero.
     SIMSTORE = 0    ! Do not simulate (or use) plant water storage.
     ISIMWATTAB = 0  ! Do not simulate water table
-    
+
     REWIND(UFILE)
     READ (UWATPARS, WATCONTROL, IOSTAT = IOERROR)
 
@@ -1694,7 +1856,7 @@ SUBROUTINE READWATCONTROL(UFILE,KEEPWETI,KEEPDRYI,SIMTSOILI,REASSIGNRAINI, &
     USESTANDI=USESTAND
     SIMSTOREI=SIMSTORE
     ISIMWATTABI=ISIMWATTAB
-    
+
     RETURN
 END SUBROUTINE READWATCONTROL
 
@@ -1726,9 +1888,13 @@ SUBROUTINE INPUTSTR(NSPECIES,STRFILES,JLEAF,BPT,RANDOM,NOAGEC,  &
     CHARACTER STRFILES(MAXSP)*30
     !CHARACTER(*), INTENT(IN) :: in_path
     CHARACTER(*) in_path
-    
+    INTEGER :: numpar !glm!
+	COMMON /PAR/ numpar !glm!
+	CHARACTER*20 filenamenum !glm!
+
     DO I=1,NSPECIES
-        OPEN(USTR, FILE=trim(in_path)//STRFILES(I), STATUS='OLD', IOSTAT=IOERROR)
+        write(filenamenum,'(I4.4,A1,A10)') numpar,'_',trim(in_path)//STRFILES(I) !glm
+        OPEN(USTR, FILE=trim(in_path)//filenamenum, STATUS='OLD', IOSTAT=IOERROR)
         IF(IOERROR.NE.0)THEN
             CALL SUBERROR('ERROR: STR FILE ' // TRIM(STRFILES(I)) // ' DOES NOT EXIST' ,IFATAL,0)
         ENDIF
@@ -1824,27 +1990,32 @@ SUBROUTINE INPUTPHY(NSPECIES,PHYFILES,MODELJM,MODELRD,MODELGS,MODELRW,          
     REAL VPDMIN(MAXSP),GK(MAXSP)
     REAL G02TABLE(MAXDATE,MAXSP),G12TABLE(MAXDATE,MAXSP)
     INTEGER NEWTUZET
-    
+
     CHARACTER(*) in_path
     CHARACTER PHYFILES(MAXSP)*30
 
+    CHARACTER*20 filenamenum !glm!
+   	INTEGER :: numpar !glm!
+	COMMON /PAR/ numpar !glm!
+
     DO I = 1,NSPECIES
-        OPEN(UPHY, FILE=trim(in_path)//PHYFILES(I), STATUS='OLD',IOSTAT=IOERROR)
+        write(filenamenum,'(I4.4,A1,A10)') numpar,'_',trim(in_path)//PHYFILES(I) !glm
+        OPEN(UPHY, FILE=trim(in_path)//filenamenum, STATUS='OLD',IOSTAT=IOERROR)
         IF(IOERROR.NE.0)THEN
             CALL SUBERROR('ERROR: PHY FILE ' // TRIM(PHYFILES(I)) // ' DOES NOT EXIST' ,IFATAL,0)
         ENDIF
         CALL READRR(UPHY,RMCR(I),RMFR(I),Q10R(I),RTEMPR(I))
-        
+
         CALL READRB(UPHY,RMB(I),Q10B(I),RTEMPB(I))
-        
+
         ! Note that NOAGEC is passed to, not read from.
         CALL READAGEP(UPHY, NOAGEC(I), NOAGEP(I))
-        
+
         CALL READPROP(UPHY, NOAGEC(I), NOAGEP(I), PROPC(1,I),PROPP(1,I))
-        
+
         CALL READABSRP(UPHY,NOLAY,ABSRP(1,1,I), &
              REFLEC(1,1,I),TRANS(1,1,I),RHOSOL(1,I))
-        
+
         CALL READGS(UPHY,I,MODELGS,                                 &
                     GSREF(I),GSMIN(I),PAR0(I),D0(I),VK1(I),VK2(I),VPD1(I),  &
                     VPD2(I), VMFD0(I), GSJA(I), GSJB(I), T0(I), TREF(I),    &
@@ -1853,7 +2024,7 @@ SUBROUTINE INPUTPHY(NSPECIES,PHYFILES,MODELJM,MODELRD,MODELGS,MODELRW,          
                     NOGSDATES(I), DATESGS(1,I), D0L(I),GAMMA(I),VPDMIN(I),   &
                     WLEAFTABLE(1,I), NSIDES(I), SF(I), PSIV(I),DATESWLEAF(1,I),NOWLEAFDATES(I),&
                     G02TABLE(1,I),G12TABLE(1,I),NEWTUZET)
-        
+
           CALL READLEAFN(UPHY, MODELJM, MODELRD, NOLAY, NOAGEP(I),  &
                             NONDATES(I), DATESN(1,I),      &
                             LEAFN(1,1,1,I))
@@ -1929,7 +2100,7 @@ SUBROUTINE INPUTTREE(XSLOPE,YSLOPE,BEAR,X0,Y0,XMAX,YMAX,PLOTAREA,STOCKING,      
     REAL DIAMA(maxdate,MAXT),PLOTAREA
     REAL X0,Y0,XMAX,YMAX,XSLOPE,YSLOPE,BEAR,SHADEHT,STOCKING
     REAL ZHT,Z0HT,ZPD,DT1,DT2,DT3,DT4,EXPTIME,APP,EXPAN
-    
+
     ! Read in number of trees & number of target tree
     CALL READPLOT(UTREES, X0, Y0, XMAX, YMAX, NOALLTREES,XSLOPE, YSLOPE, BEAR, &
                   SHADEHT, STOCKING, IPLOTSHAPE,PLOTAREA)
@@ -1954,12 +2125,13 @@ SUBROUTINE INPUTTREE(XSLOPE,YSLOPE,BEAR,X0,Y0,XMAX,YMAX,PLOTAREA,STOCKING,      
     ! Get diameter of each tree
     CALL READTREEARRAY(UTREES,6,NOALLTREES,NODDATES,DATESD,DIAMA)
 
-    ! Calculate total LAI
-    CALL CALCLAI(NOLADATES,FLT,NOALLTREES,XMAX,YMAX,XSLOPE,YSLOPE,TOTLAITABLE)
 
     ! Read in how many of the trees form the subplot (from confile)
     CALL READCONTREES(UCONTROL,NOALLTREES,DX,DY,XMAX,YMAX,NOTREES,NOTARGETS,ITARGETS,IPLOTSHAPE,WEIGHTS)
-       
+
+    ! Calculate total LAI
+    CALL CALCLAI(NOLADATES,FLT,NOTARGETS,XMAX,YMAX,XSLOPE,YSLOPE,TOTLAITABLE,PLOTAREA,ITARGETS)
+
     ! Read species array, if provided.
     CALL READSPECLIST(UTREES, NSPECIES, ISPECIES)
 
@@ -2055,8 +2227,8 @@ SUBROUTINE SORTTREESP(X,Y,NOALLTREES,NOTREES,DX,DY,DZ,R1,R2,R3,TRUNK,FLT,DIAMA, 
         END DO
     END DO
     RETURN
-    
-                        
+
+
     END SUBROUTINE SORTTREESP
 
 
@@ -2076,7 +2248,7 @@ SUBROUTINE SORTTREESI(NOALLTREES,NOTREES,NOTARGET,DX,DY,DZ,IT)
     ! Location to sort trees to (location of the current target tree).
     X = DX(NOTARGET)
     Y = DY(NOTARGET)
-    
+
     ! We select NT trees which are closest to the tree (NOTARGET) we
     ! are concerned with.
     DO N = 1,NOALLTREES
@@ -2098,10 +2270,10 @@ SUBROUTINE SORTTREESI(NOALLTREES,NOTREES,NOTARGET,DX,DY,DZ,IT)
 20  CONTINUE
 
     RETURN
-                            
+
 END SUBROUTINE SORTTREESI
 
-    
+
 !**********************************************************************
 SUBROUTINE ANGLE(ELP,NALPHA,FALPHA)
 ! This routine calculates the fraction of leaf area in each leaf
@@ -2128,12 +2300,12 @@ SUBROUTINE ANGLE(ELP,NALPHA,FALPHA)
 
         TOTAL = 0.000
         DO N = 1,NALPHA
-            ALP1 = (N-1)*DALP                           
-            ALP2 = N*DALP                               
-            RSUM = 0.000                                 
-            CALL INTEG(ALP1,ALP2,ELP,TEMP,RSUM)          
-            FALPHA(N) = RSUM                             
-            TOTAL = TOTAL + RSUM                         
+            ALP1 = (N-1)*DALP
+            ALP2 = N*DALP
+            RSUM = 0.000
+            CALL INTEG(ALP1,ALP2,ELP,TEMP,RSUM)
+            FALPHA(N) = RSUM
+            TOTAL = TOTAL + RSUM
         END DO
         DO N = 1,NALPHA
             FALPHA(N) = FALPHA(N)/TOTAL
@@ -2155,7 +2327,7 @@ SUBROUTINE INTEG(ALP1,ALP2,ELP,TEMP,RSUM)
     IMPLICIT NONE
     INTEGER I
     REAL H,UP,ALP1,ALP2,DOWN,RSUM,ELP,TEMP,FANG
-    
+
     H = (ALP2-ALP1)/50.0
     UP = ALP1 + H*0.42265
     DOWN = ALP1 + H*1.57735
@@ -2177,7 +2349,7 @@ REAL FUNCTION AVGLIA(ELP)
 !**********************************************************************
     IMPLICIT NONE
     REAL ELP
-    
+
     IF (ELP.GT.1.0) THEN
         AVGLIA = 1.0/ (0.5901*ELP+0.3037)
     ELSE
@@ -2199,7 +2371,7 @@ REAL FUNCTION CALCELP(AVGANG)
     REAL AVGANG
 
     AVGANG = AVGANG*PID180    !Convert to radians
-    
+
     IF (AVGANG.LT.1.0) THEN
         CALCELP = (1./AVGANG - 0.3037)/0.5901
     ELSE
@@ -2217,7 +2389,7 @@ REAL FUNCTION FANG(ELP,TEMP,ALP)
 !**********************************************************************
     IMPLICIT NONE
     REAL ELP,TEMP,ALP
-    
+
     FANG = 2.0*ELP*ELP*SIN(ALP)/ (TEMP*(((COS(ALP))**2.0+ (ELP*SIN(ALP))**2)**2))
 
     RETURN
@@ -2230,16 +2402,16 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                     THRAB,FCO2,FRESPF,FRESPW,FRESPB,                &
                     FH2OT,GSCAN,GBHCAN,FH2OCAN,FHEAT,VPD,TAIRABOVE,PAR,  &
                     PSILCAN,PSILCANMIN,CICAN,ECANMAX,ACANMAX,ZEN,AZ,  &
-                    ETCANDEFICIT,PLANTWATER)
+                    ETCANDEFICIT,FBEAM)
 ! Output the hourly totals
 !**********************************************************************
     USE switches
     USE maestcom
-   
+
     IMPLICIT NONE
     INTEGER NOTARGETS,IDAY,IHOUR,ITAR,ITREE,ISPEC,I,NOLAY
     INTEGER ITARGETS(MAXT),ISPECIES(MAXT)
-    
+
     REAL THRAB(MAXT,MAXHRS,3),FCO2(MAXT,MAXHRS),FRESPF(MAXT,MAXHRS)
     REAL FRESPW(MAXT,MAXHRS),FRESPB(MAXT,MAXHRS)
     REAL GSCAN(MAXT,MAXHRS),FH2OT(MAXT,MAXHRS),FH2OCAN(MAXT,MAXHRS)
@@ -2250,9 +2422,9 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
     REAL FOLLAY(MAXLAY),TCAN(MAXT,MAXHRS),VPD(MAXHRS)
     REAL TAIRABOVE,PAR(MAXHRS)
     REAL ECANMAX(MAXT,MAXHRS),ACANMAX(MAXT,MAXHRS)
-    REAL ETCANDEFICIT(MAXT,MAXHRS),PLANTWATER(MAXT)
+    REAL ETCANDEFICIT(MAXT,MAXHRS)
     REAL PSILCAN(MAXT,MAXHRS),PSILCANMIN(MAXT,MAXHRS),CICAN(MAXT,MAXHRS)
-    REAL ZEN(MAXHRS), AZ(MAXHRS)
+    REAL ZEN(MAXHRS), AZ(MAXHRS), FBEAM(IHOUR,3)
 
     IF (IOHRLY.GE.1) THEN
         DO ITAR=1,NOTARGETS
@@ -2266,11 +2438,11 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                                     FH2OT(ITAR,IHOUR)*1E-3,                                     &
                                     FH2OCAN(ITAR,IHOUR)*1E-3,GSCAN(ITAR,IHOUR),GBHCAN(ITAR,IHOUR),  &
                                     FHEAT(ITAR,IHOUR)*1E-3,TCAN(ITAR,IHOUR),                    &
-                                    ACANMAX(ITAR,IHOUR),ETCANDEFICIT(ITAR,IHOUR),PLANTWATER(ITAR),           &   
+                                    ACANMAX(ITAR,IHOUR),ETCANDEFICIT(ITAR,IHOUR),               &
                                     PSILCAN(ITAR,IHOUR),PSILCANMIN(ITAR,IHOUR),CICAN(ITAR,IHOUR),  &
                                     TAIRABOVE,VPD(IHOUR)/1000,PAR(IHOUR), &
-                                    ZEN(IHOUR),AZ(IHOUR)                   
-                500 FORMAT (I7,1X,3(I4,1X),23(F12.5,1X))  
+                                    ZEN(IHOUR),AZ(IHOUR),FBEAM(IHOUR,1)
+                500 FORMAT (I7,1X,3(I4,1X),23(F12.5,1X))
             ELSE IF (IOFORMAT .EQ. 1) THEN
                 WRITE (UHRLY) REAL(IDAY),REAL(ITREE),REAL(ISPEC),REAL(IHOUR),               &
                                 THRAB(ITAR,IHOUR,1)*UMOLPERJ,THRAB(ITAR,IHOUR,2),           &
@@ -2279,10 +2451,10 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                                 FH2OT(ITAR,IHOUR)*1e-3,                                     &
                                 FH2OCAN(ITAR,IHOUR)*1E-3,GSCAN(ITAR,IHOUR),GBHCAN(ITAR,IHOUR),        &
                                 FHEAT(ITAR,IHOUR)*1E-3,TCAN(ITAR,IHOUR),                    &
-                                ACANMAX(ITAR,IHOUR),                    &   
+                                ACANMAX(ITAR,IHOUR),                    &
                                 PSILCAN(ITAR,IHOUR),PSILCANMIN(ITAR,IHOUR),CICAN(ITAR,IHOUR),  &
                                 TAIRABOVE,VPD(IHOUR)/1000,PAR(IHOUR)
-            END IF                        
+            END IF
         END DO
     END IF
     IF (IOFORMAT .EQ. 0) THEN
@@ -2302,7 +2474,7 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
     ELSE IF (IOFORMAT .EQ. 1) THEN
         IF (IOHRLY.GE.2) THEN
             WRITE (ULAY) REAL(IDAY),REAL(IHOUR)
-        
+
             IF (FOLLAY(1).GT.0.0) THEN
                 WRITE (ULAY) (PPAR(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
                 WRITE (ULAY) (PPS(1,I,IHOUR)/FOLLAY(I),I=1,NOLAY)
@@ -2312,7 +2484,7 @@ SUBROUTINE OUTPUTHR(IDAY,IHOUR,NOTARGETS,ITARGETS,ISPECIES,         &
                 WRITE (ULAY) -999.9
             END IF
         END IF
-    END IF    
+    END IF
     RETURN
 END SUBROUTINE OUTPUTHR
 
@@ -2320,7 +2492,8 @@ END SUBROUTINE OUTPUTHR
 SUBROUTINE OUTPUTDY(IDAY,NOTARGETS,ITARGETS,ISPECIES,TDYAB,             &
                     TOTCO2,TOTRESPF,TOTRESPW,TOTRESPWG,TOTH2O,TOTH2OCAN,TOTHFX, &
                     TOTRESPCR,TOTRESPFR,TOTRESPFRG,TOTRESPCRG,TOTRESPFG, &
-                    TOTRESPB,TOTRESPBG)
+                    TOTRESPB,TOTRESPBG, &
+                    TOTH2OEV) !glm canopy evap
 
 ! Output the daily totals
 !**********************************************************************
@@ -2330,17 +2503,18 @@ SUBROUTINE OUTPUTDY(IDAY,NOTARGETS,ITARGETS,ISPECIES,TDYAB,             &
     IMPLICIT NONE
     INTEGER NOTARGETS,IDAY,ITAR,ITREE,ISPEC
     INTEGER ITARGETS(MAXT),ISPECIES(MAXT)
-    
-    
+
+
     REAL TDYAB(MAXT,3)
     REAL TOTCO2(MAXT),TOTRESPF(MAXT),TOTRESPWM(MAXT)
     REAL TOTRESPB(MAXT),TOTRESPFR(MAXT),TOTRESPCR(MAXT)
     REAL TOTH2O(MAXT),TOTH2OCAN(MAXT),TOTHFX(MAXT)
     REAL TOTRESPW(MAXT)
-    
+
     REAL TOTRESPFG,TOTRESPWG,TOTRESPBG
     REAL TOTRESPCRG,TOTRESPFRG
-    
+    REAL TOTH2OEV(MAXT) !glm canopy evap
+
     IF (IODAILY.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
         DO ITAR=1,NOTARGETS
             ITREE = ITARGETS(ITAR)
@@ -2349,8 +2523,9 @@ SUBROUTINE OUTPUTDY(IDAY,NOTARGETS,ITARGETS,ISPECIES,TDYAB,             &
                         TDYAB(ITAR,1),TDYAB(ITAR,2),TDYAB(ITAR,3),  &
                         TOTCO2(ITAR)+TOTRESPF(ITAR),TOTRESPF(ITAR), &
                         TOTCO2(ITAR),TOTH2O(ITAR),TOTH2OCAN(ITAR),  &
-                        TOTHFX(ITAR)
-            500 FORMAT (I7,1X,I4,1X,I4,1X,9(F12.4,1X))        
+                        TOTHFX(ITAR), &
+                        TOTH2OEV(ITAR) !glm canopy evap
+            500 FORMAT (I7,1X,I4,1X,I4,1X,10(F12.4,1X))      !change 9 to 10 !glm canopy evap
         END DO
     ELSE IF (IODAILY.EQ.1 .AND. IOFORMAT .EQ. 1) THEN
         DO ITAR=1,NOTARGETS
@@ -2360,10 +2535,11 @@ SUBROUTINE OUTPUTDY(IDAY,NOTARGETS,ITARGETS,ISPECIES,TDYAB,             &
                         TDYAB(ITAR,1),TDYAB(ITAR,2),TDYAB(ITAR,3),  &
                         TOTCO2(ITAR)+TOTRESPF(ITAR),TOTRESPF(ITAR), &
                         TOTCO2(ITAR),TOTH2O(ITAR),TOTH2OCAN(ITAR),  &
-                        TOTHFX(ITAR)    
+                        TOTHFX(ITAR), &
+                        TOTH2OEV(ITAR) !glm canopy evap
         END DO
     END IF
-    
+
     IF (IORESP.EQ.1 .AND. IOFORMAT .EQ. 0) THEN
         DO ITAR=1,NOTARGETS
             ITREE = ITARGETS(ITAR)
@@ -2386,7 +2562,7 @@ SUBROUTINE OUTPUTDY(IDAY,NOTARGETS,ITARGETS,ISPECIES,TDYAB,             &
                         TOTRESPCRG,TOTRESPFRG
         END DO
     END IF
-    
+
     RETURN
 END SUBROUTINE OUTPUTDY
 
@@ -2395,7 +2571,8 @@ END SUBROUTINE OUTPUTDY
 SUBROUTINE OUTPUTDYWAT(IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,                 &
                        PPTTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,               &
                        SOILEVAPTOT,FSOILMEAN,TFALLTOT,QHTOT,QETOT,QNTOT,    &
-                       QCTOT,RADINTERCTOT)
+                       QCTOT,RADINTERCTOT, &
+                       EVMMTOT)!glm canopy evap
 
 ! Write the daily water balance output file.
 !**********************************************************************
@@ -2407,30 +2584,33 @@ SUBROUTINE OUTPUTDYWAT(IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,                 &
     REAL WSOILMEAN,WSOILROOTMEAN,PPTTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT
     REAL SOILEVAPTOT,FSOILMEAN,TFALLTOT,QHTOT,QETOT,QNTOT,QCTOT,RADINTERCTOT
     REAL SWPMEAN
-    
+    REAL EVMMTOT !glm canopy evap
+
     IF (IOFORMAT .EQ. 0) THEN
-        WRITE(UWATDAY, 523)IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,            &
+        WRITE(UWATDAY, 523)IDAY,WSOILMEAN,WSOILROOTMEAN,SWPMEAN,             &
                            PPTTOT,TFALLTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,  &
                            SOILEVAPTOT,FSOILMEAN,QHTOT,                     &
-                           QETOT,QNTOT,QCTOT,RADINTERCTOT
-        523 FORMAT(I7,15(F12.4))
+                           QETOT,QNTOT,QCTOT,RADINTERCTOT, &
+                           EVMMTOT !glm canopy evap
+        523 FORMAT(I7,16(F12.4)) !change 15 to 16 !glm canopy evap
     ELSE IF (IOFORMAT .EQ. 1) THEN
         WRITE(UWATDAY) REAL(IDAY),WSOILMEAN,WSOILROOTMEAN,SWPMEAN,        &
-                       PPTTOT,TFALLTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,    &
-                       SOILEVAPTOT,FSOILMEAN,QHTOT,                       &
-                       QETOT,QNTOT,QCTOT,RADINTERCTOT    
+                       PPTTOT,TFALLTOT,ETMMTOT,ETMEASTOT,DISCHARGETOT,  &
+                       SOILEVAPTOT,FSOILMEAN,QHTOT,                     &
+                       QETOT,QNTOT,QCTOT,RADINTERCTOT, &
+                       EVMMTOT !glm canopy evap
     END IF
     RETURN
 END SUBROUTINE OUTPUTDYWAT
 
 
 !**********************************************************************
-SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,                   &
+SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,          &
                               WSOIL,WSOILROOT,PPT,CANOPY_STORE,         &
                               EVAPSTORE,DRAINSTORE,                     &
-                              SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,   &
+                              SURFACE_WATERMM,ETMM,ETMM2,               &
                               USEMEASET,ETMEAS,DISCHARGE,               &
-                              FRACWATER,WEIGHTEDSWP,KTOT,               &
+                              FRACWATER,WEIGHTEDSWP,KTOT,       &
                               DRYTHICK,SOILEVAP,OVERFLOW,THERMCOND,     &
                               FRACUPTAKE,SOILMOISTURE,FSOIL1,NSUMMED,   &
                               TOTTMP,SOILTEMP,TAIRABOVE,                &
@@ -2438,9 +2618,11 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,                   &
                               RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC,   &
                               ESOIL,TOTLAI, WTITLE,                     &
                               RADINTERC1,RADINTERC2,RADINTERC3,         &
-                              SCLOSTTOT,SOILWP,FRACAPAR,                &
-                              RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN,        &
-                              TSOILSURFACE,GCANOP,ITERTAIR,NOTARGETS)
+                              SCLOSTTOT,SOILWP,FRACAPAR,&
+                              RTHERMINC,TAIRCAN,TCAN,VPD,VPDCAN, &
+                              TSOILSURFACE,GCANOP,ITERTAIR,NOTARGETS,   &
+                              HTOT,SCLOSTTOT3, &
+                              EVMM,drycan) !glm canopy evap
 ! Outputs water balance results.
 ! RAD, May 2008
 !**********************************************************************
@@ -2450,25 +2632,28 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,                   &
     INTEGER IDAY,IHOUR,NROOTLAYER,NLAYER
     INTEGER NSUMMED,USEMEASET,IHOWMANY
     REAL FRACWATER(MAXSOILLAY),FRACUPTAKE(MAXSOILLAY)
-    REAL SOILTEMP(MAXSOILLAY), SOILWP(MAXSOILLAY)
+    REAL SOILTEMP(MAXSOILLAY), SOILWP(MAXSOILLAY) ! modificatin mathias décembre 2012
+    !REAL, INTENT(IN) :: THERMCOND(MAXSOILLAY)
     REAL THERMCOND(MAXSOILLAY)
-    
-    REAL WSOIL,WSOILROOT,PPT,CANOPY_STORE,EVAPSTORE,DRAINSTORE, RTHERMINC
+
+    REAL WSOIL,WSOILROOT,PPT,CANOPY_STORE,EVAPSTORE,DRAINSTORE, RTHERMINC ! TEST MATHIAS
     REAL SURFACE_WATERMM,ETMM,ETMM2,ETMEAS,DISCHARGE
     REAL WEIGHTEDSWP,KTOT,DRYTHICK,SOILEVAP,OVERFLOW
     REAL SOILMOISTURE,FSOIL1,TOTTMP,TAIRABOVE,TAIRCAN,TCAN(MAXT,MAXHRS)
     REAL QH,QE,QN,QC,RGLOBUND,RGLOBABV,RGLOBABV12,RADINTERC,ESOIL,TOTLAI
-    REAL RADINTERC1,RADINTERC2,RADINTERC3,SCLOSTTOT,ETMMNONSOIL
-    REAL RNET,FRACAPAR, VPD, VPDCAN, TSOILSURFACE,GCANOP,TCANMEAN
+    REAL RADINTERC1,RADINTERC2,RADINTERC3,SCLOSTTOT
+    REAL RNET,FRACAPAR, VPD, VPDCAN, TSOILSURFACE,GCANOP,TCANMEAN,HTOT,SCLOSTTOT3
+    REAL EVMM,drycan !glm canopy evap
+
     INTEGER ITERTAIR,NOTARGETS
 
     CHARACTER*80 WTITLE
-    
+
     ! Calculate net radiation at a plane above the canopy.
     ! SCLOSTTOT includes leaf and soil reflection that is not re-absor
     ! ESOIL is upward longwave transmission by the soil. It is here as
     ! that canopy T equals air T, so that the canopy is not a net radi
-    RNET = RGLOBABV - SCLOSTTOT - ESOIL
+    RNET = RGLOBABV - SCLOSTTOT - ESOIL !just in print
 
     ! Average FSOIL
     !FSOIL1 = FSOIL1 / REAL(NSUMMED)
@@ -2477,7 +2662,7 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,                   &
     ELSE
         FSOIL1 = FSOIL1 / TOTTMP
     ENDIF
-    
+
     !Average TCAN
     TCANMEAN = sum(TCAN(1:NOTARGETS,IHOUR))/NOTARGETS
 
@@ -2491,58 +2676,58 @@ SUBROUTINE OUTPUTWATBAL(IDAY,IHOUR,NROOTLAYER,NLAYER,                   &
     IF (IOWATBAL .EQ. 1 .AND. IOFORMAT .EQ. 0) THEN
         WRITE (UWATBAL,520) IDAY+1,IHOUR,WSOIL,WSOILROOT,PPT,       &
                            CANOPY_STORE,EVAPSTORE,DRAINSTORE,       &
-                           SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,DISCHARGE,    &
+                           SURFACE_WATERMM,ETMM,ETMM2,DISCHARGE,    &
                            OVERFLOW*1000,WEIGHTEDSWP,KTOT,          &
                            DRYTHICK,SOILEVAP,SOILMOISTURE,          &
                            FSOIL1,QH,QE,QN,QC,                      &
                            RGLOBUND, RGLOBABV, RADINTERC, RNET,     &
-                           TOTLAI,TAIRABOVE, TAIRCAN, TCANMEAN,     &
-                           TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3), &
-                           FRACWATER(1),FRACWATER(2),FRACAPAR, VPD,VPDCAN,GCANOP,ITERTAIR
-520                        FORMAT (I7,I7,40(F14.6,1X),I7)
-                           
+                           TOTLAI,TAIRABOVE, TAIRCAN, TCANMEAN,TSOILSURFACE-273.15, SOILTEMP(1),SOILTEMP(2),SOILTEMP(3),    & !SOILTEMP(1) is the soil temperature just below the drythick layer
+                           FRACWATER(1),FRACWATER(2),FRACAPAR, VPD,VPDCAN,GCANOP,ITERTAIR,  &
+                            HTOT,RTHERMINC,SCLOSTTOT3,SCLOSTTOT, &
+                           EVMM,drycan !glm canopy evap
+520                        FORMAT (I7,I7,39(F14.6,1X),I7,6(F14.6,1X)) !change 4 to 6 !glm canopy evap
+
         ! Write volumetric water content by layer:
-        WRITE (UWATLAY, 521) FRACWATER(1:NLAYER)
+        WRITE (UWATLAY, 521) FRACWATER(1:NLAYER)        !60) M. Christina 12/2013
 
         ! write swp by layer
-        WRITE (USWPLAY, 521) SOILWP(1:NLAYER)
+        WRITE (USWPLAY, 521) SOILWP(1:NLAYER)       !60) M. Christina 12/2013
 
         ! Write soil temperature by layer:
-        WRITE (USOILT, 522) SOILTEMP(2:NLAYER+1)
+        WRITE (USOILT, 522) SOILTEMP(2:NLAYER+1)          !20) M. Christina 12/2013 ! first layer = T jsute below the drythick layer M. CHristina
 
-        ! Write fractional water uptake by layer (but no more than 40 layers)
+        ! Write fractional water uptake by layer (but no more than 40 laye
         IHOWMANY = MIN(40, NROOTLAYER)
         WRITE(UWATUPT,998)FRACUPTAKE(1:IHOWMANY)
 
-        998   FORMAT (60(F7.4,1X))
-        521   FORMAT (60(F10.4,1X))
+        998   FORMAT (60(F7.4,1X))  ! 60 au lieyu de 40
+!        520   FORMAT (I7,I7,54(F14.4,1X))
+        521   FORMAT (60(F10.4,1X)) !60 au liey de 15
         522   FORMAT (25(F10.2,1X))
     ELSE IF (IOWATBAL .EQ. 1 .AND. IOFORMAT .EQ. 1) THEN
-        WRITE (UWATBAL) REAL(IDAY+1),REAL(IHOUR),WSOIL,WSOILROOT,PPT,         &
-                           CANOPY_STORE,EVAPSTORE,DRAINSTORE,                 &
-                           SURFACE_WATERMM,ETMM,ETMM2,ETMMNONSOIL,DISCHARGE,  &
-                           OVERFLOW*1000,WEIGHTEDSWP,KTOT,                    &
-                           DRYTHICK,SOILEVAP,SOILMOISTURE,                    &
-                           FSOIL1,QH,QE,QN,QC,                                &
-                           RGLOBUND, RGLOBABV, RADINTERC, RNET,               &
-                           TOTLAI,TAIRABOVE,TAIRCAN,TCAN, SOILTEMP(1),SOILTEMP(2),   &
+        WRITE (UWATBAL) REAL(IDAY+1),REAL(IHOUR),WSOIL,WSOILROOT,PPT,       &
+                           CANOPY_STORE,EVAPSTORE,DRAINSTORE,               &
+                           SURFACE_WATERMM,ETMM,ETMM2,DISCHARGE,            &
+                           OVERFLOW*1000,WEIGHTEDSWP,KTOT,          &
+                           DRYTHICK,SOILEVAP,SOILMOISTURE,                  &
+                           FSOIL1,QH,QE,QN,QC,                              &
+                           RGLOBUND, RGLOBABV, RADINTERC, RNET,             &
+                           TOTLAI,TAIRABOVE,TAIRCAN,TCAN, SOILTEMP(1),SOILTEMP(2),            &
                            FRACWATER(1),FRACWATER(2)
-        
         ! Write volumetric water content by layer:
-        WRITE (UWATLAY) FRACWATER(1:NLAYER)
+        WRITE (UWATLAY) FRACWATER(1:NLAYER)     !25) M. Christina 11/2013
 
         ! write swp by layer
-        WRITE (USWPLAY) SOILWP(1:NLAYER)
+        WRITE (USWPLAY) SOILWP(1:NLAYER)     !25) M. Christina 11/2013
 
         ! Write soil temperature by layer:
-        WRITE (USOILT) SOILTEMP(1:NLAYER)
+        WRITE (USOILT) SOILTEMP(1:NLAYER)     !20) M. Christina 11/2013
 
-        ! Write fractional water uptake by layer
+        ! Write fractional water uptake by layer (but no more than 40 laye
         IHOWMANY = MIN(40, NROOTLAYER)
         WRITE(UWATUPT)FRACUPTAKE(1:IHOWMANY)
-        
     END IF
-    
+
     RETURN
 END SUBROUTINE OUTPUTWATBAL
 
@@ -2598,12 +2783,12 @@ SUBROUTINE READPLOT(UFILE, X0I, Y0I, XMAXI, YMAXI, NOALLTREESI, &
     USE maestcom
     IMPLICIT NONE
     INTEGER UFILE,IOERROR,IPLOTSHAPE,PLOTSHAPE,NOTREES,NOALLTREESI
-    
+
     REAL X0I, Y0I, XMAXI, YMAXI, XSLOPEI, YSLOPEI, BEARI, WATBALAREAI, WATBALAREA
     REAL SHADEHTI, STOCKING, X0,Y0,XMAX,YMAX,XSLOPE,YSLOPE,BEARING,SHADEHT
-    
+
     NAMELIST /PLOT/ X0,Y0,XMAX,YMAX,NOTREES,XSLOPE,YSLOPE,BEARING,SHADEHT,PLOTSHAPE,WATBALAREA
-    
+
 
     SHADEHT = 0.0
     X0 = 0.0
@@ -2630,7 +2815,7 @@ SUBROUTINE READPLOT(UFILE, X0I, Y0I, XMAXI, YMAXI, NOALLTREESI, &
     ELSE
         WATBALAREAI = WATBALAREA
     END IF
-    
+
     IF (NOTREES.GT.MAXT) THEN
         CALL SUBERROR('WARNING: NO OF TREES IN TREES FILE EXCEEDED MAXIMUM',IWARN,IOERROR)
         NOTREES = MAXT
@@ -2825,7 +3010,7 @@ SUBROUTINE READAERO(UFILE, EXTWINDI)
     INTEGER UFILE,IOERROR
     REAL EXTWIND,EXTWINDI
     NAMELIST /AERO/ EXTWIND
-   
+
     REWIND (UFILE)
     READ (UFILE,AERO,IOSTAT = IOERROR)
 
@@ -2837,7 +3022,7 @@ SUBROUTINE READAERO(UFILE, EXTWINDI)
     EXTWINDI = EXTWIND
 
     RETURN
-END SUBROUTINE READAERO 
+END SUBROUTINE READAERO
 
 
 !**********************************************************************
@@ -2880,19 +3065,19 @@ SUBROUTINE READLIA(UFILE, NALPHAI, ALPHA, FALPHAI,DATESLIAOUT,NOLIADATES)
     NALPHA = 1
     ELP = 1.0
     FALPHA(1) = 1.0
-    
+
     ! Read file
     REWIND (UFILE)
     READ (UFILE,LIA,IOSTAT = IOERROR)
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('WARNING: USING DEFAULT VALUES FOR LEAF INCIDENCE ANGLE',IWARN,IOERROR)
     END IF
-    
-    
+
+
     DO IDATE = 1,NODATESLIA
             DATESLIAOUT(IDATE)=IDATE50(DATESLIA(IDATE))
     END DO
-    
+
     IF (NALPHA.EQ.1) THEN
         IF (AVGANG.GT.0.0) THEN
             ALPHA(1) = AVGANG*PID180
@@ -2917,23 +3102,23 @@ SUBROUTINE READLIA(UFILE, NALPHAI, ALPHA, FALPHAI,DATESLIAOUT,NOLIADATES)
 
     END IF
 
-    NALPHAI = NALPHA                       
+    NALPHAI = NALPHA
     NOLIADATES = NODATESLIA
-    
-    IF (AVGANG.LT.0.0.AND.ELP.LT.0.0) THEN        
+
+    IF (AVGANG.LT.0.0.AND.ELP.LT.0.0) THEN
         DALPHA = PID2/FLOAT(NALPHAI)
         DO IALP = 1,NALPHAI
             ALPHA(IALP) = (IALP-0.5)*DALPHA
         END DO
         INDEX = 1
         DO IDATE = 1,NODATESLIA
-            DO IANG = 1,NALPHAI                     
+            DO IANG = 1,NALPHAI
             FALPHAI(IANG,IDATE) = FALPHA(INDEX)
             INDEX = INDEX+1
             END DO
-        END DO                                  
+        END DO
    ENDIF
-        
+
     RETURN
 END SUBROUTINE READLIA
 
@@ -2953,6 +3138,9 @@ SUBROUTINE READSPECIES(UFILE,NSPECIES,SPECIESNAMES,PHYFILES,STRFILES)
     CHARACTER PHYFILES(MAXSP)*30
     CHARACTER STRFILES(MAXSP)*30
 
+    CHARACTER*20 filenamenum !glm
+	INTEGER :: numpar !glm!
+	COMMON /PAR/ numpar !glm!
     ! Set defaults
     NSPECIES = 1
     PHYFILES(1) = 'phy.dat'
@@ -3054,7 +3242,7 @@ SUBROUTINE READALLOM(UFILE, COEFFTI, EXPONTI, WINTERCI,     &
     NAMELIST /ALLOM/ COEFFT, EXPONT, WINTERC
     NAMELIST /ALLOMB/ BCOEFFT, BEXPONT, BINTERC
     NAMELIST /ALLOMR/ RCOEFFT, REXPONT, RINTERC, FRFRAC
-    
+
     ! Default values
     COEFFT = 0.0
     WINTERC = 0.0
@@ -3118,7 +3306,7 @@ SUBROUTINE READPROP(UFILE, NOAGEC, NOAGEP, PROPCI, PROPPI)
     NAMELIST /PHENOL/ PROP
     REAL PROP(MAXC),PROPCI(MAXC),PROPPI(MAXC)
     REAL TOTAL
-    
+
     DO I = 1,MAXC
         PROP(I) = 0.0
     END DO
@@ -3188,10 +3376,10 @@ SUBROUTINE READBETA(UFILE, NOAGECI, JLEAFI, BPTI, RANDOMI,DATESLADOUT,NOLADDATES
     INTEGER JLEAF,JLEAFI,UFILE,NOAGECI
     INTEGER NOAGEC,I,J,IOERROR,IDATE
     REAL RANDOM,RANDOMI
-    
+
     REAL BPT(6*MAXC*maxdate),BPTEXT(2*MAXC*MAXDATE),BPTI(8,MAXC,maxdate)
     NAMELIST /LADD/ NOAGEC,JLEAF,BPT,BPTEXT,RANDOM,NODATESLAD,DATESLAD
-    
+
     ! BM 11/99 added another parameter to BETA function - input via BPTEXT - default value 1
 
     ! Default values
@@ -3205,7 +3393,7 @@ SUBROUTINE READBETA(UFILE, NOAGECI, JLEAFI, BPTI, RANDOMI,DATESLADOUT,NOLADDATES
         DO I = 1,6*MAXC*MAXDATE
             BPT(I) = 0.0
         END DO
-    END DO        
+    END DO
 
     ! Read file
     REWIND (UFILE)
@@ -3213,7 +3401,7 @@ SUBROUTINE READBETA(UFILE, NOAGECI, JLEAFI, BPTI, RANDOMI,DATESLADOUT,NOLADDATES
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('WARNING: DEFAULT VALUE: UNIFORM LEAF AREA DENSITY', IWARN,IOERROR)
     END IF
-       
+
     DO IDATE = 1,NODATESLAD
          DATESLADOUT(IDATE)=IDATE50(DATESLAD(IDATE))
     END DO
@@ -3221,18 +3409,18 @@ SUBROUTINE READBETA(UFILE, NOAGECI, JLEAFI, BPTI, RANDOMI,DATESLADOUT,NOLADDATES
     NOAGECI = NOAGEC
     JLEAFI = JLEAF
     RANDOMI = RANDOM
-    
+
     DO IDATE = 1,NOLADDATES
         DO J = 1,MAXC
             DO I = 0,1
-                BPTI(I*4+1,J,IDATE) = BPT((IDATE-1)*6*NOAGECI+(I*3+1)+(J-1)*6)           
-                BPTI(I*4+2,J,IDATE) = BPT((IDATE-1)*6*NOAGECI+(I*3+2)+(J-1)*6)           
-                BPTI(I*4+3,J,IDATE) = BPT((IDATE-1)*6*NOAGECI+(I*3+3)+(J-1)*6)           
-                BPTI(I*4+4,J,IDATE) = BPTEXT((IDATE-1)*2*NOAGECI+I+1+(J-1)*2)          
+                BPTI(I*4+1,J,IDATE) = BPT((IDATE-1)*6*NOAGECI+(I*3+1)+(J-1)*6)
+                BPTI(I*4+2,J,IDATE) = BPT((IDATE-1)*6*NOAGECI+(I*3+2)+(J-1)*6)
+                BPTI(I*4+3,J,IDATE) = BPT((IDATE-1)*6*NOAGECI+(I*3+3)+(J-1)*6)
+                BPTI(I*4+4,J,IDATE) = BPTEXT((IDATE-1)*2*NOAGECI+I+1+(J-1)*2)
             END DO
-        END DO    
+        END DO
     END DO
-    
+
     ! Elementary error checking:
     ! If not using uniform leaf area density
     IF (JLEAF.NE.0) THEN
@@ -3263,12 +3451,12 @@ SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
     INTEGER UFILE,GSMODI,JMMODI,RDMODI,SSMODI,RWMODI,ITERMAXI,ITERTAIRMAX,ITERTAIRMAXI
     INTEGER MODELGS,MODELJM,MODELRD,MODELRW,MODELSS
     INTEGER ITERMAX,ISIMUS,IOERROR,NECHLAY,NECHLAYI
-    
+
     ! ISIMUS is not read from this namelist, but appears in the namelist because it used to be read here.
     ! If provided, warning printed to say it is not actually used here (read in from CONTROL)
     NAMELIST /MODEL/ MODELGS,MODELJM,MODELRD,MODELRW, &
                         MODELSS,ITERMAX,ISIMUS,ITERTAIRMAX,NECHLAY
-    
+
 
     ! Default values
     MODELGS = 0     ! The Jarvis model of stom cond
@@ -3277,7 +3465,7 @@ SUBROUTINE READMODEL(UFILE, GSMODI, JMMODI, RDMODI, &
     MODELRW = 0     ! RW values read in directly
     MODELSS = 0     ! sunlit & shade calculations separate
     ITERMAX = 0     ! The leaf temperature is not calculated
-    ISIMUS = -1      
+    ISIMUS = -1
     ITERTAIRMAX = 0 ! Maximum number of iterations for canopy air temperature
     NECHLAY = 15    ! (Max.) Number of layers in ECH (used to calculate DLAI from TOTLAI in CHART)
 
@@ -3313,7 +3501,7 @@ SUBROUTINE READHIST(UFILE, IOHIST, BINSIZEI)
     INTEGER UFILE,IOHIST,IOERROR
     REAL BINSIZE,BINSIZEI
     NAMELIST /HISTO/ BINSIZE
-    
+
     IF (IOHIST.EQ.1) THEN
         REWIND (UFILE)
         READ (UFILE, HISTO, IOSTAT = IOERROR)
@@ -3336,7 +3524,7 @@ SUBROUTINE READCCSCEN(UFILE, ICC, CO2INCI, TINCI)
     INTEGER UFILE,ICC
     REAL CO2INC,TINC,CO2INCI,TINCI
     NAMELIST /CCSCEN/ CO2INC, TINC
-    
+
     ! Default values
     ICC = 0
     CO2INC = 0.0
@@ -3363,7 +3551,7 @@ SUBROUTINE READOTC(UFILE, IOTC, TOTCI, WINDOTCI, PAROTCI, FBEAMOTCI)
     REAL TOTCI,WINDOTCI,PAROTCI,FBEAMOTCI
     REAL TOTC,WINDOTC,PAROTC,FBEAMOTC
     NAMELIST /OTC/ TOTC,WINDOTC,PAROTC,FBEAMOTC
-    
+
     ! Default values
     IOTC = 0
     TOTC = 0
@@ -3397,7 +3585,7 @@ SUBROUTINE READABSRP(UFILE,NOLAY,ABSRP,REFLEC,TRANS,RHOSOLI)
     REAL D1,D2
     REAL, EXTERNAL :: RINTEG
     NAMELIST /ABSORP/ NOLAYERS,RHOSOL,ATAU,ARHO
-    
+
     ! Read file
     REWIND (UFILE)
     READ (UFILE,ABSORP,IOSTAT = IOERROR)
@@ -3411,13 +3599,13 @@ SUBROUTINE READABSRP(UFILE,NOLAY,ABSRP,REFLEC,TRANS,RHOSOLI)
       DO J = 1,3
         RHOSOLI(J) = RHOSOL(J)
         DO I = 1,NOLAY
-            D1 = (REAL(I) - 1)/REAL(NOLAY)                           
-            D2 = (REAL(I))/REAL(NOLAY)                               
-            REFLEC(I,J) = RINTEG(D1,D2,X,ARHO,(J-1)*NOLAYERS,NOLAY)  
-            TRANS(I,J) = RINTEG(D1,D2,X,ATAU,(J-1)*NOLAYERS,NOLAY)   
-            ABSRP(I,J) = 1.0 - REFLEC(I,J) - TRANS(I,J)              
+            D1 = (REAL(I) - 1)/REAL(NOLAY)
+            D2 = (REAL(I))/REAL(NOLAY)
+            REFLEC(I,J) = RINTEG(D1,D2,X,ARHO,(J-1)*NOLAYERS,NOLAY)
+            TRANS(I,J) = RINTEG(D1,D2,X,ATAU,(J-1)*NOLAYERS,NOLAY)
+            ABSRP(I,J) = 1.0 - REFLEC(I,J) - TRANS(I,J)
         END DO
-    END DO        
+    END DO
 
     100   FORMAT(10(1X,F8.3))
     RETURN
@@ -3437,7 +3625,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
 
     USE maestcom
     IMPLICIT NONE
-    
+
     INTEGER UFILE,NODATES,MODELGS,NSIDES,NSIDESI,I,WLEAFNODATES
     INTEGER DATESGSI(maxdate),IOERROR,IDATE,NOGSDATES,NOWLEAFDATES,DATESWLEAFI(maxdate)
     INTEGER, EXTERNAL :: IDATE50
@@ -3457,7 +3645,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     REAL VPDMIN,VPDMINI
     REAL G02TABLEI(maxdate),G12TABLEI(maxdate),G20(maxdate),G21(maxdate),G02I(maxdate),G12I(maxdate)
     INTEGER NEWTUZET, NEWTUZETI
-    
+
     NAMELIST /BBGS/ DATES,GSMIN,GNIGHT,G0,G1,GAMMA,WLEAF,NSIDES, &
                     SMD1,SMD2,WC1,WC2,SWPEXP,WLEAFDATES,G20,G21
     NAMELIST /BBLGS/DATES, GSMIN, GNIGHT,G0,G1,D0L,GAMMA,WLEAF,NSIDES, &
@@ -3465,7 +3653,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     NAMELIST /BBMGS/DATES, GSMIN, GNIGHT,G0,G1,GAMMA,VPDMIN,GK,WLEAF,NSIDES,WC1,WC2,WLEAFDATES,G20,G21
     NAMELIST /BBTUZ/DATES, GSMIN, GNIGHT,G0,G1,SF,PSIV,GAMMA,VPDMIN,WLEAF,NSIDES,WLEAFDATES,G20,G21
     NAMELIST /BBGSCON/ NODATES,CONDUNITS,WLEAFNODATES
-    
+
     ! Defaults
     GSMIN = 0.001
     SMD1 = 0.0
@@ -3483,10 +3671,10 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
     G20 = -999.
     G21 = -999.
 
-    DATES(1) = '01/01/99'     
-    WLEAFDATES(1) = '01/01/99'   
-    
-    
+    DATES(1) = '01/01/99'
+    WLEAFDATES(1) = '01/01/99'
+
+
     REWIND(UFILE)
 
     ! Ball-Berry and BBL Dates, and optionally units of conductance.
@@ -3499,7 +3687,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         CALL SUBERROR('JARVIS STOMATAL CONDUCTANCE MODEL IS NO LONGER SUPPORTED IN MAESPA.', &
             IFATAL,IOERROR)
     ENDIF
-    
+
     IF (MODELGS.EQ.2)THEN
         READ (UFILE,BBGS,IOSTAT = IOERROR)
         DO IDATE = 1,NODATES
@@ -3513,7 +3701,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             GNIGHT = G0(1)
             CALL SUBERROR('GNIGHT NOT INPUT, ASSUMED EQUAL TO G0 AT FIRST DATE.', IWARN,0)
         ENDIF
-        
+
         ! If conductance pars given for water:
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
             G0 = G0 / GSVGSC
@@ -3543,7 +3731,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         NOGSDATES = NODATES
         NOWLEAFDATES = WLEAFNODATES
         WLEAFTABLEI = WLEAF
-        
+
     ELSE IF (MODELGS.EQ.3) THEN   ! Ball-Berry Leuning model parameter
         READ (UFILE, BBLGS, IOSTAT = IOERROR)
         DO IDATE = 1,NODATES
@@ -3557,7 +3745,7 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             GNIGHT = G0(1)
             CALL SUBERROR('GNIGHT NOT INPUT, ASSUMED EQUAL TO G0 AT FIRST DATE.', IWARN,0)
         ENDIF
-        
+
         ! If conductance pars given for water:
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
             G0 = G0 / GSVGSC
@@ -3603,11 +3791,11 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             GNIGHT = G0(1)
             CALL SUBERROR('GNIGHT NOT INPUT, ASSUMED EQUAL TO G0 AT FIRST DATE.', IWARN,0)
         ENDIF
-        
+
         ! New Medlyn et al 2011 model (corrigendum):
         ! g1 MUST be for H2O
         CALL SUBERROR('GS PARAMETERS ARE ASSUMED TO BE FOR H2O.', IWARN,0)
-        
+
         GSMINI = GSMIN
         GNIGHTI = GNIGHT
         G0TABLEI = G0
@@ -3622,27 +3810,27 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
             CALL SUBERROR('VPDMIN PARAMETER ASSUMED TO BE INPUT IN kPa.', IWARN,0)
             VPDMINI = VPDMIN*1000
         ENDIF
-        
+
         NOGSDATES = NODATES
         NOWLEAFDATES = WLEAFNODATES
         WLEAFTABLEI = WLEAF
     ELSE IF (MODELGS.EQ.6) THEN   ! Ball-Berry-Tuzet parameters
-        
+
         READ (UFILE, BBTUZ, IOSTAT = IOERROR)
 
         DO IDATE = 1,NODATES
             DATESGSI(IDATE) = IDATE50(DATES(IDATE))
         END DO
-        
+
         DO IDATE = 1,WLEAFNODATES
             DATESWLEAFI(IDATE) = IDATE50(WLEAFDATES(IDATE))
         END DO
-        
+
         IF(GNIGHT.LT.0.0)THEN
             GNIGHT = G0(1)
             CALL SUBERROR('GNIGHT NOT INPUT, ASSUMED EQUAL TO G0 AT FIRST DATE.', IWARN,0)
         ENDIF
-        
+
         ! If conductance pars given for water:
         IF(CONDUNITS.EQ.'H2O'.OR.CONDUNITS.EQ.'h2o')THEN
             GSMIN = GSMIN / GSVGSC
@@ -3670,18 +3858,14 @@ SUBROUTINE READGS(UFILE,I,MODELGS,                                              
         NOWLEAFDATES = WLEAFNODATES
         WLEAFTABLEI = WLEAF
     END IF
-    
+
     IF (IOERROR.NE.0) THEN
         CALL SUBERROR('ERROR READING STOMATAL CONDUCTANCE PARAMETERS', IFATAL,IOERROR)
     END IF
     NSIDESI = NSIDES
-    
-    ! Break-point version of Tuzet model
+
     IF(G21(1).GE.0.) NEWTUZETI = 1
-    
-    ! Bug : if GNIGHT is zero, simulation goes wrong at IHOUR=2 and onwards. Not sure why yet...
-    IF(GNIGHTI.EQ.0.0)GNIGHTI = 1E-09
-    
+
     RETURN
 END SUBROUTINE READGS
 
@@ -3727,7 +3911,7 @@ SUBROUTINE READPHYARRAY(UFILE,NARRAY,NOLAY,NOAGEP,NDATE,IDATES,VALUESI)
     CHARACTER*10 DATES(maxdate)
     INTEGER, EXTERNAL :: IDATE50
     REAL, EXTERNAL :: RINTEG
-    
+
     NAMELIST /NFOLCON/ NODATES,NOLAYERS,NOAGES
     NAMELIST /NFOL/ DATES,VALUES
     NAMELIST /JMAXCON/ NODATES,NOLAYERS,NOAGES
@@ -3841,7 +4025,7 @@ SUBROUTINE READPHYARRAY(UFILE,NARRAY,NOLAY,NOAGEP,NDATE,IDATES,VALUESI)
                 VALUESI(IDATE,I,IAGE) = RINTEG(D1,D2,X,VALUES,(IDATE-1)*NOAGES*NOLAYERS+(IAGE-1)*NOLAYERS,NOLAY)
             END DO
         END DO
-    END DO                    
+    END DO
 
     ! Fill in array in case no of ages is less than NOAGEP
     IF (NOAGES.LT.NOAGEP) THEN
@@ -3851,7 +4035,7 @@ SUBROUTINE READPHYARRAY(UFILE,NARRAY,NOLAY,NOAGEP,NDATE,IDATES,VALUESI)
                 VALUESI(IDATE,ILAY,I) = VALUESI(IDATE,ILAY,1)
             END DO
         END DO
-    END DO                    
+    END DO
     END IF
 
     NDATE = NODATES
@@ -3886,7 +4070,7 @@ NAMELIST /VJMAXSTRESS/ VFUN,VPARA,VPARB,VPARC
     VPARBI = VPARB
     VPARCI = VPARC
     VFUNI = VFUN
-    
+
     IF(VFUNI.GT.2)CALL SUBERROR('ERROR: ONLY VFUN=0,1,2 CURRENTLY SUPPORTED',IFATAL,1)
 
 RETURN
@@ -3940,10 +4124,10 @@ SUBROUTINE READJMAX(UFILE, MODELJM, NOLAY, NOAGEP,                      &
                     VCMAXTABLE(IDATE,ILAY,IAGE) = VCMAXA*LEAFN(IDATE,ILAY,IAGE) + VCMAXB
                 END DO
             END DO
-        END DO            
+        END DO
     ELSE ! Read in Jmax, Vcmax arrays
         CALL READPHYARRAY(UFILE,2,NOLAY,NOAGEP,NOJDATES,DATESJ,JMAXTABLE)
-        CALL READPHYARRAY(UFILE,3,NOLAY,NOAGEP,NOVDATES,DATESV,VCMAXTABLE)  
+        CALL READPHYARRAY(UFILE,3,NOLAY,NOAGEP,NOVDATES,DATESV,VCMAXTABLE)
     END IF
 
     ! Read in additional parameters
@@ -3981,7 +4165,7 @@ SUBROUTINE READJMAX(UFILE, MODELJM, NOLAY, NOAGEP,                      &
             DO IAGE = 1,NOAGEP
                 AJQTABLE(1,ILAY,IAGE) = AJQ
             END DO
-        END DO    
+        END DO
     END IF
 
     RETURN
@@ -4003,7 +4187,7 @@ SUBROUTINE READRD(UFILE, MODELRD, NOLAY, NOAGEP, NONDATES,      &
     INTEGER DATESN(maxdate), DATESRD(maxdate), DATESRFQ(maxdate)
     INTEGER UFILE,MODELRD,NOLAY,NOAGEP,NONDATES,NOFQDATES
     INTEGER IOERROR,NORDATES,IDATE,ILAY,IAGE
-    
+
     REAL LEAFN(maxdate,MAXLAY,MAXC)
     REAL RDTABLE(maxdate,MAXLAY,MAXC), Q10FTABLE(maxdate)
     REAL K10F,Q10F,RTEMP,TBELOW,DAYRESP,EFFYRF,RDA,RDB
@@ -4024,7 +4208,7 @@ SUBROUTINE READRD(UFILE, MODELRD, NOLAY, NOAGEP, NONDATES,      &
                     RDTABLE(IDATE,ILAY,IAGE) = RDA*LEAFN(IDATE,ILAY,IAGE) + RDB
                 END DO
             END DO
-        END DO        
+        END DO
     ELSE ! Read in RD0 arrays
         CALL READPHYARRAY(UFILE,4,NOLAY,NOAGEP,NORDATES,DATESRD,RDTABLE)
     END IF
@@ -4058,7 +4242,7 @@ END SUBROUTINE READRD
 
 
 !**********************************************************************
-SUBROUTINE READRW(UFILE,MODELRW,EFFYRWI,RMWI,RTEMPWI,   & 
+SUBROUTINE READRW(UFILE,MODELRW,EFFYRWI,RMWI,RTEMPWI,   &
                     NOWQDATES, DATESRWQ, Q10WTABLE,     &
                     COLLA,COLLK,STEMSDWI,RMAI,STEMFORMI)
 ! Read in or calculate parameters to do with woody respiration rate.
@@ -4068,15 +4252,15 @@ SUBROUTINE READRW(UFILE,MODELRW,EFFYRWI,RMWI,RTEMPWI,   &
     IMPLICIT NONE
     INTEGER UFILE, DATESRWQ(maxdate), IOERROR, MODELRW
     INTEGER NOWQDATES
-    
+
     REAL Q10WTABLE(maxdate)
     REAL COLLA, COLLK, STEMSDWI, RMAI, STEMFORMI
     REAL EFFY,RM,RMA,RTEMP,Q10W, STEMFORM,CA,CK
     REAL STEMSDW,RTEMPWI,EFFYRWI,RMWI
-    
+
     NAMELIST /WRESP/ EFFY,RM,RMA,RTEMP,Q10W,STEMFORM
     NAMELIST /COLLWRESP/ CA,CK,STEMSDW
-    
+
     EFFY = 0.0        ! Missing value - growth respn not calculated
     RM = 0.0          ! Missing value - maint respn not calculated
     RMA = 0.0         ! Missing value - maint respn not calculated
@@ -4088,7 +4272,7 @@ SUBROUTINE READRW(UFILE,MODELRW,EFFYRWI,RMWI,RTEMPWI,   &
     REWIND (UFILE)
     READ (UFILE,WRESP,IOSTAT = IOERROR)
     IF(IOERROR.EQ.0)Q10WTABLE(1) = Q10W
-    
+
     CALL READARRAY(UFILE,5,NOWQDATES,DATESRWQ,Q10WTABLE)
 
     !      IF (EFFY.EQ.0.0) CALL SUBERROR('WARNING: WOODY GROWTH RESP NOT CALCULATED',IWARN,IOERROR)
@@ -4112,7 +4296,7 @@ SUBROUTINE READRW(UFILE,MODELRW,EFFYRWI,RMWI,RTEMPWI,   &
         COLLK = CK
         STEMSDWI = STEMSDW
     END IF
-    
+
     IF ((RM.EQ.0.0).AND.(RMA.GT.0.0)) MODELRW = 2
 
     RETURN
@@ -4131,7 +4315,7 @@ SUBROUTINE READRR(UFILE,RMCRI,RMFRI,Q10RI,RTEMPRI)
     REAL RTEMPR,RTEMPRI
 
     NAMELIST /RRESP/ RMCR,RMFR,Q10R,RTEMPR
-    
+
     REWIND (UFILE)
     RMCR = 0.0        ! Missing value - maint respn not calculated
     RMFR = 0.0        ! Missing value - maint respn not calculated
@@ -4162,7 +4346,7 @@ SUBROUTINE READRB(UFILE,RMBI,Q10BI,RTEMPBI)
     IMPLICIT NONE
     INTEGER UFILE,IOERROR
     REAL RMBI,RMB,Q10BI,Q10B,RTEMPB,RTEMPBI
-    
+
     NAMELIST /BRESP/ RMB,Q10B,RTEMPB
 
     REWIND (UFILE)
@@ -4284,7 +4468,7 @@ SUBROUTINE PHYINTERP(IDATE,NODATES,IDATEARR,PARAMTABLE,NOLAY,NOAGEP,PARAMS)
             DO ILAY = 1,NOLAY
                 PARAMS(ILAY,IAGE) = PARAMTABLE(1,ILAY,IAGE)
             END DO
-        END DO        
+        END DO
 
     ! If after the final date, take last value
     ELSE IF (IDATE.GT.IDATEARR(NODATES)) THEN
@@ -4292,7 +4476,7 @@ SUBROUTINE PHYINTERP(IDATE,NODATES,IDATEARR,PARAMTABLE,NOLAY,NOAGEP,PARAMS)
             DO ILAY = 1,NOLAY
                 PARAMS(ILAY,IAGE) = PARAMTABLE(NODATES,ILAY,IAGE)
             END DO
-        END DO            
+        END DO
 
     ! Otherwise have to interpolate
     ELSE
@@ -4307,7 +4491,7 @@ SUBROUTINE PHYINTERP(IDATE,NODATES,IDATEARR,PARAMTABLE,NOLAY,NOAGEP,PARAMS)
                 Y2 = PARAMTABLE(INDEX, ILAY, IAGE)
                 PARAMS(ILAY,IAGE) = Y1 + SLOPE*(Y2 - Y1)
             END DO
-        END DO            
+        END DO
     END IF
     RETURN
 END SUBROUTINE PHYINTERP
@@ -4360,12 +4544,12 @@ REAL FUNCTION RINTEG(D1,D2,X,VALUES,IOFFSET,NOLAY)
     INTEGER IP,IOFFSET,NOLAY
     REAL X(MAXLAY+1),VALUES(MAXLAY*MAXC*maxdate)
     REAL D1,D2
-    
+
     ! NB The array VALUES can be of variable size - since this routine is used
     ! to handle reflectance and transmittance, and leaf N, Jmax, Vcmax and Rd
     ! arrays (as of 8/97). Here it should be set to the maximum size of
     ! any array to be passed.
-    
+
     RINTEG = 0.0
     IP = 1
 
@@ -4379,7 +4563,7 @@ REAL FUNCTION RINTEG(D1,D2,X,VALUES,IOFFSET,NOLAY)
     END DO
 
     RINTEG = RINTEG + NOLAY* VALUES(IP+IOFFSET)*(D2-AMAX1(D1,X(IP)))
-    
+
     ! mgdk, no idea what this format statment is here for I assumed a relict
     !100 FORMAT(4(1X,F8.3))
 
@@ -4502,7 +4686,7 @@ END SUBROUTINE READCONTREES
     REAL DX(MAXT),DY(MAXT),DZ(MAXT),XYCOORDS(MAXT*2)
     REAL X0,Y0,XMAX,YMAX,XSLOPE,YSLOPE,SPACING,NOX,ZADD
     NAMELIST /XY/ XYCOORDS
-    
+
     REWIND (UFILE)
     READ (UFILE,XY,IOSTAT = IOERROR)
 
@@ -4529,16 +4713,11 @@ END SUBROUTINE READCONTREES
     X0 = 0.0
     Y0 = 0.0
 
-    ! Calculate the z co-ordinates from slopes
-    ZADD=0.0
-    IF (XSLOPE.LT.0.0) ZADD=XMAX*SIN(XSLOPE)
-    IF (YSLOPE.LT.0.0) ZADD=ZADD+YMAX*SIN(YSLOPE)
-    ZADD=ABS(ZADD)
-    
-    !  X and Y distances are measured on the slope so the height is based
-    !  on the sin(slope).
+    ! X and Y distances are measured on the slope so the height is based
+    ! on the sin(slope).
+    ! RV: Bug here, replacing ZADD by /2 on each DX/DY. 13/01/2017
     DO I = 1,NOALLTREES
-        DZ(I) = DX(I)*SIN(XSLOPE) + DY(I)*SIN(YSLOPE) + ZADD
+        DZ(I) = DX(I)*SIN(XSLOPE)/2 + DY(I)*SIN(YSLOPE)/2
     END DO
 
     RETURN
@@ -4562,7 +4741,7 @@ SUBROUTINE GETLEAFAREA(UFILE,IFLUSH,DT1I,DT2I,DT3I,DT4I, &
     REAL FLT(maxdate,MAXT)
     REAL DT1,DT1I,DT2,DT2I,DT3,DT3I,DT4,DT4I
     REAL EXPTIME,SIZELEAF,EXPTIMEI,APP,EXPAN
-    
+
     NAMELIST /PHENOLOGY/ FLUSHDATE,DT1,DT2,DT3,DT4,EXPTIME,MAXLEAVES,SIZELEAF
 
     REWIND(UFILE)
@@ -4754,7 +4933,7 @@ SUBROUTINE READTREEARRAY(UFILE,NARRAY,NOALLTREES,NDATE,IDATES,VALUESI)
         ELSE IF (NARRAY.EQ.8) THEN
             READ(UFILE,ALLUSLAI,IOSTAT=IOERROR)
         END IF
-        ! Missing diam, leaf N i 
+        ! Missing diam, leaf N i
         IF ((IOERROR.NE.0).AND.(NARRAY.LT.6))CALL SUBERROR('ERROR: MISSING DATA',IFATAL,IOERROR)
         IF (NODATES.GT.maxdate) THEN
             CALL SUBERROR('WARNING: TOO MANY DATES: SOME DATA LOST',IWARN,IOERROR)
@@ -4768,33 +4947,34 @@ SUBROUTINE READTREEARRAY(UFILE,NARRAY,NOALLTREES,NDATE,IDATES,VALUESI)
             DO IDATE = 1,NODATES
                 VALUESI(IDATE,ITREES) = VALUES(IDATE)
             END DO
-        END DO    
+        END DO
     END IF
-    
+
     NDATE = NODATES
     RETURN
 END SUBROUTINE READTREEARRAY
 
 
 !**********************************************************************
-SUBROUTINE CALCLAI(NOLADATES,FLT,NOALLTREES,XMAX,YMAX,XSLOPE,YSLOPE,TOTLAITABLE)
+SUBROUTINE CALCLAI(NOLADATES,FLT,NOTARGETS,XMAX,YMAX,XSLOPE,YSLOPE,TOTLAITABLE,PLOTAREA,ITARGETS)
 ! Calculate total LAI of the plot - based on horizontal plot area
+! RV & GLM 05/2017: TOTLAI is now computed from target trees within watbalarea (=plotarea)
 !**********************************************************************
 
     USE maestcom
     IMPLICIT NONE
-    INTEGER IDATE, ITREE
-    INTEGER NOLADATES,NOALLTREES
+    INTEGER IDATE, ITREE,ITAR
+    INTEGER NOLADATES,NOTARGETS,ITARGETS(MAXT)
     REAL FLT(maxdate,MAXT),TOTLAITABLE(maxdate)
-    REAL XMAX,YMAX,XSLOPE,YSLOPE,GROUNDAREA
+    REAL XMAX,YMAX,XSLOPE,YSLOPE,PLOTAREA
 
-    GROUNDAREA = XMAX*COS(XSLOPE)*YMAX*COS(YSLOPE)
     DO IDATE = 1,NOLADATES
         TOTLAITABLE(IDATE) = 0.0
-        DO ITREE = 1,NOALLTREES
+        DO ITAR = 1,NOTARGETS
+            ITREE= ITARGETS(ITAR)
             TOTLAITABLE(IDATE) = TOTLAITABLE(IDATE) + FLT(IDATE,ITREE)
         END DO
-        TOTLAITABLE(IDATE) = TOTLAITABLE(IDATE)/GROUNDAREA
+        TOTLAITABLE(IDATE) = TOTLAITABLE(IDATE)/PLOTAREA
     END DO
     RETURN
 END SUBROUTINE CALCLAI
@@ -4812,10 +4992,10 @@ SUBROUTINE TREEINTERP(IDAY,ISTART,NODATES,IDATEARR,PARAMTABLE,NOTREES,PARAMS)
     IMPLICIT NONE
     INTEGER ITREE, INDEX, NOTREES,IDATE,IDAY,ISTART
     INTEGER IDATEARR(maxdate),NODATES
-    
+
     REAL PARAMTABLE(maxdate,MAXT)
     REAL PARAMS(MAXT),SLOPE,Y1,Y2
-    
+
     IDATE = IDAY + ISTART
 
     ! If no dates, take 0.0
@@ -4853,7 +5033,7 @@ END SUBROUTINE TREEINTERP
 !**********************************************************************
 SUBROUTINE TREEINTERP2(IDAY,ISTART,NODATES,IDATEARR,PARAMTABLE,NOTREES,PARAMS)
 ! Like TREEINTERP, but for arrays that have dimension (maxdate), not
-! (maxdate,MAXT), like most of them. 
+! (maxdate,MAXT), like most of them.
 ! Addition to fix TOTLAI problems, Nov2010 (RAD).
 !**********************************************************************
 
@@ -4869,7 +5049,7 @@ SUBROUTINE TREEINTERP2(IDAY,ISTART,NODATES,IDATEARR,PARAMTABLE,NOTREES,PARAMS)
     ! If no dates, take 0.0
     IF (NODATES.EQ.0) THEN
         PARAMS = 0.0
-        
+
     ! If only one date, or before the starting date, take first value
     ELSE IF ((NODATES.EQ.1).OR.IDATE.LE.IDATEARR(1)) THEN
         PARAMS = PARAMTABLE(1)
@@ -4877,7 +5057,7 @@ SUBROUTINE TREEINTERP2(IDAY,ISTART,NODATES,IDATEARR,PARAMTABLE,NOTREES,PARAMS)
     ! If after the final date, take last value
     ELSE IF (IDATE.GT.IDATEARR(NODATES)) THEN
             PARAMS = PARAMTABLE(NODATES)
-    
+
     ! Otherwise have to interpolate
     ELSE
         INDEX = 1
@@ -4919,7 +5099,7 @@ SUBROUTINE INTERPOLATEP(IDAY, ISTART,                           &
     INTEGER IDAY,ISTART,NOJDATES,NOLAY,NOAGEP
     INTEGER NOVDATES,NORDATES,NOSLADATES,NOADATES,NOGSDATES,NOWLEAFDATES
     INTEGER NOFQDATES,NOWQDATES
-    
+
     REAL JMAXTABLE(maxdate,MAXLAY,MAXC)
     REAL VCMAXTABLE(maxdate,MAXLAY,MAXC)
     REAL RDTABLE(maxdate,MAXLAY,MAXC)
@@ -5052,8 +5232,8 @@ SUBROUTINE INTERPOLATEW(IDAY,ISTART,NOSPEC,NOKPDATES,DATESKP,PLANTKTABLE,PLANTK,
     REAL PLANTKTABLE(maxdate),PLANTK
     REAL ROOTRAD,ROOTSRL,ROOTMASSTOT,ROOTRADTABLE(maxdate),ROOTSRLTABLE(maxdate),ROOTMASSTOTTABLE(maxdate)
     REAL FRACROOTSPEC(maxsoillay,MAXSP),LAYTHICK(maxsoillay),ROOTRESFRAC
-    REAL ROOTXSECAREA, ROOTLEN(maxsoillay,MAXSP),ROOTRESIST, ROOTMASS(maxsoillay,MAXSP)   
-    
+    REAL ROOTXSECAREA, ROOTLEN(maxsoillay,MAXSP),ROOTRESIST, ROOTMASS(maxsoillay,MAXSP)
+
     IF (NOKPDATES.GT.1) THEN
         CALL WATINTERP(IDAY,ISTART,NOKPDATES,DATESKP,PLANTKTABLE,PLANTK)
     ELSE
@@ -5068,20 +5248,20 @@ SUBROUTINE INTERPOLATEW(IDAY,ISTART,NOSPEC,NOKPDATES,DATESKP,PLANTKTABLE,PLANTK,
         ROOTSRL = ROOTSRLTABLE(1)
         ROOTMASSTOT = ROOTMASSTOTTABLE(1)
     END IF
-    
+
     ! Root cross-sectional area (m2)
     ROOTXSECAREA = PI*ROOTRAD**2
-         
+
     ! Prepare root mass and length arrays (from SPA, io.f90, RAD).
     ROOTLEN = 0.
     DO ISPEC=1, NOSPEC
         DO I=1, NROOTLAYER
-            ! g m-3 
-            ROOTMASS(I,ISPEC) = FRACROOTSPEC(I,ISPEC) * ROOTMASSTOT / LAYTHICK(I)      
-        
+            ! g m-3
+            ROOTMASS(I,ISPEC) = FRACROOTSPEC(I,ISPEC) * ROOTMASSTOT / LAYTHICK(I)
+
             ! m m-3 soil
 			ROOTLEN(I,ISPEC) = ROOTMASS(I,ISPEC) * ROOTSRL
-			
+
         END DO
     END DO
 
@@ -5109,11 +5289,11 @@ SUBROUTINE INTERPOLATEDIST(IDAY,ISTART,FRACROOTTABLE,NOROOTDATES,NOROOTSPEC,DATE
 
     IF(ISMAESPA)THEN
         IF (NOROOTDATES.GT.1) THEN
-            DO I = 1,NOROOTSPEC    
+            DO I = 1,NOROOTSPEC
                 CALL DISTINTERP(IDAY,ISTART,NOROOTDATES,NROOTLAYER,DATESROOT,   &
                 FRACROOTTABLE(1:MAXSOILLAY,1:MAXDATE,I),FRACROOTSPEC(1:MAXSOILLAY,I))
             ENDDO
-        
+
         ELSE
             FRACROOTSPEC = FRACROOTTABLE(1:MAXSOILLAY,1,1:MAXSP)
         ENDIF
@@ -5127,14 +5307,14 @@ SUBROUTINE INTERPOLATEDIST(IDAY,ISTART,FRACROOTTABLE,NOROOTDATES,NOROOTSPEC,DATE
                     DO J=2,NROOTLAYER
                         DEPTHLAYER(J) = DEPTHLAYER(J-1) + LAYTHICK(J)
                     ENDDO
-                    
+
                 LIMITLAYER(I) = 1 ! by default the minimum is to have root in the first layer
                 IF (ROOTFRONT(I).LT.DEPTHLAYER(NROOTLAYER)) THEN
                     DO J=1,(NROOTLAYER-1)
                         IF ((DEPTHLAYER(J).LT.ROOTFRONT(I)).AND.(DEPTHLAYER(J+1).GE.ROOTFRONT(I))) THEN
                             LIMITLAYER(I) = J+1
                         END IF
-                    ENDDO                    
+                    ENDDO
                         IF (LIMITLAYER(I).NE.NROOTLAYER) THEN
                             DO J = (LIMITLAYER(I)+1),NROOTLAYER
                                 FRACROOTSPEC(J,I) = 0.
@@ -5142,19 +5322,19 @@ SUBROUTINE INTERPOLATEDIST(IDAY,ISTART,FRACROOTTABLE,NOROOTDATES,NOROOTSPEC,DATE
                         ENDIF
                 ENDIF
             ENDDO
-        
+
         ENDIF
-        
+
         DO I = 1,NOROOTSPEC
             CALL FILLWITHLAST(FRACROOTSPEC(1:MAXSOILLAY,I), MAXSOILLAY, NROOTLAYER, -900.0)
-        
+
             ! check if it sums to one
             FRACSUM = SUM(FRACROOTSPEC(1:MAXSOILLAY,I))
                  ! modification mathias décembre 2012
             FRACROOTSPEC(1:MAXSOILLAY,I) = FRACROOTSPEC(1:MAXSOILLAY,I) / FRACSUM
         ENDDO
     ENDIF
-        
+
     DO I = 1,NSPECIES
         IF (NOLIADATES(I).GT.1) THEN
             CALL DISTINTERP2(IDAY,ISTART,NOLIADATES(I),NALPHASPEC(I),DATESLIA2(1:maxdate,I), &
@@ -5163,9 +5343,9 @@ SUBROUTINE INTERPOLATEDIST(IDAY,ISTART,FRACROOTTABLE,NOROOTDATES,NOROOTSPEC,DATE
             FALPHASPEC(1:maxang,I) = FALPHATABLESPEC(1:maxang,1,I)
         ENDIF
     END DO
-    
+
 END SUBROUTINE INTERPOLATEDIST
-                        
+
 SUBROUTINE WATINTERP(IDAY,ISTART,NODATES,IDATEARR,PARAMTABLE,PARAMS)
 
     USE maestcom
@@ -5229,7 +5409,7 @@ SUBROUTINE  DISTINTERP(IDAY,ISTART,NODATES,NOMAX,IDATEARR,PARAMTABLE,PARAM)
             INDEX = INDEX + 1
         END DO
         SLOPE = REAL((IDATE - IDATEARR(INDEX-1)))/ REAL((IDATEARR(INDEX) - IDATEARR(INDEX-1)))
-            
+
             DO I = 1,NOMAX
                 Y1 = PARAMTABLE(I,INDEX-1)
                 Y2 = PARAMTABLE(I,INDEX)
@@ -5269,7 +5449,7 @@ SUBROUTINE  DISTINTERP2(IDAY,ISTART,NODATES,NOMAX,IDATEARR,PARAMTABLE,PARAM)
             INDEX = INDEX + 1
         END DO
         SLOPE = REAL((IDATE - IDATEARR(INDEX-1)))/ REAL((IDATEARR(INDEX) - IDATEARR(INDEX-1)))
-            
+
             DO I = 1,NOMAX
                 Y1 = PARAMTABLE(I,INDEX-1)
                 Y2 = PARAMTABLE(I,INDEX)
@@ -5288,32 +5468,32 @@ SUBROUTINE LADCHOOSE(IDAY,ISTART,NSPECIES,NOLADDATES,DATESLAD,BPTTABLESPEC,BPTSP
     INTEGER IDAY,ISTART,NOLADDATES(maxsp), DATESLAD(maxdate,maxsp),IDATE, IOERROR,I,J
     REAL BPTTABLESPEC(8,maxc,maxsp,maxdate),BPTSPEC(8,maxc,maxsp)
     INTEGER ISPEC,NSPECIES,NDATE
-    
+
     IDATE = IDAY + ISTART
 
     DO ISPEC = 1,NSPECIES
-        
+
         NDATE = NOLADDATES(ISPEC)
-        
+
         IF (NDATE.EQ.1) THEN
             BPTSPEC(1:8,1:maxc,ISPEC) = BPTTABLESPEC(1:8,1:maxc,ISPEC,1)
-        
+
         ELSE
             IF (IDATE.LT.DATESLAD(1,ISPEC)) THEN
                     BPTSPEC(1:8,1:maxc,ISPEC) = BPTTABLESPEC(1:8,1:maxc,ISPEC,1)
-            
+
             ELSE IF (IDATE.GE.DATESLAD(NDATE,ISPEC)) THEN
                     BPTSPEC(1:8,1:maxc,ISPEC) = BPTTABLESPEC(1:8,1:maxc,ISPEC,NDATE)
-        
+
             ELSE
                 DO I =1,(NDATE-1)
                     IF (IDATE.LT.DATESLAD(I+1,ISPEC).AND.IDATE.GE.DATESLAD(I,ISPEC)) THEN
                             BPTSPEC(1:8,1:maxc,ISPEC) = BPTTABLESPEC(1:8,1:maxc,ISPEC,I)
                     END IF
-                ENDDO        
+                ENDDO
             END IF
         END IF
-        
+
     END DO
 END SUBROUTINE LADCHOOSE
 
@@ -5321,14 +5501,14 @@ END SUBROUTINE LADCHOOSE
 SUBROUTINE OUTPUTLAY(UFILE,FOLLAY,JMAX25,VCMAX25,NOLAY)
 ! Daily output to layer flux file.
 !**********************************************************************
-    
+
     USE switches
     USE maestcom
     IMPLICIT NONE
     INTEGER UFILE,I,NOLAY
     REAL FOLLAY(MAXLAY)
     REAL JMAX25(MAXLAY,MAXC),VCMAX25(MAXLAY,MAXC)
-    
+
     IF (IOFORMAT .EQ. 0) THEN
         WRITE(UFILE,*) 'LEAF AREA OF TARGET TREE IN EACH LAYER IN M2'
         WRITE(UFILE,500) (FOLLAY(I),I=1,NOLAY)
@@ -5339,12 +5519,12 @@ SUBROUTINE OUTPUTLAY(UFILE,FOLLAY,JMAX25,VCMAX25,NOLAY)
         WRITE(UFILE,*) 'VCMAX (CURRENT) IN EACH LAYER IN UMOL M-2 S-1'
         WRITE(UFILE,500) (VCMAX25(I,1),I=1,NOLAY)
         WRITE(UFILE,*)
-    
+
         500 FORMAT(10(F10.5,1X))
     ELSE IF (IOFORMAT .EQ. 1) THEN
-    
+
     END IF
-    
+
     RETURN
 END SUBROUTINE OUTPUTLAY
 
@@ -5353,14 +5533,14 @@ END SUBROUTINE OUTPUTLAY
 SUBROUTINE OUTPUTHIST(UFILE,HISTO,BINSIZE,NOTARGETS)
 ! Write PAR histogram to file.
 !**********************************************************************
-    
+
     USE maestcom
     USE switches
     IMPLICIT NONE
     INTEGER UFILE,NOTARGETS,ITAR,IBIN
     REAL HISTO(MAXT,MAXHISTO)
     REAL BINSIZE
-    
+
     IF (IOFORMAT .EQ. 0) THEN
         DO ITAR = 1,NOTARGETS
             WRITE (UFILE,500) ITAR
@@ -5383,7 +5563,7 @@ SUBROUTINE OUTPUTHIST(UFILE,HISTO,BINSIZE,NOTARGETS)
             END DO
         END DO
     END IF
-    
+
     RETURN
 END SUBROUTINE OUTPUTHIST
 
@@ -5392,10 +5572,10 @@ INTEGER FUNCTION INEDGES(DX,DY,XMAX,YMAX,EDGEDIST)
 ! Checks to see if the chosen tree is within EDGEDIST m of the edge
 ! of the plot. Returns -1 if yes and 1 if no.
 !**********************************************************************
-    
+
     IMPLICIT NONE
     REAL DX,DY,XMAX,YMAX,EDGEDIST
-    
+
     IF ((DX.LT.EDGEDIST).OR.(DY.LT.EDGEDIST).OR.(XMAX-DX.LT.EDGEDIST).OR.(YMAX-DY.LT.EDGEDIST)) THEN
         INEDGES = -1
     ELSE
@@ -5409,16 +5589,16 @@ END FUNCTION INEDGES
 SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
 ! More general file interface, opening files...
 ! MGDK, Nov. 2010.
-!**********************************************************************    
+!**********************************************************************
     USE maestcom
     IMPLICIT NONE
-    
+
     INTEGER length, ioerror
     !INTEGER, INTENT(inout) ::  unit   !  logical file unit
     INTEGER  unit   !  logical file unit
     !CHARACTER(len=*), INTENT(in) ::  action, file_format, fname, status
     CHARACTER(len=*)  action, file_format, fname, status
-    
+
     SELECT CASE (file_format)
     CASE (format_ascii)
         OPEN(unit, file=fname, action=action, status=status, iostat=ioerror)
@@ -5433,18 +5613,18 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
         IF (ioerror /= 0) THEN
 		    WRITE(STDOUT,*) 'Cant open binary file:', fname
 		    STOP
-		END IF            
+		END IF
     CASE default
         WRITE(*,*) 'Error opening file, dont understand the format:', TRIM(file_format)
     END SELECT
 
     END SUBROUTINE OPEN_FILE
 
-    
-    
+
+
 !**********************************************************************
       SUBROUTINE GETPOINTSF(NUMTESTPNT,XL,YL,ZL,X0,Y0,XMAX,YMAX, &
-        CTITLE,TTITLE,MTITLE,STITLE,VTITLE)
+        CTITLE,TTITLE,MTITLE,STITLE,VTITLE,IPOINTS)
 ! Subroutine for testing radiation interception routines.
 ! Open input & output files and read information about sensor positions.
 !**********************************************************************
@@ -5452,7 +5632,12 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
       USE maestcom
       IMPLICIT NONE
       INTEGER NOPOINTS,INPUTTYPE,IOERROR,NUMTESTPNT,N,I
-      
+      INTEGER IPOINTS
+
+      CHARACTER*20 filenamenum !glm!
+      INTEGER :: numpar !glm!
+      COMMON /PAR/ numpar !glm!
+
       CHARACTER(len=256) ::  CTITLE, TTITLE, PTITLE, STITLE,  VTITLE, MTITLE
       REAL XL(MAXP),YL(MAXP),ZL(MAXP),COORDS(MAXP*3)
       REAL X0,Y0,ANGLE,SPACING,ZHEIGHT,COSANG,SINANG,DIST
@@ -5462,10 +5647,15 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
       NAMELIST /XYZ/ COORDS
       NAMELIST /TRANSECT/ ANGLE,SPACING,ZHEIGHT
 
+
+      write(filenamenum,'(I4.4,A)') numpar,'_points.dat' ! RV
+      OPEN (UPOINTSI, FILE = filenamenum, STATUS='OLD', IOSTAT=IOERROR)
+
+
 ! Open input file
-      OPEN (UPOINTSI, FILE = 'points.dat', STATUS = 'OLD', &
-         IOSTAT=IOERROR)
-      
+      ! OPEN (UPOINTSI, FILE = 'points.dat', STATUS = 'OLD', &
+      !   IOSTAT=IOERROR)
+
       IF (IOERROR.NE.0) &
         CALL SUBERROR('ERROR: POINTS INPUT FILE DOES NOT EXIST', &
         IFATAL,IOERROR)
@@ -5487,7 +5677,7 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
         CALL SUBERROR('WARNING: TOO MANY TEST POINTS SPECIFIED', &
         IWARN,IOERROR)
         NUMTESTPNT = MAXP
-      ELSE 
+      ELSE
         NUMTESTPNT = NOPOINTS
       END IF
 
@@ -5520,16 +5710,40 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
           DIST =  DIST + SPACING
         ENDDO
       END IF
-  
+
       DO I = 1,NUMTESTPNT
          IF( (XL(I).LT.X0.OR.XL(I).GT.XMAX) .OR. (YL(I).LT.Y0.OR.YL(I).GT.YMAX) ) THEN
-            CALL SUBERROR('WARNING: MAESTEST MAY CRASH WHEN POINTS ARE OUTSIDE PLOT BOUNDS. & 
+            CALL SUBERROR('WARNING: MAESTEST MAY CRASH WHEN POINTS ARE OUTSIDE PLOT BOUNDS. &
                 FIX POINTS.DAT IF INFINITE LOOP OCCURS!', IWARN, -1)
          ENDIF
       ENDDO
-  
+
 ! Open output file
-      OPEN (UPOINTSO, FILE = 'testflx.dat', STATUS = 'UNKNOWN')
+    if (numpar.lt.10) then
+	    write(filenamenum,'(I1.1,A)') numpar,'_testflx.dat' !RV
+        elseif (numpar.lt.100) then
+	    write(filenamenum,'(I2.2,A)') numpar,'_testflx.dat' !RV
+        elseif (numpar.lt.1000) then
+	    write(filenamenum,'(I3.3,A)') numpar,'_testflx.dat' !RV
+        else
+	    write(filenamenum,'(I4.4,A)') numpar,'_testflx.dat' !RV
+    endif
+      CALL OPEN_FILE(filenamenum, UPOINTSO, 'write', 'asc', 'replace')
+      ! OPEN (UPOINTSO, FILE = filenamenum, STATUS='UNKNOWN')
+      ! OPEN (UPOINTSO, FILE = 'testflx.dat', STATUS = 'UNKNOWN')
+    IF (IPOINTS.EQ.2) THEN
+        if (numpar.lt.10) then
+            write(filenamenum,'(I1.1,A)') numpar,'_ptTD.dat' !RV
+            elseif (numpar.lt.100) then
+	        write(filenamenum,'(I2.2,A)') numpar,'_ptTD.dat' !RV
+            elseif (numpar.lt.1000) then
+	        write(filenamenum,'(I3.3,A)') numpar,'_ptTD.dat' !RV
+            else
+	        write(filenamenum,'(I4.4,A)') numpar,'_ptTD.dat' !RV
+        endif
+        CALL OPEN_FILE(filenamenum, UPTTD, 'write', 'asc', 'replace')    
+    ENDIF
+            
 ! Write headings to output file
 991   FORMAT (A12,A80) ! For writing comments to output files.
 992   FORMAT (1X,3(A3,1X),11(A12,1X))
@@ -5559,9 +5773,7 @@ SUBROUTINE OPEN_FILE(fname, unit, action, file_format, status)
       WRITE (UPOINTSO, 993) 'TTOT: total radiation (PAR) (umol m-2 s-1)'
 
       WRITE(UPOINTSO,993)' '
-      WRITE (UPOINTSO,994)'Columns: DAY HR PT  X  Y  Z  PAR  FBEAM  TD   TSCAT  TBEAM TDIFF TTOT ' 
+      WRITE (UPOINTSO,994)'Columns: DAY HR PT  X  Y  Z  PAR  FBEAM  TD   TSCAT  TBEAM TDIFF TTOT '
 
       RETURN
       END ! GetPointsF
-
-
