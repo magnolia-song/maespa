@@ -20,9 +20,9 @@ A Makefile is provided to compile Maespa on Mac / Linux (thanks to Martin de Kau
 
 
 ## References
-Duursma RA & Medlyn BE (2012) MAESPA: A model to study interactions between water limitation, environmental drivers and vegetation function at tree and stand levels, with an example application to [CO2] x drought interactions. Geoscientific Model Development 5 : 919-940
+Duursma RA & Medlyn BE (2012) MAESPA: A model to study interactions between water limitation, environmental drivers and vegetation function at tree and stand levels, with an example application to [CO2] x drought interactions. Geoscientific Model Development 5 : 919-940 [Link](http://www.geosci-model-dev.net/5/919/2012/gmd-5-919-2012.html)
 
-Vezy, R., et al., Measuring and modelling energy partitioning in canopies of varying complexity using MAESPA model. Agricultural and Forest Meteorology, 2018. 253â€“254: p. 203-217. [Link](https://www.sciencedirect.com/science/article/pii/S016819231830042X).
+Vezy, R., et al., Measuring and modelling energy partitioning in canopies of varying complexity using MAESPA model. Agricultural and Forest Meteorology, 2018. 253-254: p. 203-217. [Link](https://www.sciencedirect.com/science/article/pii/S016819231830042X).
 
 
 
