@@ -77,7 +77,7 @@
 !!     Number of grid points within quarter of a layer (PPQ).
 !      PPLAY = 12 ! Was in MAESTCOM
 !      PPQ = PPLAY/4
-!      
+!
 !!     Relative height of each height interval (HTINT).
 !      HTINT = 1.0/REAL(NOLAY)
 !!     Radius of crown at 45 degrees to axis.
@@ -108,7 +108,7 @@
 !        IF(MOD(LAYER,2).EQ.1) THEN
 !          CORR = SURFACE(CZ(IPQ),JSHAPE)
 !        ELSE
-!          ! Multiply by cos 45°
+!          ! Multiply by cos 45ï¿½
 !          CORR = 0.5*SQRT(2.0)*SURFACE(CZ(IPQ),JSHAPE)
 !        ENDIF
 !        ! Factors come from assuming volume of each gridpoint is equal
@@ -331,15 +331,15 @@
       REAL, EXTERNAL :: SURFACE
       REAL, EXTERNAL :: SEGMT
       REAL, EXTERNAL :: CUMUL
-      
-! Constants for use later in the subroutine      
+
+! Constants for use later in the subroutine
       NUMPNT = PPLAY * NOLAY
       NOSPOKES = 4 ! will be a parameter, once figured out.
-      
+
 !     Number of grid points within quarter of a layer (PPQ).
     ! was hardwired to 3.
       PPQ = PPLAY/NOSPOKES
-      
+
 !     Relative height of each height interval (HTINT).
       HTINT = 1.0/REAL(NOLAY)
 !     Radius of crown at 45 degrees to axis.
@@ -349,7 +349,7 @@
       IF (JSHAPE.EQ.JBOX) THEN
         RXY = SQRT(RX2+RY2)
       ELSE
-        RXY = SQRT(2.0*(RX2*RY2)/(RX2+RY2)) 
+        RXY = SQRT(2.0*(RX2*RY2)/(RX2+RY2))
       ENDIF
 !     Number of grid points in each quadrant.
       MUMPNT = NUMPNT/NOSPOKES
@@ -360,27 +360,27 @@
 ! distances (AX) and volume (VL) of each grid point.
       DO 10 LAYER = 1, NOLAY      ! for each layer
         IPQ = (LAYER-1)*REAL(PPQ) + 1   ! grid point number
-        
+
 ! calculate relative height - same for each grid point in the layer
         DO I = 1,PPQ
          CZ(IPQ + (I-1)) = (LAYER-0.5)*HTINT
         ENDDO
-        
+
 ! calculate relative radial distance - differs in odd & even layers
 ! The function 'surface' finds relative radial distance to crown surface as function of relative height
         IF(MOD(LAYER,2).EQ.1) THEN
           CORR = SURFACE(CZ(IPQ),JSHAPE)
         ELSE
-          ! Multiply by cos 45°
-          CORR = 0.5*SQRT(2.0)*SURFACE(CZ(IPQ),JSHAPE) 
+          ! Multiply by cos 45ï¿½
+          CORR = 0.5*SQRT(2.0)*SURFACE(CZ(IPQ),JSHAPE)
         ENDIF
-        
+
         ! Factors come from assuming volume of each gridpoint is equal
         CALL AXVOL(PPQ, AXPOINTS)
         DO I=1,PPQ
             AX(IPQ + (I-1)) = AXPOINTS(I) * CORR
         ENDDO
-        
+
 ! Calculate volume for each grid point.
         HUP = LAYER*HTINT*RZNTR
         HDN = (LAYER-1)*HTINT*RZNTR
@@ -466,7 +466,7 @@
                      VL(IPQ)*PROPC(IAGE)
             ENDDO
 50        CONTINUE
-          
+
 ! now set for gridpoints in other quadrants
         DO 40 IPQ1 = 1,MUMPNT    ! loop over gridpoints in 1st quadrant
           IPQ2 = IPQ1+MUMPNT     ! gridpoints in 2nd quadrant
@@ -484,12 +484,12 @@
             DLT(IPT) = DLT(IPT) + DLI(IAGE,IPT)
 60        CONTINUE
           DLT(IPT)=DLT(IPT)*CORFL
-100     CONTINUE        
+100     CONTINUE
       END IF ! If JLEAF = 0
 
 ! Normalize the subvolume and foliage of each grid point.
 
-! BM 11/99 Following is unnecessary. 
+! BM 11/99 Following is unnecessary.
 !      TOTVL=0.0
 !      DO 70 IPT=1,NUMPNT
 !        TOTVL=VL(IPT)+TOTVL
@@ -509,7 +509,7 @@
 !      ELSE
 !        CORFL=FOLntr/TOTFL
 !      END IF
-     
+
 !     DO 100 IPT=1,NUMPNT
 !        DO 100 IAGE = 1,NOAGEC
 !          DLI(IAGE,IPT)=DLI(IAGE,IPT)*CORFL
@@ -602,7 +602,7 @@
       REAL, EXTERNAL :: SURFACE
       REAL, EXTERNAL :: SEGMT
       REAL, EXTERNAL :: CUMUL
-      
+
 ! Constants for use later in the subroutine
 
       NUMPNT = PPLAY * NOLAY
@@ -655,7 +655,7 @@
       ! Modified by A. Morales on March 2012
       ! Y coordinates = X coordinates in even layers
        CORR2 = 1
-        ENDIF 
+        ENDIF
         ENDIF
 
         ! Factors come from assuming volume of each gridpoint is equal
@@ -673,7 +673,7 @@
             VL(IPQ + (I-1))  = VLM/PPLAY
         END DO
     END DO
-    
+
 ! (b) Now set x,y,z co-ordinates of each grid point, using AX & CZ from above.
       DO 20 IPQ1 = 1,MUMPNT    ! loop over gridpoints in 1st quadrant
         IPQ2 = IPQ1+MUMPNT     ! gridpoints in 2nd quadrant
@@ -737,7 +737,7 @@
             HORIZ = 1.0
             CORFL = FOLNTR/REAL(PPLAY)
           END IF
-              
+
 ! set DLI for gridpoints in 1st quadrant
           DO 50 LAYER = 1,NOLAY      ! for each layer
             IPQ = (LAYER-1)*PPQ + 1   ! grid point number - 1st quadrant
@@ -843,7 +843,7 @@
         IMPLICIT NONE
         INTEGER PPQ,I
         REAL R(MAXP/4),RMID(MAXP/4)
-        
+
         ! First get radii of intersections between equi-areas:
         DO I = 1,PPQ
             R(I) = SQRT(REAL(I)/REAL(PPQ))
@@ -870,7 +870,7 @@
     IMPLICIT NONE
     INTEGER JSHAPE
     REAL V1,V2,HUP,HDN,RX1,RY1,RZ1
-    
+
       IF (JSHAPE.EQ.JHELIP) THEN
         V1 = PI*RX1*RY1* (HUP- (HUP**3)/ (3.0*RZ1*RZ1))
         V2 = PI*RX1*RY1* (HDN- (HDN**3)/ (3.0*RZ1*RZ1))
@@ -1002,7 +1002,7 @@ SUBROUTINE EXDIFF(NALPHA,ALPHA,FALPHA,NZEN,DIFZEN,RANDOM,DEXT)
         DO IALP = 1,NALPHA
             ASUM = ASUM + &
             COSDEL(RANDOM,DIFZEN(IZEN),ALPHA(IALP))*FALPHA(IALP)
-        END DO        
+        END DO
         DEXT(IZEN) = ASUM
     END DO
     RETURN
@@ -1041,7 +1041,7 @@ END SUBROUTINE EXDIFF
         XMAX,YMAX,SHADEHT, &
         FOLT,ZBC,JLEAFT,BPTT,NOAGECT,PROPCT,JSHAPET,SHAPET, &
         NEWTUTD,TU,TD,RELDF,DEXT )
-      
+
 ! This subroutine calculates the diffuse transmittances, if required.
 !**********************************************************************
 
@@ -1064,7 +1064,7 @@ END SUBROUTINE EXDIFF
       REAL XMAX,YMAX,SHADEHT,SU,SU1,SL,SL1,TMPVAR,DIFSKY,PTHUP
       LOGICAL SHADEDYN
       LOGICAL, EXTERNAL :: SHADED
-      REAL DEXTANGT(maxt,maxang),DEXTANG(maxang)  
+      REAL DEXTANGT(maxt,maxang),DEXTANG(maxang)
 
       DEXTANGT=0.0  !not used
       DEXTANG=0.0   ! no used
@@ -1145,7 +1145,7 @@ END SUBROUTINE EXDIFF
             CALL TREDST(IFLAG,IPROG,IRAD,DZDN,DAZ, &
                XL(IPT),YL(IPT),ZL(IPT),RX,RY,RZ,DXT,DYT,DZT, &
                FOLT,ZBC,JLEAFT,BPTT,NOAGECT,PROPCT,JSHAPET,SHAPET, &
-               DEXTT(1:MAXT,J),NT,SL,SL1,DEXT(J),DEXTANGT,DEXTANG) 
+               DEXTT(1:MAXT,J),NT,SL,SL1,DEXT(J),DEXTANGT,DEXTANG)
 
             ADDDN = ADDDN + EXP(-DEXT(J)*(SL+SL1))
 
@@ -1189,7 +1189,7 @@ END SUBROUTINE EXDIFF
       IMPLICIT NONE
       INTEGER JSHAPET(MAXT),JLEAFT(MAXT),NOAGECT(MAXT)
       INTEGER M,NT,IPROG,IRAD,IFLAG
-      
+
       REAL DXT(MAXT),DYT(MAXT),DZT(MAXT)
       REAL RX(MAXT),RY(MAXT),RZ(MAXT),ZBC(MAXT),FOLT(MAXT)
       REAL BPT(8,MAXC),PROPCT(MAXC,MAXT)
@@ -1204,9 +1204,9 @@ END SUBROUTINE EXDIFF
       TANAZ = TAN(DAZ)
       SINAZ = SIN(DAZ)
 
-      
+
 ! Remember old value of 'EFFK' (effective extinction coefficient). This is the average across trees,
-! when TREDST is called from TRANSD (as it exclusively is). 
+! when TREDST is called from TRANSD (as it exclusively is).
       OLDEFFK = EFFK
 
 ! Zero the pathlengths.
@@ -1268,8 +1268,8 @@ END SUBROUTINE EXDIFF
            S1 = S1 + SS
            S1W = S1W + SSW
            S1WANG = S1WANG + SSWANG(1:MAXANG)
-        END IF        
-        
+        END IF
+
 200   CONTINUE
 
 ! Calculate weighted effective extinction coefficient.
@@ -1303,9 +1303,9 @@ END SUBROUTINE EXDIFF
       REAL RR,ANG,TRDE,BETA2
       REAL, EXTERNAL :: SURFACE
       REAL, EXTERNAL :: BETA
-      
+
       SS = 0.000
-      
+
 ! Sample path at 20 points
       DO 100 I = 1,20
 
@@ -1314,10 +1314,10 @@ END SUBROUTINE EXDIFF
         RCH = ZZ/RZQ
         IF ((RCH.LT.1.01) .AND. (RCH.GT.1.0)) RCH = 1.00 ! numerical tid
         TRD = SURFACE(RCH,JSHAPE)*SQRT(RXQ*RYQ)                  ! TRD i
-        IF (TRD.EQ.0.0) THEN 
-            TRD=0.0001 ! glm 17 décembre 2012
+        IF (TRD.EQ.0.0) THEN
+            TRD=0.0001 ! glm 17 dï¿½cembre 2012
         ENDIF
-        
+
 ! Find beta in vertical direction
         BETA1 = 0.0
         DO J = 1,NOAGEC
@@ -1526,12 +1526,12 @@ END SUBROUTINE EXDIFF
       USE maestcom
       IMPLICIT NONE
       INTEGER IRAD,JSHAPE,IFLAG
-      
+
       REAL DZZ,DAZ,XPP,YPP,ZPP
       REAL RXQ,RYQ,RZQ,ZBCQ,DXTQ,DYTQ,DZTQ
       REAL PATH,X1,Y1,Z1,X2,Y2,Z2,POL,POM,PON,DELTA
       REAL R1,R2,TEMP
-      
+
 ! The default path length is zero.
       PATH = 0.00
 
@@ -1637,7 +1637,7 @@ END SUBROUTINE EXDIFF
       USE maestcom
       IMPLICIT NONE
       INTEGER JSHAPE
-      
+
       REAL XPP,YPP,ZPP,RXQ,RYQ,RZQ,ZBCQ
       REAL DXTQ,DYTQ,DZTQ,POL,POM,PON,DELTA,R1,R2
       REAL A,B,C,D
@@ -1737,11 +1737,11 @@ END SUBROUTINE EXDIFF
 ! planes of the box (done in CDIST) then test to see if the co-ords
 ! of each intersection lie within the box (done here).
 !**********************************************************************
-      
+
       IMPLICIT NONE
       REAL DLEN,C1,DQ1,RQ1,C2,DQ2,RQ2
       REAL R1,R2,DELTA
-      
+
       IF ((ABS(C1-DQ1).LE.RQ1).AND.(ABS(C2-DQ2).LE.RQ2)) THEN
         IF (DELTA.GT.-1.0) THEN
           R2 = DLEN
@@ -1851,7 +1851,7 @@ END SUBROUTINE EXDIFF
       IMPLICIT NONE
       INTEGER LAYER(MAXP),MLAYER(MAXP)
       INTEGER NUMPNT,NAZ,NZEN,NLAY
-      
+
       REAL TU(MAXP),TD(MAXP)
       REAL DIFZEN(MAXANG),DEXT(MAXANG)
       REAL RTA(50),TAUMIN,XSLOPE,YSLOPE,TOTLAI,DLAI
@@ -1888,7 +1888,7 @@ END SUBROUTINE EXDIFF
          SMALL = AMIN1(TU(IPT),TD(IPT))
          IF (SMALL.LT.TAUMIN) TAUMIN = SMALL
       ENDDO
-      
+
       RETURN
       END !Tdumin
 
@@ -1919,7 +1919,7 @@ END SUBROUTINE EXDIFF
 ! Norman (1979) says this should be always < 0.5 and preferably closer to 0.1.
 ! Here for LAI < 5, we try DLAI = 0.1
       DLAI = REAL(IFIX(TOTLAI/5.0)+1)*0.1 !! modification Mathias 12/2012
-      
+
 ! Calculate transmittance through one elementary layer with thickness DLAI
 10    KK = 0            ! Initialise variable used to calculate NLAY
       WN = 0.0
@@ -1986,7 +1986,7 @@ END SUBROUTINE EXDIFF
       INTEGER LAYER(MAXP), MLAYER(MAXP)
       REAL RTA(50)
       REAL TU(MAXP),TD(MAXP),DIFMU,DIFUP,DIFMD,DIFDN
-    
+
 ! Z1 = no of layers above the equivalent layer in the EHC
 ! Z2 = no of layers below the equivalent layer in the EHC
 ! The point h in the horizontal canopy is found by finding Z1 such that
@@ -2021,7 +2021,7 @@ END SUBROUTINE EXDIFF
         IF(Z2.EQ.-1)THEN
             Z2 = NLAY - Z1
         ENDIF
-        
+
 390     MLAYER(IPT) = Z2 + Z1
         LAYER(IPT) = Z1
         IF (LAYER(IPT).EQ.0) LAYER(IPT) = 1
@@ -2051,7 +2051,7 @@ END SUBROUTINE EXDIFF
       REAL, EXTERNAL :: EPSIL
       REAL, EXTERNAL :: OMEGA
       REAL, EXTERNAL :: ALUNAR
-      
+
 !      DOY = REAL(MOD(IDOY*100,36525)/100)
 !      DOY = 31047
       DOY = REAL(DAYJUL(IDOY))
@@ -2152,7 +2152,7 @@ END SUBROUTINE EXDIFF
 !**********************************************************************
       IMPLICIT NONE
       REAL T
-      
+
       ECCENT = 0.01675104 - (4.08E-5+1.26E-7*T)*T
       RETURN
       END  !Eccent
@@ -2165,7 +2165,7 @@ END SUBROUTINE EXDIFF
       USE maestcom
       IMPLICIT NONE
       REAL T,D
-      
+
       ANOM = -1.52417 + (1.5E-4+3.0E-6*T)*T*T
       ANOM = ANOM + 0.98560*D
       IF (ANOM.LE.360.0) GO TO 10
@@ -2184,7 +2184,7 @@ END SUBROUTINE EXDIFF
       USE maestcom
       IMPLICIT NONE
       REAL T
-      
+
       EPSIL = (23.452294- (1.30125E-2+ (1.64E-6-5.03E-7*T)*T)*T)*PID180
       !EPSIL = (23.452294- (1.30125E-2+ (1.64E-6-5.03E-7*T)*T)*T)*PID180
 
@@ -2214,7 +2214,7 @@ END SUBROUTINE EXDIFF
       USE maestcom
       IMPLICIT NONE
       REAL T,D
- 
+
       ALUNAR = (259.1833+ (2.078E-3+2.0E-6*T)*T*T-0.05295*D)*PID180
 
       RETURN
@@ -2295,7 +2295,7 @@ END SUBROUTINE EXDIFF
       REAL TTIMD,EQNTIM,ALAT,DEC,XSLOPE,YSLOPE,BEAR,ZEN
       REAL BMULT,DMULT2,SOMULT,PARMB1,PARMB2,AZSLOP,SLOPE
       REAL DMULT1,ALATST,GH,DTEMP,TEMP,HRANG,CZENST,TEMPSP
-        
+
 !     We assume alebdo of solar radiation of the slope in question is 0.2
 !    according to Steven et al, the parameter to describe the
 !     intensity of diffuse on the sky is between that of the cloudless
@@ -2404,7 +2404,7 @@ END SUBROUTINE EXDIFF
         XMAX,YMAX,SHADEHT, &
         FOLT,ZBC,JLEAFT,BPTT,NOAGECT,PROPCT,JSHAPET,SHAPET, &
         NT,SLA,BEXT,BEXTANGT,BEXTANG)
-      
+
 ! a subroutine to calculate the transmittances of direct radiation
 ! and also the within and between-tree shading for beam
 !**********************************************************************
@@ -2483,7 +2483,7 @@ END SUBROUTINE EXDIFF
       IMPLICIT NONE
       INTEGER IPT,IWAVE,MLAYERI,LAYERI,JTOT,JJ,J,ITER
       INTEGER IREPT,JJP1,JJM1
-      
+
       REAL DIFDN(MAXP,3),DIFUP(MAXP,3),SCLOST(MAXP,3)
       REAL THDOWN(MAXP),DLAI,EXPDIF,ZEN,BEXT
       REAL DMULT2,SOMULT,BMULT, RADABV,FBEAM,TAIR,TSOIL
@@ -2578,7 +2578,7 @@ END SUBROUTINE EXDIFF
          IF (ABS(UP-U(IWAVE,JJ)).GT.0.01) IREPT = 1
          U(IWAVE,JJ) = UP
 1200  CONTINUE
-      IF (IREPT.NE.0) GOTO 900  
+      IF (IREPT.NE.0) GOTO 900
 
 ! Summarise calculations.
 ! This is a mix of code from previous versions of Maestro. Think it's right!
@@ -2595,7 +2595,7 @@ END SUBROUTINE EXDIFF
         ! This is actually transmission, not scatter.
         ! For convenience, store it in the same array.
         SCLOST(IPT,IWAVE) = U(IWAVE,JTOT)*RADABV
-      ELSE                                           
+      ELSE
         SCLOST(IPT,IWAVE) = U(IWAVE,JTOT)*RADABV
       ENDIF
 
@@ -2625,7 +2625,7 @@ SUBROUTINE ABSTHERM(IPT,MLAYERI,LAYERI,EXPDIF,RADABV,TAIR,TSOIL,RHOSOL, &
     REAL ELEAF,FF,ESOIL
     REAL, EXTERNAL :: TK
     REAL, EXTERNAL :: ESOILFUN
-                    
+
     ! These are temporary arrays within this subroutine.
     ! U(I) is the upwards long-wave flux incident on layer I
     ! D(I) is the  downwards long-wave flux incident on layer I
@@ -2684,8 +2684,8 @@ SUBROUTINE ABSRAD(IPT,IWAVE, &
     REAL DFLUX(MAXP,3), BFLUX(MAXP,3), SCATFX(MAXP,3)
     REAL BEXT,BMULT,RELDF,RADABV,FBEAM,ZEN,ABSRP,DIFDN,DIFUP
     REAL DFX,SCAT,DMEAN
-    
-    IF (ZEN.GT.1.56) THEN   ! limite l'angle zenithal à 89.4° pour éviter certains bug ! mars 2013 mathias
+
+    IF (ZEN.GT.1.56) THEN   ! limite l'angle zenithal ï¿½ 89.4ï¿½ pour ï¿½viter certains bug ! mars 2013 mathias
         BMULT = 0.0
     END IF
 
@@ -2695,7 +2695,7 @@ SUBROUTINE ABSRAD(IPT,IWAVE, &
     ELSE
         BFLUX(IPT,IWAVE) = RADABV*FBEAM/COS(ZEN)*ABSRP
     END IF
-    
+
     ! Calculate diffuse radiation absorbed directly.
     DFX = RELDF*RADABV*(1.0-FBEAM)
 
@@ -2724,20 +2724,28 @@ END SUBROUTINE ABSRAD
 
 
 !**********************************************************************
-SUBROUTINE CATEGO(AREA,APAR,HISTO,BINSIZE,ITAR)
+SUBROUTINE CATEGO(AREA,APAR,ALEAF,IJV,HISTO,BINSIZE,ITAR)
 ! This function creates a histogram of PAR frequency in the canopy
 ! over the simulation period. Frequency in m2.HR.
+! Adding two more columns of J-limited and V-limited photosynthesis
+! ALEAF is J-limited if IJV = 0, V-limited if IJV = 1,
+! not calculated if IJV = -1. BM 02/19
 !**********************************************************************
 
     USE maestcom
     IMPLICIT NONE
-    INTEGER ITAR,IHISTO
-    REAL HISTO(MAXT,MAXHISTO)
-    REAL AREA,APAR,BINSIZE
-    
+    INTEGER ITAR,IHISTO,IJV
+    REAL HISTO(MAXT,MAXHISTO,3)
+    REAL AREA,APAR,ALEAF,BINSIZE
+
     IHISTO = NINT((APAR+BINSIZE/2.)/BINSIZE)
     IF (IHISTO.LE.MAXHISTO) THEN
-        HISTO(ITAR,IHISTO) = HISTO(ITAR,IHISTO) + AREA
+        HISTO(ITAR,IHISTO,1) = HISTO(ITAR,IHISTO,1) + AREA
+        IF (IJV.EQ.0) THEN
+          HISTO(ITAR,IHISTO,2) = HISTO(ITAR,IHISTO,2) + AREA*ALEAF
+        ELSE IF (IJV.EQ.1) THEN
+          HISTO(ITAR,IHISTO,3) = HISTO(ITAR,IHISTO,3) + AREA*ALEAF
+        END IF
     ELSE
         CALL SUBERROR('HISTOGRAM OVERFLOW',IWARN,0)
     END IF
@@ -2769,7 +2777,7 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     REAL FRACAPAR,CHECK,PARUSMEAN,FAPARUS,THRABUS,FAPAROS
     REAL FANIROS,FANIRMULT,RADINTERC12TOT
     REAL DOWNTHAV,RGLOBUND,RADINTERC
-    
+
     ! Units: SCLOST W m-2, THRAB W tree-1, RADABV W tree -1,
     RADINTERC = 0.0
     RADINTERC12 = 0.0
@@ -2779,7 +2787,7 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     RGLOBABV = 0.0
     RGLOBABV12 = 0.0
     SCLOSTTOT = 0.0
-    
+
     ! Interception in W.
     DO I=1,NOTARGETS
         RADINTERC1 = RADINTERC1 + EXPFACTORS(I) * THRAB(I,IHOUR,1)
@@ -2792,7 +2800,7 @@ SUBROUTINE GETRGLOB(IHOUR,SCLOSTTREE,THRAB,RADABV, &
     RADINTERC3 = RADINTERC3 / PLOTAREA
     RADINTERC12 = RADINTERC1 + RADINTERC2
     RADINTERC = RADINTERC1 + RADINTERC2 + RADINTERC3
-    
+
     ! Understorey APAR. Note that APARUS will not be exactly the same,
     ! PARUS calculated in the understorey routines is at different poi
     ! the more US points we have, and the more NOTREES, the closer the

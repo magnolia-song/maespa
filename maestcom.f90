@@ -13,9 +13,9 @@ MODULE maestcom
     INTEGER, PARAMETER :: MAXC = 3           ! Maximum no. of leaf area distributions
     INTEGER, PARAMETER :: MAXANG = 20        ! Maximum no. of zenith & leaf angles
     INTEGER, PARAMETER :: MAXD = 13          ! For resp prog
-    INTEGER, PARAMETER :: MAXDATE = 1000        ! Maximum no. of dates for tree or physiol parameters
+    INTEGER, PARAMETER :: MAXDATE = 366*10        ! Maximum no. of dates for tree or physiol parameters
     INTEGER, PARAMETER :: MAXMET = 20         ! Maximum columns in met data file
-    INTEGER, PARAMETER :: MAXHISTO = 200      ! Maximum bins in PAR histogram
+    INTEGER, PARAMETER :: MAXHISTO = 100      ! Maximum bins in PAR histogram
     REAL, PARAMETER    :: TOL = 0.02          ! Tolerance for leaf temp iteration
     INTEGER, PARAMETER :: MAXDAY =   900      ! For sumtrees program
     INTEGER, PARAMETER :: MAXHRS = 96 !24*60      ! Maximum number of time periods in a day (ie 15 mins)

@@ -1,0 +1,53 @@
+
+&control
+iohrly = 1
+iotutd = 7
+ioresp = 0
+iohist = 1
+IPOINTS = 0
+/
+
+try other dates here.
+&dates
+startdate = '01/01/13'
+enddate = '31/12/16'
+/
+
+&treescon
+itargets = 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+notrees = 106
+/
+
+
+
+&diffang
+nolay = 6
+nzen = 20
+naz = 20
+/
+
+&model
+modelgs = 4
+modelrd = 0
+modeljm = 0
+itermax = 200
+modelss = 0
+/
+
+
+&CCSCEN
+CO2INC = 0
+TINC = 0
+/
+
+&SPECIES
+nspecies = 1
+speciesnames = 'canopy'
+phyfiles = 'phy.dat'
+strfiles = 'str.dat'
+/
+
+&HISTO
+BINSIZE = 25
+/
+
