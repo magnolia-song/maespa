@@ -70,12 +70,12 @@ nodates = 1
 /
 
 &JMAX
-values = 166
+values = 158.795
 dates = '01/01/13'
 /
 
 &Vcmax
-values = 83
+values = 91
 dates = '01/01/13'
 /
 
